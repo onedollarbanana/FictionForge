@@ -6,6 +6,9 @@ import { Header } from '@/components/layout/header'
 
 const inter = Inter({ subsets: ['latin'] })
 
+// Force ALL routes to be dynamically rendered (no static generation)
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'FictionForge - Where Stories Come Alive',
   description: 'A modern platform for web fiction authors and readers',
