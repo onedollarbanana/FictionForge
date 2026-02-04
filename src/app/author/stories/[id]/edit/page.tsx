@@ -154,7 +154,8 @@ export default function EditStoryPage() {
               >
                 {opt.label}
               </Button>
-            ))}n          </div>
+            ))}
+          </div>
         </div>
 
         <div className="space-y-2">
