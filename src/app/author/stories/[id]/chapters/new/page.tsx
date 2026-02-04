@@ -1,7 +1,5 @@
 "use client";
 
-export const dynamic = 'force-dynamic';
-
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
@@ -21,13 +19,13 @@ export default function NewChapterPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
 
   // Word count
   const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
 
   useEffect(() => {
     async function loadStory() {
+      const supabase = createClient();
       const { data } = await supabase
         .from("stories")
         .select("title")
@@ -38,14 +36,18 @@ export default function NewChapterPage() {
         setStoryTitle(data.title);
       }
     }
-    loadStory();
-  }, [storyId, supabase]);
+    
+    if (storyId) {
+      loadStory();
+    }
+  }, [storyId]);
 
   const handleSubmit = async (e: React.FormEvent, publish: boolean) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
+    const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setError("You must be logged in");
@@ -65,7 +67,7 @@ export default function NewChapterPage() {
       ? chapters[0].chapter_number + 1 
       : 1;
 
-    const { data, error: insertError } = await supabase
+    const { error: insertError } = await supabase
       .from("chapters")
       .insert({
         story_id: storyId,
@@ -88,7 +90,6 @@ export default function NewChapterPage() {
     }
 
     // Update story chapter count and word count
-    // (In production, this would be a database trigger)
     const { data: allChapters } = await supabase
       .from("chapters")
       .select("word_count")
@@ -111,87 +112,85 @@ export default function NewChapterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Breadcrumb */}
-        <div className="mb-4">
-          <Link href={`/author/stories/${storyId}`} className="text-muted-foreground hover:text-foreground">
-            ← Back to {storyTitle || "Story"}
-          </Link>
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      {/* Breadcrumb */}
+      <div className="mb-4">
+        <Link href={`/author/stories/${storyId}`} className="text-muted-foreground hover:text-foreground">
+          ← Back to {storyTitle || "Story"}
+        </Link>
+      </div>
+
+      <h1 className="text-3xl font-bold mb-8">New Chapter</h1>
+
+      <form className="space-y-6">
+        {error && (
+          <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-950 rounded">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <Label htmlFor="title">Chapter Title *</Label>
+          <Input
+            id="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Chapter 1: The Beginning"
+            required
+            maxLength={200}
+          />
         </div>
 
-        <h1 className="text-3xl font-bold mb-8">New Chapter</h1>
-
-        <form className="space-y-6">
-          {error && (
-            <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-950 rounded">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="title">Chapter Title *</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Chapter 1: The Beginning"
-              required
-              maxLength={200}
-            />
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <Label htmlFor="content">Content *</Label>
+            <span className="text-sm text-muted-foreground">
+              {wordCount.toLocaleString()} words
+            </span>
           </div>
+          <Textarea
+            id="content"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Write your chapter here..."
+            rows={20}
+            className="font-mono"
+            required
+          />
+          <p className="text-xs text-muted-foreground">
+            Tip: The rich text editor is coming soon! For now, use plain text.
+          </p>
+        </div>
 
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label htmlFor="content">Content *</Label>
-              <span className="text-sm text-muted-foreground">
-                {wordCount.toLocaleString()} words
-              </span>
-            </div>
-            <Textarea
-              id="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Write your chapter here..."
-              rows={20}
-              className="font-mono"
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              Tip: The rich text editor is coming soon! For now, use plain text.
-            </p>
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="authorNote">Author&apos;s Note (optional)</Label>
+          <Textarea
+            id="authorNote"
+            value={authorNote}
+            onChange={(e) => setAuthorNote(e.target.value)}
+            placeholder="Add a note for your readers..."
+            rows={3}
+          />
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="authorNote">Author&apos;s Note (optional)</Label>
-            <Textarea
-              id="authorNote"
-              value={authorNote}
-              onChange={(e) => setAuthorNote(e.target.value)}
-              placeholder="Add a note for your readers..."
-              rows={3}
-            />
-          </div>
-
-          <div className="flex gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={loading || !title.trim() || !content.trim()}
-              onClick={(e) => handleSubmit(e, false)}
-            >
-              {loading ? "Saving..." : "Save Draft"}
-            </Button>
-            <Button
-              type="button"
-              disabled={loading || !title.trim() || !content.trim()}
-              onClick={(e) => handleSubmit(e, true)}
-            >
-              {loading ? "Publishing..." : "Publish"}
-            </Button>
-          </div>
-        </form>
-      </div>
+        <div className="flex gap-4">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={loading || !title.trim() || !content.trim()}
+            onClick={(e) => handleSubmit(e, false)}
+          >
+            {loading ? "Saving..." : "Save Draft"}
+          </Button>
+          <Button
+            type="button"
+            disabled={loading || !title.trim() || !content.trim()}
+            onClick={(e) => handleSubmit(e, true)}
+          >
+            {loading ? "Publishing..." : "Publish"}
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }
