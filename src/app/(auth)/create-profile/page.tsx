@@ -27,13 +27,17 @@ export default function CreateProfilePage() {
 
     const timer = setTimeout(async () => {
       setCheckingUsername(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      // Check if username is taken by someone else
       const { data } = await supabase
         .from('profiles')
-        .select('username')
+        .select('username, id')
         .eq('username', username.toLowerCase())
         .single()
       
-      setUsernameAvailable(!data)
+      // Available if no one has it, OR if current user already has it
+      setUsernameAvailable(!data || data.id === user?.id)
       setCheckingUsername(false)
     }, 500)
 
@@ -73,16 +77,17 @@ export default function CreateProfilePage() {
       return
     }
 
-    const { error: insertError } = await supabase
+    // Update existing profile (created by trigger on signup)
+    const { error: updateError } = await supabase
       .from('profiles')
-      .insert({
-        id: user.id,
+      .update({
         username: username.toLowerCase(),
         display_name: displayName || null,
       })
+      .eq('id', user.id)
 
-    if (insertError) {
-      setError(insertError.message)
+    if (updateError) {
+      setError(updateError.message)
       setLoading(false)
     } else {
       router.push('/author/dashboard')
