@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { useUser } from '@/lib/hooks/useUser'
 import { createClient } from '@/lib/supabase/client'
-import { BookOpen, Pen, LogOut, User } from 'lucide-react'
+import { Pen, LogOut } from 'lucide-react'
 
 export function Header() {
   const { user, profile, loading } = useUser()
   const router = useRouter()
-  const supabase = createClient()
 
   const handleLogout = async () => {
+    const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/')
     router.refresh()

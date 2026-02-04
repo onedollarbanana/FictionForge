@@ -1,28 +1,11 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export const dynamic = 'force-dynamic';
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-primary">FictionForge</h1>
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
-            <Link href="/login">
-              <Button variant="ghost">Log in</Button>
-            </Link>
-            <Link href="/signup">
-              <Button>Sign up</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
+    <div className="bg-background">
       {/* Hero Section */}
       <main className="container mx-auto px-4 py-16">
         <div className="max-w-3xl mx-auto text-center">
