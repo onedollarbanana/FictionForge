@@ -162,7 +162,7 @@ export default async function AuthorDashboard() {
           <div className="grid gap-4 md:grid-cols-2">
             {stories.map(story => (
               <StoryCard key={story.id} story={story as Story} />
-            )}
+            ))}
           </div>
         )}
       </div>

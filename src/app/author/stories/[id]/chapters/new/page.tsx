@@ -62,7 +62,7 @@ export default function NewChapterPage({
       ]
     }
 
-    const { data, error: insertError } = await supabase
+    const { error: insertError } = await supabase
       .from('chapters')
       .insert({
         story_id: params.id,
@@ -82,15 +82,7 @@ export default function NewChapterPage({
       setError(insertError.message)
       setLoading(false)
     } else {
-      // Update story chapter count and word count
-      await supabase.rpc('increment_story_stats', {
-        story_id: params.id,
-        chapters: 1,
-        words: wordCount,
-      }).catch(() => {
-        // RPC might not exist yet, that's ok
-      })
-
+      // Note: Story stats will be updated by database trigger in future
       router.push(`/author/stories/${params.id}`)
       router.refresh()
     }
@@ -137,11 +129,7 @@ export default function NewChapterPage({
               </div>
               <Textarea
                 id="content"
-                placeholder="Start writing your chapter...
-
-Separate paragraphs with blank lines.
-
-(A rich text editor with LitRPG stat boxes, formatting, and more is coming in Phase 6!)"
+                placeholder="Start writing your chapter...\n\nSeparate paragraphs with blank lines.\n\n(A rich text editor with LitRPG stat boxes, formatting, and more is coming in Phase 6!)"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 rows={20}
