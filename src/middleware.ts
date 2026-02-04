@@ -17,38 +17,18 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
+          request.cookies.set({ name, value, ...options })
           response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
+            request: { headers: request.headers },
           })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
+          response.cookies.set({ name, value, ...options })
         },
         remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
+          request.cookies.set({ name, value: '', ...options })
           response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
+            request: { headers: request.headers },
           })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
+          response.cookies.set({ name, value: '', ...options })
         },
       },
     }
@@ -56,27 +36,27 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Protect author routes
+  // Protected routes - require auth
   if (request.nextUrl.pathname.startsWith('/author')) {
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
 
-    // Check if user has a profile
+    // Check if user has profile
     const { data: profile } = await supabase
       .from('profiles')
       .select('id')
       .eq('id', user.id)
       .single()
 
-    if (!profile) {
+    if (!profile && !request.nextUrl.pathname.startsWith('/create-profile')) {
       return NextResponse.redirect(new URL('/create-profile', request.url))
     }
   }
 
   // Redirect logged-in users away from auth pages
   if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
-    return NextResponse.redirect(new URL('/browse', request.url))
+    return NextResponse.redirect(new URL('/author/dashboard', request.url))
   }
 
   return response

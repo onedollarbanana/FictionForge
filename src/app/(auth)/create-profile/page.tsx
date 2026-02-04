@@ -7,22 +7,20 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Check, X, Loader2 } from 'lucide-react'
 
 export default function CreateProfilePage() {
   const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [checkingUsername, setCheckingUsername] = useState(false)
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null)
+  const [checkingUsername, setCheckingUsername] = useState(false)
+  const [loading, setLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
   // Debounced username check
   useEffect(() => {
-    if (!username || username.length < 3) {
+    if (username.length < 3) {
       setUsernameAvailable(null)
       return
     }
@@ -42,28 +40,30 @@ export default function CreateProfilePage() {
     return () => clearTimeout(timer)
   }, [username, supabase])
 
-  const validateUsername = (value: string) => {
-    const regex = /^[a-z0-9_]+$/
-    return regex.test(value) && value.length >= 3 && value.length <= 20
+  const validateUsername = (value: string): string | null => {
+    if (value.length < 3) return 'Username must be at least 3 characters'
+    if (value.length > 20) return 'Username must be 20 characters or less'
+    if (!/^[a-z0-9_]+$/.test(value)) return 'Only lowercase letters, numbers, and underscores'
+    return null
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
     setError(null)
 
-    const lowerUsername = username.toLowerCase()
-
-    if (!validateUsername(lowerUsername)) {
-      setError('Username must be 3-20 characters, lowercase letters, numbers, and underscores only')
+    const usernameError = validateUsername(username)
+    if (usernameError) {
+      setError(usernameError)
+      setLoading(false)
       return
     }
 
     if (!usernameAvailable) {
       setError('Username is not available')
+      setLoading(false)
       return
     }
-
-    setLoading(true)
 
     const { data: { user } } = await supabase.auth.getUser()
     
@@ -73,83 +73,78 @@ export default function CreateProfilePage() {
       return
     }
 
-    const { error } = await supabase
+    const { error: insertError } = await supabase
       .from('profiles')
       .insert({
         id: user.id,
-        username: lowerUsername,
+        username: username.toLowerCase(),
         display_name: displayName || null,
       })
 
-    if (error) {
-      if (error.code === '23505') {
-        setError('Username is already taken')
-      } else {
-        setError(error.message)
-      }
+    if (insertError) {
+      setError(insertError.message)
       setLoading(false)
-      return
+    } else {
+      router.push('/author/dashboard')
+      router.refresh()
     }
-
-    router.push('/browse')
-    router.refresh()
   }
 
   return (
-    <Card>
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Create your profile</CardTitle>
+    <Card className="w-full max-w-md">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold">Create your profile</CardTitle>
         <CardDescription>Choose a username to get started</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+            <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-950 rounded-md">
+              {error}
+            </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
+            <Label htmlFor="username">Username *</Label>
             <div className="relative">
               <Input
                 id="username"
-                placeholder="coolauthor42"
+                type="text"
+                placeholder="coolwriter"
                 value={username}
-                onChange={(e) => setUsername(e.target.value.toLowerCase())}
-                className="pr-10"
+                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                 required
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                {checkingUsername && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                {!checkingUsername && usernameAvailable === true && <Check className="h-4 w-4 text-green-500" />}
-                {!checkingUsername && usernameAvailable === false && <X className="h-4 w-4 text-red-500" />}
-              </div>
+              {username.length >= 3 && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {checkingUsername ? (
+                    <span className="text-muted-foreground">...</span>
+                  ) : usernameAvailable ? (
+                    <span className="text-green-500">✓</span>
+                  ) : (
+                    <span className="text-red-500">✗</span>
+                  )}
+                </span>
+              )}
             </div>
             <p className="text-xs text-muted-foreground">
-              3-20 characters, lowercase letters, numbers, and underscores
+              3-20 characters, lowercase letters, numbers, underscores only
             </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="displayName">Display Name (optional)</Label>
             <Input
               id="displayName"
-              placeholder="Cool Author"
+              type="text"
+              placeholder="Your Name"
               value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
+              onChange={(e) => setDisplayName(e.target.value.slice(0, 50))}
               maxLength={50}
             />
-            <p className="text-xs text-muted-foreground">
-              This is how your name will appear to readers
-            </p>
           </div>
         </CardContent>
         <CardFooter>
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={loading || !usernameAvailable}
-          >
-            {loading ? 'Creating profile...' : 'Create Profile'}
+          <Button type="submit" className="w-full" disabled={loading || !usernameAvailable}>
+            {loading ? 'Creating...' : 'Create Profile'}
           </Button>
         </CardFooter>
       </form>

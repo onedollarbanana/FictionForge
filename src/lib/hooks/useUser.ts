@@ -13,30 +13,42 @@ interface Profile {
   created_at: string
 }
 
-export function useUser() {
+interface UseUserReturn {
+  user: User | null
+  profile: Profile | null
+  loading: boolean
+  error: Error | null
+}
+
+export function useUser(): UseUserReturn {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
-  const supabase = createClient()
 
   useEffect(() => {
-    const getUser = async () => {
+    const supabase = createClient()
+
+    async function getUser() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        
+        if (userError) throw userError
+        
         setUser(user)
 
         if (user) {
-          const { data: profile, error } = await supabase
+          const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', user.id)
             .single()
 
-          if (error && error.code !== 'PGRST116') {
-            throw error
+          if (profileError && profileError.code !== 'PGRST116') {
+            throw profileError
           }
-          setProfile(profile)
+
+          setProfile(profileData)
         }
       } catch (e) {
         setError(e as Error)
@@ -47,24 +59,15 @@ export function useUser() {
 
     getUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null)
-        if (session?.user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single()
-          setProfile(profile)
-        } else {
-          setProfile(null)
-        }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      if (!session?.user) {
+        setProfile(null)
       }
-    )
+    })
 
     return () => subscription.unsubscribe()
-  }, [supabase])
+  }, [])
 
   return { user, profile, loading, error }
 }
