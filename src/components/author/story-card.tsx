@@ -10,9 +10,9 @@ interface Story {
   status: string;
   created_at: string;
   chapter_count: number;
-  total_word_count: number;
-  total_views: number;
-  follower_count: number;
+  total_word_count: number | null;
+  total_views: number | null;
+  follower_count: number | null;
 }
 
 interface StoryCardProps {
@@ -51,10 +51,10 @@ export function StoryCard({ story }: StoryCardProps) {
           )}
           
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-            <span>{story.chapter_count} chapters</span>
-            <span>{story.total_word_count.toLocaleString()} words</span>
-            <span>{story.total_views.toLocaleString()} views</span>
-            <span>{story.follower_count} followers</span>
+            <span>{story.chapter_count ?? 0} chapters</span>
+            <span>{(story.total_word_count ?? 0).toLocaleString()} words</span>
+            <span>{(story.total_views ?? 0).toLocaleString()} views</span>
+            <span>{story.follower_count ?? 0} followers</span>
           </div>
         </div>
         

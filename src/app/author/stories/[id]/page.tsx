@@ -13,10 +13,10 @@ interface Story {
   status: string;
   genres: string[];
   tags: string[];
-  chapter_count: number;
-  total_word_count: number;
-  total_views: number;
-  follower_count: number;
+  chapter_count: number | null;
+  total_word_count: number | null;
+  total_views: number | null;
+  follower_count: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -25,7 +25,7 @@ interface Chapter {
   id: string;
   title: string;
   chapter_number: number;
-  word_count: number;
+  word_count: number | null;
   status: string;
   published_at: string | null;
   created_at: string;
@@ -149,19 +149,19 @@ export default function StoryOverviewPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="p-4 rounded-lg border bg-card">
           <p className="text-sm text-muted-foreground">Chapters</p>
-          <p className="text-2xl font-bold">{story.chapter_count}</p>
+          <p className="text-2xl font-bold">{story.chapter_count ?? 0}</p>
         </div>
         <div className="p-4 rounded-lg border bg-card">
           <p className="text-sm text-muted-foreground">Words</p>
-          <p className="text-2xl font-bold">{story.total_word_count.toLocaleString()}</p>
+          <p className="text-2xl font-bold">{(story.total_word_count ?? 0).toLocaleString()}</p>
         </div>
         <div className="p-4 rounded-lg border bg-card">
           <p className="text-sm text-muted-foreground">Views</p>
-          <p className="text-2xl font-bold">{story.total_views.toLocaleString()}</p>
+          <p className="text-2xl font-bold">{(story.total_views ?? 0).toLocaleString()}</p>
         </div>
         <div className="p-4 rounded-lg border bg-card">
           <p className="text-sm text-muted-foreground">Followers</p>
-          <p className="text-2xl font-bold">{story.follower_count}</p>
+          <p className="text-2xl font-bold">{story.follower_count ?? 0}</p>
         </div>
       </div>
 
@@ -199,7 +199,7 @@ export default function StoryOverviewPage() {
                     <span className="font-medium">{chapter.title}</span>
                   </div>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>{chapter.word_count.toLocaleString()} words</span>
+                    <span>{(chapter.word_count ?? 0).toLocaleString()} words</span>
                     <span
                       className={`px-2 py-0.5 rounded text-xs ${
                         chapter.status === "published"
