@@ -1,171 +1,125 @@
-import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import type { Story } from '@/types/database'
+"use client";
 
-function formatNumber(num: number): string {
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
-  if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
-  return num.toString()
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { StoryCard } from "@/components/author/story-card";
+
+interface Story {
+  id: string;
+  title: string;
+  blurb: string | null;
+  status: string;
+  created_at: string;
+  chapter_count: number;
+  total_word_count: number;
+  total_views: number;
+  follower_count: number;
 }
 
-function StoryCard({ story }: { story: Story }) {
-  const statusColors = {
-    ongoing: 'bg-green-500/10 text-green-500 border-green-500/20',
-    completed: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-    hiatus: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-    dropped: 'bg-red-500/10 text-red-500 border-red-500/20',
+export default function AuthorDashboard() {
+  const [stories, setStories] = useState<Story[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalStories: 0,
+    totalChapters: 0,
+    totalWords: 0,
+    totalViews: 0,
+  });
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function loadStories() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("stories")
+        .select("*")
+        .eq("author_id", user.id)
+        .order("updated_at", { ascending: false });
+
+      if (error) {
+        console.error("Error loading stories:", error);
+        return;
+      }
+
+      const storiesData = data || [];
+      setStories(storiesData);
+      
+      // Calculate stats
+      setStats({
+        totalStories: storiesData.length,
+        totalChapters: storiesData.reduce((sum, s) => sum + (s.chapter_count || 0), 0),
+        totalWords: storiesData.reduce((sum, s) => sum + (s.total_word_count || 0), 0),
+        totalViews: storiesData.reduce((sum, s) => sum + (s.total_views || 0), 0),
+      });
+      
+      setLoading(false);
+    }
+
+    loadStories();
+  }, [supabase]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
   }
 
   return (
-    <Card className="hover:shadow-lg transition-shadow">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-lg">
-              <Link href={`/author/stories/${story.id}`} className="hover:underline">
-                {story.title}
-              </Link>
-            </CardTitle>
-            <Badge 
-              variant="outline" 
-              className={statusColors[story.status]}
-            >
-              {story.status.charAt(0).toUpperCase() + story.status.slice(1)}
-            </Badge>
-          </div>
-          <Link href={`/author/stories/${story.id}/edit`}>
-            <Button variant="outline" size="sm">Edit</Button>
-          </Link>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {story.blurb && (
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-            {story.blurb}
-          </p>
-        )}
-        <div className="flex flex-wrap gap-1 mb-4">
-          {story.genres.slice(0, 3).map(genre => (
-            <Badge key={genre} variant="secondary" className="text-xs">
-              {genre}
-            </Badge>
-          ))}
-        </div>
-        <div className="grid grid-cols-4 gap-2 text-center text-sm">
-          <div>
-            <div className="font-semibold">{story.chapter_count}</div>
-            <div className="text-xs text-muted-foreground">Chapters</div>
-          </div>
-          <div>
-            <div className="font-semibold">{formatNumber(story.word_count)}</div>
-            <div className="text-xs text-muted-foreground">Words</div>
-          </div>
-          <div>
-            <div className="font-semibold">{formatNumber(story.total_views)}</div>
-            <div className="text-xs text-muted-foreground">Views</div>
-          </div>
-          <div>
-            <div className="font-semibold">{formatNumber(story.follower_count)}</div>
-            <div className="text-xs text-muted-foreground">Followers</div>
-          </div>
-        </div>
-        <div className="mt-4 pt-4 border-t flex justify-between">
-          <Link href={`/author/stories/${story.id}/chapters`}>
-            <Button variant="ghost" size="sm">Manage Chapters</Button>
-          </Link>
-          <Link href={`/author/stories/${story.id}/chapters/new`}>
-            <Button size="sm">+ Add Chapter</Button>
-          </Link>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-export default async function AuthorDashboard() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const { data: stories, error } = await supabase
-    .from('stories')
-    .select('*')
-    .eq('author_id', user!.id)
-    .order('updated_at', { ascending: false })
-
-  if (error) {
-    console.error('Error fetching stories:', error)
-  }
-
-  return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Author Dashboard</h1>
-          <p className="text-muted-foreground">Manage your stories and chapters</p>
+          <Link href="/author/stories/new">
+            <Button>+ New Story</Button>
+          </Link>
         </div>
-        <Link href="/author/stories/new">
-          <Button>+ Create New Story</Button>
-        </Link>
-      </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Stories</CardDescription>
-            <CardTitle className="text-3xl">{stories?.length || 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Chapters</CardDescription>
-            <CardTitle className="text-3xl">
-              {stories?.reduce((sum, s) => sum + s.chapter_count, 0) || 0}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Views</CardDescription>
-            <CardTitle className="text-3xl">
-              {formatNumber(stories?.reduce((sum, s) => sum + s.total_views, 0) || 0)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Followers</CardDescription>
-            <CardTitle className="text-3xl">
-              {formatNumber(stories?.reduce((sum, s) => sum + s.follower_count, 0) || 0)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+        {/* Stats Overview */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="p-4 rounded-lg border bg-card">
+            <p className="text-sm text-muted-foreground">Stories</p>
+            <p className="text-2xl font-bold">{stats.totalStories}</p>
+          </div>
+          <div className="p-4 rounded-lg border bg-card">
+            <p className="text-sm text-muted-foreground">Chapters</p>
+            <p className="text-2xl font-bold">{stats.totalChapters}</p>
+          </div>
+          <div className="p-4 rounded-lg border bg-card">
+            <p className="text-sm text-muted-foreground">Total Words</p>
+            <p className="text-2xl font-bold">{stats.totalWords.toLocaleString()}</p>
+          </div>
+          <div className="p-4 rounded-lg border bg-card">
+            <p className="text-sm text-muted-foreground">Total Views</p>
+            <p className="text-2xl font-bold">{stats.totalViews.toLocaleString()}</p>
+          </div>
+        </div>
 
-      {/* Stories List */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Your Stories</h2>
-        {!stories || stories.length === 0 ? (
-          <Card className="p-12 text-center">
-            <div className="text-muted-foreground mb-4">
-              You haven&apos;t created any stories yet.
-            </div>
+        {/* Stories List */}
+        {stories.length === 0 ? (
+          <div className="text-center py-16 border rounded-lg bg-card">
+            <h2 className="text-xl font-semibold mb-2">No stories yet</h2>
+            <p className="text-muted-foreground mb-4">
+              Create your first story to get started
+            </p>
             <Link href="/author/stories/new">
               <Button>Create Your First Story</Button>
             </Link>
-          </Card>
+          </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {stories.map(story => (
+          <div className="grid gap-4">
+            {stories.map((story) => (
               <StoryCard key={story.id} story={story as Story} />
             ))}
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }

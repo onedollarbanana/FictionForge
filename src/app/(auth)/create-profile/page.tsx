@@ -1,158 +1,149 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function CreateProfilePage() {
-  const [username, setUsername] = useState('')
-  const [displayName, setDisplayName] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null)
-  const [checkingUsername, setCheckingUsername] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
-  const supabase = createClient()
+  const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(
+    null
+  );
+  const router = useRouter();
+  const supabase = createClient();
 
-  // Debounced username check
+  // Debounced username availability check
   useEffect(() => {
     if (username.length < 3) {
-      setUsernameAvailable(null)
-      return
+      setUsernameAvailable(null);
+      return;
     }
 
     const timer = setTimeout(async () => {
-      setCheckingUsername(true)
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      // Check if username is taken by someone else
+      setCheckingUsername(true);
       const { data } = await supabase
-        .from('profiles')
-        .select('username, id')
-        .eq('username', username.toLowerCase())
-        .single()
-      
-      // Available if no one has it, OR if current user already has it
-      setUsernameAvailable(!data || data.id === user?.id)
-      setCheckingUsername(false)
-    }, 500)
+        .from("profiles")
+        .select("username")
+        .eq("username", username.toLowerCase())
+        .single();
 
-    return () => clearTimeout(timer)
-  }, [username, supabase])
+      setUsernameAvailable(!data);
+      setCheckingUsername(false);
+    }, 500);
 
-  const validateUsername = (value: string): string | null => {
-    if (value.length < 3) return 'Username must be at least 3 characters'
-    if (value.length > 20) return 'Username must be 20 characters or less'
-    if (!/^[a-z0-9_]+$/.test(value)) return 'Only lowercase letters, numbers, and underscores'
-    return null
-  }
+    return () => clearTimeout(timer);
+  }, [username, supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
 
-    const usernameError = validateUsername(username)
-    if (usernameError) {
-      setError(usernameError)
-      setLoading(false)
-      return
-    }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!usernameAvailable) {
-      setError('Username is not available')
-      setLoading(false)
-      return
-    }
-
-    const { data: { user } } = await supabase.auth.getUser()
-    
     if (!user) {
-      setError('You must be logged in')
-      setLoading(false)
-      return
+      setError("You must be logged in to create a profile");
+      setLoading(false);
+      return;
     }
 
-    // Update existing profile (created by trigger on signup)
-    const { error: updateError } = await supabase
-      .from('profiles')
+    const { error } = await supabase
+      .from("profiles")
       .update({
         username: username.toLowerCase(),
-        display_name: displayName || null,
+        display_name: displayName || username,
       })
-      .eq('id', user.id)
+      .eq("id", user.id);
 
-    if (updateError) {
-      setError(updateError.message)
-      setLoading(false)
-    } else {
-      router.push('/author/dashboard')
-      router.refresh()
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+      return;
     }
-  }
+
+    router.push("/author/dashboard");
+    router.refresh();
+  };
+
+  const isValidUsername = /^[a-z0-9_]{3,20}$/.test(username.toLowerCase());
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold">Create your profile</CardTitle>
-        <CardDescription>Choose a username to get started</CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="w-full max-w-md p-8 space-y-6 bg-card rounded-lg border">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Create your profile</h1>
+          <p className="text-muted-foreground">Choose a username to get started</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-950 rounded-md">
+            <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-950 rounded">
               {error}
             </div>
           )}
+
           <div className="space-y-2">
             <Label htmlFor="username">Username *</Label>
-            <div className="relative">
-              <Input
-                id="username"
-                type="text"
-                placeholder="coolwriter"
-                value={username}
-                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                required
-              />
-              {username.length >= 3 && (
-                <span className="absolute right-3 top-1/2 -translate-y-1/2">
-                  {checkingUsername ? (
-                    <span className="text-muted-foreground">...</span>
-                  ) : usernameAvailable ? (
-                    <span className="text-green-500">✓</span>
-                  ) : (
-                    <span className="text-red-500">✗</span>
-                  )}
+            <Input
+              id="username"
+              type="text"
+              placeholder="your_username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              minLength={3}
+              maxLength={20}
+            />
+            <div className="text-xs">
+              {checkingUsername && (
+                <span className="text-muted-foreground">Checking...</span>
+              )}
+              {!checkingUsername && usernameAvailable === true && (
+                <span className="text-green-600">✓ Username available</span>
+              )}
+              {!checkingUsername && usernameAvailable === false && (
+                <span className="text-red-500">✗ Username taken</span>
+              )}
+              {!checkingUsername && usernameAvailable === null && username.length > 0 && (
+                <span className="text-muted-foreground">
+                  {isValidUsername
+                    ? "✓ 3-20 characters, lowercase letters, numbers, underscores only"
+                    : "3-20 characters, lowercase letters, numbers, underscores only"}
                 </span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
-              3-20 characters, lowercase letters, numbers, underscores only
-            </p>
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="displayName">Display Name (optional)</Label>
             <Input
               id="displayName"
               type="text"
-              placeholder="Your Name"
+              placeholder="Your Display Name"
               value={displayName}
-              onChange={(e) => setDisplayName(e.target.value.slice(0, 50))}
+              onChange={(e) => setDisplayName(e.target.value)}
               maxLength={50}
             />
           </div>
-        </CardContent>
-        <CardFooter>
-          <Button type="submit" className="w-full" disabled={loading || !usernameAvailable}>
-            {loading ? 'Creating...' : 'Create Profile'}
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={loading || !isValidUsername || usernameAvailable === false}
+          >
+            {loading ? "Creating..." : "Create Profile"}
           </Button>
-        </CardFooter>
-      </form>
-    </Card>
-  )
+        </form>
+      </div>
+    </div>
+  );
 }

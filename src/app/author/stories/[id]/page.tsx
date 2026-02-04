@@ -1,188 +1,203 @@
-import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import type { Story, Chapter } from '@/types/database'
+"use client";
 
-function formatNumber(num: number): string {
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
-  if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
-  return num.toString()
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+
+interface Story {
+  id: string;
+  title: string;
+  blurb: string | null;
+  status: string;
+  genres: string[];
+  tags: string[];
+  chapter_count: number;
+  total_word_count: number;
+  total_views: number;
+  follower_count: number;
+  created_at: string;
+  updated_at: string;
 }
 
-export default async function StoryOverviewPage({
-  params,
-}: {
-  params: { id: string }
-}) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+interface Chapter {
+  id: string;
+  title: string;
+  chapter_number: number;
+  word_count: number;
+  status: string;
+  published_at: string | null;
+  created_at: string;
+}
 
-  // Fetch story
-  const { data: story, error } = await supabase
-    .from('stories')
-    .select('*')
-    .eq('id', params.id)
-    .single()
+export default function StoryOverviewPage() {
+  const params = useParams();
+  const storyId = params.id as string;
+  const [story, setStory] = useState<Story | null>(null);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
-  if (error || !story || story.author_id !== user?.id) {
-    notFound()
+  useEffect(() => {
+    async function loadData() {
+      // Load story
+      const { data: storyData, error: storyError } = await supabase
+        .from("stories")
+        .select("*")
+        .eq("id", storyId)
+        .single();
+
+      if (storyError) {
+        console.error("Error loading story:", storyError);
+        setLoading(false);
+        return;
+      }
+
+      setStory(storyData);
+
+      // Load chapters
+      const { data: chaptersData, error: chaptersError } = await supabase
+        .from("chapters")
+        .select("id, title, chapter_number, word_count, status, published_at, created_at")
+        .eq("story_id", storyId)
+        .order("chapter_number", { ascending: true });
+
+      if (chaptersError) {
+        console.error("Error loading chapters:", chaptersError);
+      } else {
+        setChapters(chaptersData || []);
+      }
+
+      setLoading(false);
+    }
+
+    loadData();
+  }, [storyId, supabase]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
   }
 
-  // Fetch chapters
-  const { data: chapters } = await supabase
-    .from('chapters')
-    .select('id, chapter_number, title, word_count, is_published, created_at')
-    .eq('story_id', params.id)
-    .order('chapter_number', { ascending: true })
-
-  const typedStory = story as Story
-  const typedChapters = (chapters || []) as Chapter[]
-
-  const statusColors = {
-    ongoing: 'bg-green-500/10 text-green-500 border-green-500/20',
-    completed: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-    hiatus: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-    dropped: 'bg-red-500/10 text-red-500 border-red-500/20',
+  if (!story) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Story not found</p>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">{typedStory.title}</h1>
-          <div className="flex items-center gap-2">
-            <Badge 
-              variant="outline" 
-              className={statusColors[typedStory.status]}
-            >
-              {typedStory.status.charAt(0).toUpperCase() + typedStory.status.slice(1)}
-            </Badge>
-            {typedStory.genres.map(genre => (
-              <Badge key={genre} variant="secondary">
-                {genre}
-              </Badge>
-            ))}
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Link href={`/story/${typedStory.slug}`}>
-            <Button variant="outline">View Public Page</Button>
-          </Link>
-          <Link href={`/author/stories/${params.id}/edit`}>
-            <Button variant="outline">Edit Details</Button>
-          </Link>
-          <Link href={`/author/stories/${params.id}/chapters/new`}>
-            <Button>+ New Chapter</Button>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Breadcrumb */}
+        <div className="mb-4">
+          <Link href="/author/dashboard" className="text-muted-foreground hover:text-foreground">
+            ← Back to Dashboard
           </Link>
         </div>
-      </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Chapters</CardDescription>
-            <CardTitle className="text-2xl">{typedStory.chapter_count}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Words</CardDescription>
-            <CardTitle className="text-2xl">{formatNumber(typedStory.word_count)}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Views</CardDescription>
-            <CardTitle className="text-2xl">{formatNumber(typedStory.total_views)}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Followers</CardDescription>
-            <CardTitle className="text-2xl">{formatNumber(typedStory.follower_count)}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Likes</CardDescription>
-            <CardTitle className="text-2xl">{formatNumber(typedStory.total_likes)}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-
-      {/* Blurb */}
-      {typedStory.blurb && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Synopsis</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground whitespace-pre-wrap">{typedStory.blurb}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Chapters List */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        {/* Story Header */}
+        <div className="flex justify-between items-start mb-8">
           <div>
-            <CardTitle className="text-lg">Chapters</CardTitle>
-            <CardDescription>
-              {typedChapters.length} chapter{typedChapters.length !== 1 ? 's' : ''}
-            </CardDescription>
+            <h1 className="text-3xl font-bold mb-2">{story.title}</h1>
+            <div className="flex gap-2 items-center">
+              <span className="text-sm px-2 py-1 rounded bg-muted">
+                {story.status}
+              </span>
+              {story.genres.slice(0, 3).map((genre) => (
+                <span key={genre} className="text-sm text-muted-foreground">
+                  {genre}
+                </span>
+              ))}
+            </div>
           </div>
-          <Link href={`/author/stories/${params.id}/chapters/new`}>
-            <Button size="sm">+ Add Chapter</Button>
-          </Link>
-        </CardHeader>
-        <CardContent>
-          {typedChapters.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No chapters yet. Start writing!
+          <div className="flex gap-2">
+            <Link href={`/author/stories/${storyId}/edit`}>
+              <Button variant="outline">Edit Story</Button>
+            </Link>
+            <Link href={`/author/stories/${storyId}/chapters/new`}>
+              <Button>+ New Chapter</Button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="p-4 rounded-lg border bg-card">
+            <p className="text-sm text-muted-foreground">Chapters</p>
+            <p className="text-2xl font-bold">{story.chapter_count}</p>
+          </div>
+          <div className="p-4 rounded-lg border bg-card">
+            <p className="text-sm text-muted-foreground">Words</p>
+            <p className="text-2xl font-bold">{story.total_word_count.toLocaleString()}</p>
+          </div>
+          <div className="p-4 rounded-lg border bg-card">
+            <p className="text-sm text-muted-foreground">Views</p>
+            <p className="text-2xl font-bold">{story.total_views.toLocaleString()}</p>
+          </div>
+          <div className="p-4 rounded-lg border bg-card">
+            <p className="text-sm text-muted-foreground">Followers</p>
+            <p className="text-2xl font-bold">{story.follower_count}</p>
+          </div>
+        </div>
+
+        {/* Blurb */}
+        {story.blurb && (
+          <div className="mb-8 p-4 rounded-lg border bg-card">
+            <h2 className="font-semibold mb-2">Description</h2>
+            <p className="text-muted-foreground whitespace-pre-wrap">{story.blurb}</p>
+          </div>
+        )}
+
+        {/* Chapters List */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Chapters</h2>
+          {chapters.length === 0 ? (
+            <div className="text-center py-8 border rounded-lg bg-card">
+              <p className="text-muted-foreground mb-4">No chapters yet</p>
+              <Link href={`/author/stories/${storyId}/chapters/new`}>
+                <Button>Write Your First Chapter</Button>
+              </Link>
             </div>
           ) : (
             <div className="space-y-2">
-              {typedChapters.map((chapter, index) => (
-                <div key={chapter.id}>
-                  {index > 0 && <Separator className="my-2" />}
-                  <div className="flex items-center justify-between py-2">
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm text-muted-foreground w-12">
+              {chapters.map((chapter) => (
+                <Link
+                  key={chapter.id}
+                  href={`/author/stories/${storyId}/chapters/${chapter.id}/edit`}
+                  className="block p-4 rounded-lg border bg-card hover:border-primary transition-colors"
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-muted-foreground mr-2">
                         Ch. {chapter.chapter_number}
                       </span>
-                      <div>
-                        <Link 
-                          href={`/author/stories/${params.id}/chapters/${chapter.id}`}
-                          className="font-medium hover:underline"
-                        >
-                          {chapter.title}
-                        </Link>
-                        <div className="text-xs text-muted-foreground">
-                          {chapter.word_count.toLocaleString()} words
-                        </div>
-                      </div>
+                      <span className="font-medium">{chapter.title}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={chapter.is_published ? 'default' : 'outline'}>
-                        {chapter.is_published ? 'Published' : 'Draft'}
-                      </Badge>
-                      <Link href={`/author/stories/${params.id}/chapters/${chapter.id}`}>
-                        <Button variant="ghost" size="sm">Edit</Button>
-                      </Link>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span>{chapter.word_count.toLocaleString()} words</span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs ${
+                          chapter.status === "published"
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                        }`}
+                      >
+                        {chapter.status}
+                      </span>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
-  )
+  );
 }
