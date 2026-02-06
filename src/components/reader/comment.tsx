@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 interface CommentData {
   id: string;
   content: string;
-  likes_count: number;
+  likes: number;
   created_at: string;
   user_id: string;
   parent_id: string | null;
@@ -39,7 +39,7 @@ export function Comment({
   const [replyContent, setReplyContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [liked, setLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(comment.likes_count ?? 0);
+  const [likesCount, setLikesCount] = useState(comment.likes ?? 0);
   const [revealedSpoilers, setRevealedSpoilers] = useState<Set<number>>(new Set());
 
   const renderContent = () => {
