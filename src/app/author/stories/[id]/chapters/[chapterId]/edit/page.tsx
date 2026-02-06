@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { JSONContent } from "@tiptap/react";
@@ -23,16 +23,32 @@ function debounce<T extends (...args: Parameters<T>) => void>(
   };
 }
 
-export default function NewChapterPage() {
+interface Chapter {
+  id: string;
+  title: string;
+  content: JSONContent;
+  word_count: number;
+  chapter_number: number;
+  is_published: boolean;
+  author_note_before: string | null;
+  author_note_after: string | null;
+  story_id: string;
+}
+
+export default function EditChapterPage() {
   const params = useParams();
   const storyId = params.id as string;
+  const chapterId = params.chapterId as string;
+  
   const [storyTitle, setStoryTitle] = useState("");
+  const [chapter, setChapter] = useState<Chapter | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState<JSONContent | null>(null);
   const [authorNoteBefore, setAuthorNoteBefore] = useState("");
   const [authorNoteAfter, setAuthorNoteAfter] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const router = useRouter();
@@ -40,85 +56,130 @@ export default function NewChapterPage() {
   // Word count from Tiptap JSON
   const wordCount = content ? countWordsFromJSON(content) : 0;
 
+  // Load chapter data
   useEffect(() => {
-    async function loadStory() {
+    async function loadData() {
       const supabase = createClient();
-      const { data } = await supabase
+      
+      // Load story title
+      const { data: storyData } = await supabase
         .from("stories")
         .select("title")
         .eq("id", storyId)
         .single();
       
-      if (data) {
-        setStoryTitle(data.title);
+      if (storyData) {
+        setStoryTitle(storyData.title);
       }
+
+      // Load chapter
+      const { data: chapterData, error: chapterError } = await supabase
+        .from("chapters")
+        .select("*")
+        .eq("id", chapterId)
+        .single();
+
+      if (chapterError) {
+        setError(chapterError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (chapterData) {
+        setChapter(chapterData);
+        setTitle(chapterData.title);
+        setContent(chapterData.content as JSONContent);
+        setAuthorNoteBefore(chapterData.author_note_before || "");
+        setAuthorNoteAfter(chapterData.author_note_after || "");
+      }
+      
+      setLoading(false);
     }
     
-    if (storyId) {
-      loadStory();
+    if (storyId && chapterId) {
+      loadData();
     }
-  }, [storyId]);
+  }, [storyId, chapterId]);
+
+  // Auto-save with debounce
+  const autoSave = useMemo(
+    () =>
+      debounce(async (saveContent: JSONContent, saveTitle: string) => {
+        if (!chapterId) return;
+        
+        setSaveStatus("saving");
+        const supabase = createClient();
+        
+        const { error: saveError } = await supabase
+          .from("chapters")
+          .update({
+            title: saveTitle,
+            content: saveContent,
+            word_count: countWordsFromJSON(saveContent),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", chapterId);
+
+        if (!saveError) {
+          setSaveStatus("saved");
+          setLastSaved(new Date());
+        }
+      }, 3000),
+    [chapterId]
+  );
 
   const handleContentChange = useCallback((newContent: JSONContent) => {
     setContent(newContent);
     setSaveStatus("unsaved");
-  }, []);
+    autoSave(newContent, title);
+  }, [autoSave, title]);
+
+  const handleTitleChange = useCallback((newTitle: string) => {
+    setTitle(newTitle);
+    setSaveStatus("unsaved");
+    if (content) {
+      autoSave(content, newTitle);
+    }
+  }, [autoSave, content]);
 
   const handleSubmit = async (e: React.FormEvent, publish: boolean) => {
     e.preventDefault();
     setError(null);
-    setLoading(true);
+    setSaving(true);
 
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setError("You must be logged in");
-      setLoading(false);
-      return;
-    }
 
     // Validate content
     if (!content || countWordsFromJSON(content) === 0) {
       setError("Chapter content cannot be empty");
-      setLoading(false);
+      setSaving(false);
       return;
     }
 
-    // Get next chapter number
-    const { data: chapters } = await supabase
-      .from("chapters")
-      .select("chapter_number")
-      .eq("story_id", storyId)
-      .order("chapter_number", { ascending: false })
-      .limit(1);
+    const wasPublished = chapter?.is_published;
+    const isNowPublished = publish || wasPublished;
 
-    const nextChapterNumber = chapters && chapters.length > 0 
-      ? chapters[0].chapter_number + 1 
-      : 1;
-
-    const { error: insertError } = await supabase
+    const { error: updateError } = await supabase
       .from("chapters")
-      .insert({
-        story_id: storyId,
+      .update({
         title,
-        content: content, // Tiptap JSON
+        content,
         word_count: wordCount,
-        chapter_number: nextChapterNumber,
-        is_published: publish,
-        published_at: publish ? new Date().toISOString() : null,
+        is_published: isNowPublished,
+        published_at: isNowPublished && !wasPublished ? new Date().toISOString() : undefined,
         author_note_before: authorNoteBefore || null,
         author_note_after: authorNoteAfter || null,
+        updated_at: new Date().toISOString(),
       })
-      .select()
-      .single();
+      .eq("id", chapterId);
 
-    if (insertError) {
-      setError(insertError.message);
-      setLoading(false);
+    if (updateError) {
+      setError(updateError.message);
+      setSaving(false);
       return;
     }
 
-    // Update story chapter count and word count
+    // Update story stats
     const { data: allChapters } = await supabase
       .from("chapters")
       .select("word_count")
@@ -140,6 +201,26 @@ export default function NewChapterPage() {
     router.push(`/author/stories/${storyId}`);
   };
 
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <p className="text-muted-foreground">Loading chapter...</p>
+      </div>
+    );
+  }
+
+  if (error && !chapter) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <h1 className="text-2xl font-bold mb-4">Error</h1>
+        <p className="text-muted-foreground mb-4">{error}</p>
+        <Link href={`/author/stories/${storyId}`}>
+          <Button>Back to Story</Button>
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
       {/* Breadcrumb */}
@@ -149,15 +230,32 @@ export default function NewChapterPage() {
         </Link>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <span>{wordCount.toLocaleString()} words</span>
-          {lastSaved && (
-            <span>
-              {saveStatus === "saving" ? "Saving..." : `Saved ${lastSaved.toLocaleTimeString()}`}
-            </span>
-          )}
+          <span>
+            {saveStatus === "saving" 
+              ? "Saving..." 
+              : saveStatus === "unsaved" 
+                ? "Unsaved changes"
+                : lastSaved 
+                  ? `Saved ${lastSaved.toLocaleTimeString()}`
+                  : "Saved"
+            }
+          </span>
         </div>
       </div>
 
-      <h1 className="text-3xl font-bold mb-8">New Chapter</h1>
+      <div className="flex items-center gap-4 mb-8">
+        <h1 className="text-3xl font-bold">Edit Chapter {chapter?.chapter_number}</h1>
+        {chapter?.is_published && (
+          <span className="px-2 py-1 text-xs rounded bg-green-500/20 text-green-400">
+            Published
+          </span>
+        )}
+        {!chapter?.is_published && (
+          <span className="px-2 py-1 text-xs rounded bg-yellow-500/20 text-yellow-400">
+            Draft
+          </span>
+        )}
+      </div>
 
       <form className="space-y-6">
         {error && (
@@ -171,8 +269,8 @@ export default function NewChapterPage() {
           <Input
             id="title"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Chapter 1: The Beginning"
+            onChange={(e) => handleTitleChange(e.target.value)}
+            placeholder="Chapter title"
             required
             maxLength={200}
           />
@@ -218,18 +316,20 @@ export default function NewChapterPage() {
           <Button
             type="button"
             variant="outline"
-            disabled={loading || !title.trim()}
+            disabled={saving || !title.trim()}
             onClick={(e) => handleSubmit(e, false)}
           >
-            {loading ? "Saving..." : "Save Draft"}
+            {saving ? "Saving..." : "Save"}
           </Button>
-          <Button
-            type="button"
-            disabled={loading || !title.trim()}
-            onClick={(e) => handleSubmit(e, true)}
-          >
-            {loading ? "Publishing..." : "Publish"}
-          </Button>
+          {!chapter?.is_published && (
+            <Button
+              type="button"
+              disabled={saving || !title.trim()}
+              onClick={(e) => handleSubmit(e, true)}
+            >
+              {saving ? "Publishing..." : "Publish"}
+            </Button>
+          )}
         </div>
       </form>
     </div>

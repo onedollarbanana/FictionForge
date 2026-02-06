@@ -1,0 +1,276 @@
+/* Tiptap Editor Styles */
+
+.tiptap-editor {
+  min-height: 400px;
+}
+
+.tiptap-editor:focus {
+  outline: none;
+}
+
+/* Placeholder */
+.tiptap-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+  height: 0;
+}
+
+/* Stat Box Styles */
+.stat-box {
+  border: 2px solid;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin: 16px 0;
+  font-family: ui-monospace, monospace;
+  position: relative;
+}
+
+.stat-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid currentColor;
+  opacity: 0.6;
+}
+
+.stat-box-title {
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-box-controls {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+.stat-box-variant-select {
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+  color: inherit;
+  cursor: pointer;
+}
+
+.stat-box-content {
+  min-height: 20px;
+}
+
+/* Stat Box Variants */
+.stat-box--blue {
+  border-color: #3b82f6;
+  background: linear-gradient(to bottom, #1e3a5f 0%, #0f172a 100%);
+  color: #93c5fd;
+}
+
+.stat-box--green {
+  border-color: #22c55e;
+  background: linear-gradient(to bottom, #14532d 0%, #052e16 100%);
+  color: #86efac;
+}
+
+.stat-box--red {
+  border-color: #ef4444;
+  background: linear-gradient(to bottom, #7f1d1d 0%, #450a0a 100%);
+  color: #fca5a5;
+}
+
+.stat-box--purple {
+  border-color: #a855f7;
+  background: linear-gradient(to bottom, #581c87 0%, #3b0764 100%);
+  color: #d8b4fe;
+}
+
+.stat-box--gold {
+  border-color: #eab308;
+  background: linear-gradient(to bottom, #713f12 0%, #422006 100%);
+  color: #fde047;
+}
+
+/* System Message Styles */
+.system-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 2px solid;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin: 16px 0;
+  position: relative;
+}
+
+.system-message-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.system-message-content {
+  flex: 1;
+  min-height: 20px;
+}
+
+.system-message-type-select {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* System Message Variants */
+.system-message--info {
+  border-color: #3b82f6;
+  background: #1e3a8a20;
+  color: #93c5fd;
+}
+
+.system-message--success {
+  border-color: #22c55e;
+  background: #14532d20;
+  color: #86efac;
+}
+
+.system-message--warning {
+  border-color: #f59e0b;
+  background: #78350f20;
+  color: #fcd34d;
+}
+
+.system-message--error {
+  border-color: #ef4444;
+  background: #7f1d1d20;
+  color: #fca5a5;
+}
+
+.system-message--quest {
+  border-color: #a855f7;
+  background: #581c8720;
+  color: #d8b4fe;
+}
+
+/* Spoiler Styles */
+.spoiler-wrapper {
+  margin: 16px 0;
+}
+
+.spoiler {
+  border: 1px solid hsl(var(--border));
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.spoiler-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: hsl(var(--muted));
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+.spoiler-summary::-webkit-details-marker {
+  display: none;
+}
+
+.spoiler-label-input {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-weight: 500;
+  flex: 1;
+  outline: none;
+}
+
+.spoiler-toggle {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.spoiler-content {
+  padding: 12px;
+  background: hsl(var(--card));
+}
+
+/* Table Styles */
+.tiptap-editor table {
+  border-collapse: collapse;
+  margin: 16px 0;
+  width: 100%;
+}
+
+.tiptap-editor th,
+.tiptap-editor td {
+  border: 1px solid hsl(var(--border));
+  padding: 8px 12px;
+  min-width: 100px;
+}
+
+.tiptap-editor th {
+  background: hsl(var(--muted));
+  font-weight: 600;
+}
+
+/* Prose overrides */
+.tiptap-editor h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.tiptap-editor h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.tiptap-editor h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.tiptap-editor p {
+  margin-bottom: 1rem;
+  line-height: 1.7;
+}
+
+.tiptap-editor blockquote {
+  border-left: 3px solid hsl(var(--border));
+  padding-left: 1rem;
+  font-style: italic;
+  margin: 1rem 0;
+  color: hsl(var(--muted-foreground));
+}
+
+.tiptap-editor ul,
+.tiptap-editor ol {
+  padding-left: 1.5rem;
+  margin: 1rem 0;
+}
+
+.tiptap-editor li {
+  margin-bottom: 0.25rem;
+}
+
+.tiptap-editor hr {
+  border: none;
+  border-top: 1px solid hsl(var(--border));
+  margin: 2rem 0;
+}

@@ -26,7 +26,7 @@ interface Chapter {
   title: string;
   chapter_number: number;
   word_count: number | null;
-  status: string;
+  is_published: boolean;
   published_at: string | null;
   created_at: string;
 }
@@ -59,10 +59,10 @@ export default function StoryOverviewPage() {
 
       setStory(storyData);
 
-      // Load chapters
+      // Load chapters - use is_published instead of status
       const { data: chaptersData, error: chaptersError } = await supabase
         .from("chapters")
-        .select("id, title, chapter_number, word_count, status, published_at, created_at")
+        .select("id, title, chapter_number, word_count, is_published, published_at, created_at")
         .eq("story_id", storyId)
         .order("chapter_number", { ascending: true });
 
@@ -202,12 +202,12 @@ export default function StoryOverviewPage() {
                     <span>{(chapter.word_count ?? 0).toLocaleString()} words</span>
                     <span
                       className={`px-2 py-0.5 rounded text-xs ${
-                        chapter.status === "published"
+                        chapter.is_published
                           ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                           : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
                       }`}
                     >
-                      {chapter.status}
+                      {chapter.is_published ? "Published" : "Draft"}
                     </span>
                   </div>
                 </div>
