@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { useUser } from '@/lib/hooks/useUser'
 import { createClient } from '@/lib/supabase/client'
-import { Pen, LogOut } from 'lucide-react'
+import { Pen, LogOut, Library } from 'lucide-react'
+import { MobileNav } from './mobile-nav'
 
 export function Header() {
   const { user, profile, loading } = useUser()
@@ -30,14 +31,22 @@ export function Header() {
             <Link href="/browse" className="text-sm text-muted-foreground hover:text-foreground">
               Browse
             </Link>
+            {user && profile && (
+              <Link href="/library" className="text-sm text-muted-foreground hover:text-foreground">
+                Library
+              </Link>
+            )}
           </nav>
         </div>
+        
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          
+          {/* Desktop nav */}
           {!loading && (
-            <>
+            <div className="hidden md:flex items-center gap-2">
               {user && profile ? (
-                <div className="flex items-center gap-2">
+                <>
                   <Link href="/author/dashboard">
                     <Button variant="ghost" size="sm">
                       <Pen className="h-4 w-4 mr-2" />
@@ -47,19 +56,22 @@ export function Header() {
                   <Button variant="ghost" size="sm" onClick={handleLogout}>
                     <LogOut className="h-4 w-4" />
                   </Button>
-                </div>
+                </>
               ) : (
-                <div className="flex items-center gap-2">
+                <>
                   <Link href="/login">
                     <Button variant="ghost" size="sm">Sign In</Button>
                   </Link>
                   <Link href="/signup">
                     <Button size="sm">Sign Up</Button>
                   </Link>
-                </div>
+                </>
               )}
-            </>
+            </div>
           )}
+          
+          {/* Mobile nav */}
+          <MobileNav onLogout={handleLogout} />
         </div>
       </div>
     </header>
