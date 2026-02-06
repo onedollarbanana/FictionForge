@@ -12,11 +12,16 @@ import { StatBox, SystemMessage, Spoiler } from "@/components/editor/extensions"
 import "@/styles/editor.css";
 
 interface TiptapRendererProps {
-  content: string;
+  content: string | object;
   className?: string;
 }
 
 export function TiptapRenderer({ content, className = "" }: TiptapRendererProps) {
+  // Supabase returns jsonb as parsed object, but content might also be a JSON string
+  const parsedContent = content
+    ? (typeof content === 'string' ? JSON.parse(content) : content)
+    : "";
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -34,7 +39,7 @@ export function TiptapRenderer({ content, className = "" }: TiptapRendererProps)
       SystemMessage,
       Spoiler,
     ],
-    content: content ? JSON.parse(content) : "",
+    content: parsedContent,
     editable: false,
     editorProps: {
       attributes: {
