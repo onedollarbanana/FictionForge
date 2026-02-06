@@ -14,7 +14,7 @@ interface ProfileData {
 interface CommentData {
   id: string;
   content: string;
-  likes_count: number;
+  likes: number;
   created_at: string;
   user_id: string;
   parent_id: string | null;
@@ -25,7 +25,7 @@ interface CommentData {
 interface RawCommentData {
   id: string;
   content: string;
-  likes_count: number;
+  likes: number;
   created_at: string;
   user_id: string;
   parent_id: string | null;
@@ -63,7 +63,7 @@ export function CommentList({ chapterId, currentUserId }: CommentListProps) {
       .select(`
         id,
         content,
-        likes_count,
+        likes,
         created_at,
         user_id,
         parent_id,
@@ -80,7 +80,7 @@ export function CommentList({ chapterId, currentUserId }: CommentListProps) {
     } else if (sortBy === "oldest") {
       query = query.order("created_at", { ascending: true });
     } else if (sortBy === "popular") {
-      query = query.order("likes_count", { ascending: false });
+      query = query.order("likes", { ascending: false });
     }
 
     const { data, error } = await query;
