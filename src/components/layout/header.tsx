@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { useUser } from '@/lib/hooks/useUser'
 import { createClient } from '@/lib/supabase/client'
-import { Pen, LogOut, Library } from 'lucide-react'
+import { Pen, LogOut, Library, Settings } from 'lucide-react'
 import { MobileNav } from './mobile-nav'
 
 export function Header() {
@@ -51,6 +51,11 @@ export function Header() {
                     <Button variant="ghost" size="sm">
                       <Pen className="h-4 w-4 mr-2" />
                       Dashboard
+                    </Button>
+                  </Link>
+                  <Link href="/settings/profile">
+                    <Button variant="ghost" size="sm">
+                      <Settings className="h-4 w-4" />
                     </Button>
                   </Link>
                   <Button variant="ghost" size="sm" onClick={handleLogout}>

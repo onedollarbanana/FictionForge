@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useUser } from '@/lib/hooks/useUser'
-import { Menu, X, Home, BookOpen, Pen, LogIn, LogOut, UserPlus, Library } from 'lucide-react'
+import { Menu, X, Home, BookOpen, Pen, LogIn, LogOut, UserPlus, Library, Settings } from 'lucide-react'
 
 interface MobileNavProps {
   onLogout: () => void
@@ -108,6 +108,13 @@ export function MobileNav({ onLogout }: MobileNavProps) {
                   >
                     <Pen className="h-5 w-5" />
                     <span>Author Dashboard</span>
+                  </Link>
+                  <Link
+                    href="/settings/profile"
+                    className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
+                  >
+                    <Settings className="h-5 w-5" />
+                    <span>Settings</span>
                   </Link>
                 </>
               )}
