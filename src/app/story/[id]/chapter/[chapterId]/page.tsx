@@ -4,6 +4,7 @@ import Link from "next/link";
 import { TiptapRenderer } from "@/components/reader/tiptap-renderer";
 import { ChapterNav } from "@/components/reader/chapter-nav";
 import { ChapterLikeButton } from "@/components/reader/chapter-like-button";
+import { ReadingProgressTracker } from "@/components/reader/reading-progress-tracker";
 import { CommentList } from "@/components/reader/comment-list";
 import { ChevronLeft } from "lucide-react";
 
@@ -62,6 +63,14 @@ export default async function ChapterReadingPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Track reading progress */}
+      <ReadingProgressTracker
+        storyId={storyId}
+        chapterId={chapterId}
+        chapterNumber={chapter.chapter_number}
+        userId={user?.id ?? null}
+      />
+
       {/* Compact Header */}
       <div className="border-b sticky top-0 bg-background/95 backdrop-blur z-10">
         <div className="container mx-auto px-4 py-3 max-w-3xl">
