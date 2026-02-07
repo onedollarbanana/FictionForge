@@ -2,7 +2,28 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Library, BookOpen, CheckCircle, XCircle, Eye } from 'lucide-react'
+import { Library, Eye, CheckCircle, XCircle } from 'lucide-react'
+import { LibraryStoryCard } from '@/components/story/LibraryStoryCard'
+
+export const dynamic = 'force-dynamic'
+
+type FollowWithStory = {
+  id: string
+  status: string
+  created_at: string
+  story: {
+    id: string
+    title: string
+    slug: string
+    blurb: string | null
+    cover_url: string | null
+    chapter_count: number | null
+    last_chapter_at: string | null
+    author: {
+      username: string
+    } | null
+  }
+}
 
 export default async function LibraryPage() {
   const supabase = await createClient()
@@ -36,18 +57,17 @@ export default async function LibraryPage() {
     .eq('user_id', user.id)
     .order('updated_at', { ascending: false })
 
-  const stories = follows || []
+  const stories = (follows || []) as unknown as FollowWithStory[]
   
   // Group by status
   const reading = stories.filter(f => f.status === 'reading')
   const finished = stories.filter(f => f.status === 'finished')
   const dropped = stories.filter(f => f.status === 'dropped')
 
-  const renderStoryList = (items: typeof stories, emptyMessage: string) => {
+  const renderStoryList = (items: FollowWithStory[], emptyMessage: string) => {
     if (items.length === 0) {
       return (
-        <div className="text-center py-12 text-muted-foreground">
-          <Library className="h-12 w-12 mx-auto mb-3 opacity-50" />
+        <div className="text-center py-8 text-muted-foreground border rounded-lg bg-muted/20">
           <p>{emptyMessage}</p>
         </div>
       )
@@ -55,39 +75,12 @@ export default async function LibraryPage() {
 
     return (
       <div className="space-y-3">
-        {items.map((follow) => {
-          const story = follow.story as any
-          if (!story) return null
-          
-          return (
-            <Link
-              key={follow.id}
-              href={`/story/${story.id}`}
-              className="flex gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-            >
-              {story.cover_url ? (
-                <img
-                  src={story.cover_url}
-                  alt={story.title}
-                  className="w-16 h-24 object-cover rounded"
-                />
-              ) : (
-                <div className="w-16 h-24 bg-muted rounded flex items-center justify-center">
-                  <BookOpen className="h-6 w-6 text-muted-foreground" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold truncate">{story.title}</h3>
-                <p className="text-sm text-muted-foreground">
-                  by {story.author?.username || 'Unknown'}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {story.chapter_count || 0} chapters
-                </p>
-              </div>
-            </Link>
-          )
-        })}
+        {items.map((follow) => (
+          <LibraryStoryCard 
+            key={follow.id} 
+            follow={follow as any}
+          />
+        ))}
       </div>
     )
   }

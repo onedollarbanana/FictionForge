@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen, Clock, Eye, Heart, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { FollowButton } from "@/components/story/FollowButton";
 
 export const dynamic = "force-dynamic";
 
@@ -81,7 +82,7 @@ export default async function StoryPage({ params }: PageProps) {
             </span>
             <span className="flex items-center gap-1">
               <Heart className="h-4 w-4" />
-              {(story.followers_count ?? 0).toLocaleString()} Followers
+              {(story.follower_count ?? 0).toLocaleString()} Followers
             </span>
           </div>
 
@@ -110,11 +111,10 @@ export default async function StoryPage({ params }: PageProps) {
             ) : (
               <Button disabled>No Chapters Yet</Button>
             )}
-            {/* Follow button placeholder - needs auth */}
-            <Button variant="outline">
-              <Heart className="h-4 w-4 mr-2" />
-              Follow
-            </Button>
+            <FollowButton 
+              storyId={id} 
+              initialFollowerCount={story.follower_count ?? 0} 
+            />
           </div>
         </div>
       </div>
