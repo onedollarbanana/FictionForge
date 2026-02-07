@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen, Clock, Eye, Heart, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { FollowButton } from "@/components/story/FollowButton";
+import { AnnouncementBanner } from "@/components/announcements";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,36 @@ export default async function StoryPage({ params }: PageProps) {
 
   const publishedChapters = chapters || [];
   const totalWords = publishedChapters.reduce((sum, ch) => sum + (ch.word_count || 0), 0);
+
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Fetch announcements for this story (last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  const { data: allAnnouncements } = await supabase
+    .from("announcements")
+    .select("*")
+    .eq("story_id", id)
+    .gte("created_at", thirtyDaysAgo.toISOString())
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  // Get which announcements user has read
+  let unreadAnnouncements = allAnnouncements || [];
+  
+  if (user && allAnnouncements && allAnnouncements.length > 0) {
+    const announcementIds = allAnnouncements.map(a => a.id);
+    const { data: reads } = await supabase
+      .from("announcement_reads")
+      .select("announcement_id")
+      .eq("user_id", user.id)
+      .in("announcement_id", announcementIds);
+    
+    const readIds = new Set((reads || []).map(r => r.announcement_id));
+    unreadAnnouncements = allAnnouncements.filter(a => !readIds.has(a.id));
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -118,6 +149,14 @@ export default async function StoryPage({ params }: PageProps) {
           </div>
         </div>
       </div>
+
+      {/* Announcements Banner */}
+      {unreadAnnouncements.length > 0 && (
+        <AnnouncementBanner 
+          announcements={unreadAnnouncements}
+          userId={user?.id || null}
+        />
+      )}
 
       {/* Description */}
       <Card className="mb-8">

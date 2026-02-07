@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { CreateAnnouncementForm } from "@/components/announcements";
 
 interface Story {
   id: string;
@@ -163,6 +164,15 @@ export default function StoryOverviewPage() {
           <p className="text-sm text-muted-foreground">Followers</p>
           <p className="text-2xl font-bold">{story.follower_count ?? 0}</p>
         </div>
+      </div>
+
+      {/* Announcements */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold mb-3">Announcements</h2>
+        <CreateAnnouncementForm storyId={storyId} storyTitle={story.title} />
+        <p className="text-sm text-muted-foreground mt-2">
+          Post updates without cluttering your chapter list. Followers see these on your story page.
+        </p>
       </div>
 
       {/* Blurb */}

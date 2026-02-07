@@ -79,6 +79,27 @@ export interface ReadingProgress {
   updated_at: string
 }
 
+export type AnnouncementScope = 'story' | 'all_author_stories'
+
+export interface Announcement {
+  id: string
+  story_id: string | null
+  author_id: string
+  title: string
+  content: string
+  scope: AnnouncementScope
+  created_at: string
+  // Joined data
+  author?: Profile
+  story?: Story
+}
+
+export interface AnnouncementRead {
+  user_id: string
+  announcement_id: string
+  read_at: string
+}
+
 // Genre options for stories
 export const GENRES = [
   'Fantasy',

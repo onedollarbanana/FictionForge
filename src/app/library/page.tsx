@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Library, Eye, CheckCircle, XCircle, BookOpen, Play } from 'lucide-react'
+import { Library, Eye, CheckCircle, XCircle, BookOpen, Play, Megaphone } from 'lucide-react'
 import { StatusDropdown } from '@/components/story/StatusDropdown'
 
 export const dynamic = 'force-dynamic'
@@ -77,14 +77,48 @@ export default async function LibraryPage() {
   })
 
   const stories = (follows || []) as unknown as FollowWithStory[]
+  const storyIds = stories.map(f => f.story?.id).filter(Boolean) as string[]
+
+  // Fetch announcements for followed stories (last 30 days)
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
   
+  const { data: allAnnouncements } = storyIds.length > 0 
+    ? await supabase
+        .from('announcements')
+        .select('id, story_id')
+        .in('story_id', storyIds)
+        .gte('created_at', thirtyDaysAgo.toISOString())
+    : { data: [] }
+
+  // Fetch which announcements user has read
+  const announcementIds = (allAnnouncements || []).map(a => a.id)
+  const { data: readAnnouncements } = announcementIds.length > 0
+    ? await supabase
+        .from('announcement_reads')
+        .select('announcement_id')
+        .eq('user_id', user.id)
+        .in('announcement_id', announcementIds)
+    : { data: [] }
+
+  const readIds = new Set((readAnnouncements || []).map(r => r.announcement_id))
+  
+  // Create map of story_id -> unread announcement count
+  const unreadAnnouncementsMap = new Map<string, number>()
+  ;(allAnnouncements || []).forEach(a => {
+    if (!readIds.has(a.id) && a.story_id) {
+      unreadAnnouncementsMap.set(a.story_id, (unreadAnnouncementsMap.get(a.story_id) ?? 0) + 1)
+    }
+  })
+
   // For each story, find the next chapter to read
   const storiesWithNextChapter = await Promise.all(
     stories.map(async (follow) => {
-      if (!follow.story) return { ...follow, nextChapterId: null, chaptersRead: 0 }
+      if (!follow.story) return { ...follow, nextChapterId: null, chaptersRead: 0, unreadAnnouncements: 0 }
       
       const chaptersRead = progressMap.get(follow.story.id) ?? 0
       const nextChapterNumber = chaptersRead + 1
+      const unreadAnnouncements = unreadAnnouncementsMap.get(follow.story.id) ?? 0
       
       const { data: nextChapter } = await supabase
         .from('chapters')
@@ -97,7 +131,8 @@ export default async function LibraryPage() {
       return {
         ...follow,
         nextChapterId: nextChapter?.id || null,
-        chaptersRead
+        chaptersRead,
+        unreadAnnouncements
       }
     })
   )
@@ -115,10 +150,11 @@ export default async function LibraryPage() {
     const chaptersRead = follow.chaptersRead
     const hasUnread = follow.nextChapterId !== null
     const progressPercent = totalChapters > 0 ? Math.round((chaptersRead / totalChapters) * 100) : 0
+    const unreadAnnouncements = follow.unreadAnnouncements
 
     return (
       <div key={follow.id} className="flex gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-        <Link href={`/story/${story.id}`} className="shrink-0">
+        <Link href={`/story/${story.id}`} className="shrink-0 relative">
           {story.cover_url ? (
             <img
               src={story.cover_url}
@@ -130,12 +166,27 @@ export default async function LibraryPage() {
               <BookOpen className="h-6 w-6 text-muted-foreground" />
             </div>
           )}
+          {/* Announcement badge on cover */}
+          {unreadAnnouncements > 0 && (
+            <div className="absolute -top-1 -right-1 h-5 w-5 bg-amber-500 rounded-full flex items-center justify-center">
+              <Megaphone className="h-3 w-3 text-white" />
+            </div>
+          )}
         </Link>
         
         <div className="flex-1 min-w-0">
-          <Link href={`/story/${story.id}`}>
-            <h3 className="font-semibold truncate hover:underline">{story.title}</h3>
-          </Link>
+          <div className="flex items-start gap-2">
+            <Link href={`/story/${story.id}`}>
+              <h3 className="font-semibold truncate hover:underline">{story.title}</h3>
+            </Link>
+            {/* Inline announcement indicator */}
+            {unreadAnnouncements > 0 && (
+              <span className="shrink-0 text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 px-1.5 py-0.5 rounded flex items-center gap-1">
+                <Megaphone className="h-3 w-3" />
+                {unreadAnnouncements}
+              </span>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground">
             by {story.author?.username || "Unknown"}
           </p>
