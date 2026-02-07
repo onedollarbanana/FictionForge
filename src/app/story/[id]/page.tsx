@@ -81,10 +81,20 @@ export default async function StoryPage({ params }: PageProps) {
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Story Header */}
       <div className="flex flex-col md:flex-row gap-6 mb-8">
-        {/* Cover Image Placeholder */}
-        <div className="w-full md:w-48 h-64 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center shrink-0">
-          <BookOpen className="h-16 w-16 text-primary/40" />
-        </div>
+        {/* Cover Image */}
+        {story.cover_url ? (
+          <div className="w-full md:w-48 h-64 rounded-lg overflow-hidden shrink-0">
+            <img
+              src={story.cover_url}
+              alt={`Cover for ${story.title}`}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ) : (
+          <div className="w-full md:w-48 h-64 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center shrink-0">
+            <BookOpen className="h-16 w-16 text-primary/40" />
+          </div>
+        )}
 
         <div className="flex-1">
           <h1 className="text-3xl font-bold mb-2">{story.title}</h1>

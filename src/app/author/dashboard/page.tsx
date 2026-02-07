@@ -10,6 +10,7 @@ interface Story {
   id: string;
   title: string;
   blurb: string | null;
+  cover_url: string | null;
   status: string;
   created_at: string;
   chapter_count: number;

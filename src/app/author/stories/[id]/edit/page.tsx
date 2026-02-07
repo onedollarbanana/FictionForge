@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { GenrePicker } from "@/components/author/genre-picker";
+import { CoverUpload } from "@/components/story/cover-upload";
 
 const STATUS_OPTIONS = [
   { value: "ongoing", label: "Ongoing" },
@@ -21,6 +22,7 @@ export default function EditStoryPage() {
   const storyId = params.id as string;
   const [title, setTitle] = useState("");
   const [blurb, setBlurb] = useState("");
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [status, setStatus] = useState("ongoing");
   const [genres, setGenres] = useState<string[]>([]);
   const [tags, setTags] = useState("");
@@ -46,6 +48,7 @@ export default function EditStoryPage() {
 
       setTitle(data.title);
       setBlurb(data.blurb || "");
+      setCoverUrl(data.cover_url || null);
       setStatus(data.status);
       setGenres(data.genres || []);
       setTags((data.tags || []).join(", "));
@@ -73,6 +76,7 @@ export default function EditStoryPage() {
       .update({
         title,
         blurb: blurb || null,
+        cover_url: coverUrl,
         status,
         genres,
         tags: tagArray,
@@ -113,6 +117,18 @@ export default function EditStoryPage() {
             {error}
           </div>
         )}
+
+        <div className="space-y-2">
+          <Label>Cover Image</Label>
+          <CoverUpload 
+            currentCoverUrl={coverUrl} 
+            onUpload={setCoverUrl} 
+            storyId={storyId}
+          />
+          <p className="text-xs text-muted-foreground">
+            Recommended: 400x600px (2:3 ratio)
+          </p>
+        </div>
 
         <div className="space-y-2">
           <Label htmlFor="title">Title *</Label>

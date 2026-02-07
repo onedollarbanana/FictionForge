@@ -60,10 +60,20 @@ export default async function BrowsePage() {
             <Link key={story.id} href={`/story/${story.id}`}>
               <Card className="h-full hover:bg-muted/50 transition-colors">
                 <CardContent className="p-4">
-                  {/* Cover placeholder */}
-                  <div className="w-full h-32 bg-gradient-to-br from-primary/20 to-primary/5 rounded-md mb-3 flex items-center justify-center">
-                    <BookOpen className="h-8 w-8 text-primary/40" />
-                  </div>
+                  {/* Cover */}
+                  {story.cover_url ? (
+                    <div className="w-full h-32 rounded-md mb-3 overflow-hidden">
+                      <img
+                        src={story.cover_url}
+                        alt={`Cover for ${story.title}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full h-32 bg-gradient-to-br from-primary/20 to-primary/5 rounded-md mb-3 flex items-center justify-center">
+                      <BookOpen className="h-8 w-8 text-primary/40" />
+                    </div>
+                  )}
 
                   <h2 className="font-semibold line-clamp-1 mb-1">
                     {story.title}
