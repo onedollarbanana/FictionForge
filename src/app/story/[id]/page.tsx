@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, Clock, Eye, Heart, User } from "lucide-react";
+import { BookOpen, Check, Clock, Eye, Heart, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { FollowButton } from "@/components/story/FollowButton";
 import { AnnouncementBanner } from "@/components/announcements";
@@ -77,6 +77,20 @@ export default async function StoryPage({ params }: PageProps) {
     unreadAnnouncements = allAnnouncements.filter(a => !readIds.has(a.id));
   }
 
+  // Get which chapters user has read
+  let readChapterIds = new Set<string>();
+  
+  if (user && publishedChapters.length > 0) {
+    const chapterIds = publishedChapters.map(c => c.id);
+    const { data: chapterReads } = await supabase
+      .from("chapter_reads")
+      .select("chapter_id")
+      .eq("user_id", user.id)
+      .in("chapter_id", chapterIds);
+    
+    readChapterIds = new Set((chapterReads || []).map(r => r.chapter_id));
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Story Header */}
@@ -100,32 +114,37 @@ export default async function StoryPage({ params }: PageProps) {
           <h1 className="text-3xl font-bold mb-2">{story.title}</h1>
           
           <Link 
-            href={story.profiles?.username ? `/author/${story.profiles.username}` : "#"} 
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4"
+            href={`/author/${story.profiles?.username}`}
+            className="text-muted-foreground hover:text-primary flex items-center gap-2 mb-4"
           >
             <User className="h-4 w-4" />
-            <span>{story.profiles?.username || "Unknown Author"}</span>
+            {story.profiles?.username || "Unknown Author"}
           </Link>
 
           {/* Stats Row */}
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4">
             <span className="flex items-center gap-1">
               <BookOpen className="h-4 w-4" />
-              {publishedChapters.length} Chapters
+              {publishedChapters.length} chapters
             </span>
             <span className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
-              {totalWords.toLocaleString()} Words
+              {totalWords.toLocaleString()} words
             </span>
             <span className="flex items-center gap-1">
               <Eye className="h-4 w-4" />
-              {(story.total_views ?? 0).toLocaleString()} Views
+              {(story.total_views ?? 0).toLocaleString()} views
             </span>
             <span className="flex items-center gap-1">
               <Heart className="h-4 w-4" />
-              {(story.follower_count ?? 0).toLocaleString()} Followers
+              {(story.follower_count ?? 0).toLocaleString()} followers
             </span>
           </div>
+
+          {/* Status Badge */}
+          <Badge variant="secondary" className="mb-4">
+            {story.status?.charAt(0).toUpperCase() + story.status?.slice(1) || "Ongoing"}
+          </Badge>
 
           {/* Genres & Tags */}
           <div className="flex flex-wrap gap-2 mb-4">
@@ -192,35 +211,45 @@ export default async function StoryPage({ params }: PageProps) {
           </Card>
         ) : (
           <div className="space-y-2">
-            {publishedChapters.map((chapter) => (
-              <Link
-                key={chapter.id}
-                href={`/story/${id}/chapter/${chapter.id}`}
-                className="block"
-              >
-                <Card className="hover:bg-muted/50 transition-colors">
-                  <CardContent className="py-3 px-4 flex items-center justify-between">
-                    <div>
-                      <span className="font-medium">
-                        Chapter {chapter.chapter_number}: {chapter.title}
-                      </span>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <span>{(chapter.word_count ?? 0).toLocaleString()} words</span>
-                        {(chapter.likes ?? 0) > 0 && (
-                          <span className="flex items-center gap-1">
-                            <Heart className="h-3 w-3" />
-                            {(chapter.likes ?? 0).toLocaleString()}
-                          </span>
+            {publishedChapters.map((chapter) => {
+              const isRead = readChapterIds.has(chapter.id);
+              return (
+                <Link
+                  key={chapter.id}
+                  href={`/story/${id}/chapter/${chapter.id}`}
+                  className="block"
+                >
+                  <Card className={`hover:bg-muted/50 transition-colors ${isRead ? "border-green-500/30 bg-green-500/5" : ""}`}>
+                    <CardContent className="py-3 px-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {isRead && (
+                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 text-white shrink-0">
+                            <Check className="h-4 w-4" />
+                          </div>
                         )}
+                        <div>
+                          <span className="font-medium">
+                            Chapter {chapter.chapter_number}: {chapter.title}
+                          </span>
+                          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                            <span>{(chapter.word_count ?? 0).toLocaleString()} words</span>
+                            {(chapter.likes ?? 0) > 0 && (
+                              <span className="flex items-center gap-1">
+                                <Heart className="h-3 w-3" />
+                                {(chapter.likes ?? 0).toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <span className="text-sm text-muted-foreground">
-                      {formatDistanceToNow(new Date(chapter.created_at), { addSuffix: true })}
-                    </span>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+                      <span className="text-sm text-muted-foreground">
+                        {formatDistanceToNow(new Date(chapter.created_at), { addSuffix: true })}
+                      </span>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>

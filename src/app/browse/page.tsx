@@ -78,7 +78,9 @@ export default async function BrowsePage({ searchParams }: PageProps) {
     const searchLower = search.toLowerCase();
     filteredStories = uniqueStories.filter((story) => {
       const titleMatch = story.title.toLowerCase().includes(searchLower);
-      const authorMatch = story.profiles?.username?.toLowerCase().includes(searchLower);
+      // profiles is returned as a single object from Supabase join (cast through unknown for TS)
+      const profile = story.profiles as unknown as { username: string } | null;
+      const authorMatch = profile?.username?.toLowerCase().includes(searchLower);
       const blurbMatch = story.blurb?.toLowerCase().includes(searchLower);
       return titleMatch || authorMatch || blurbMatch;
     });
@@ -104,46 +106,41 @@ export default async function BrowsePage({ searchParams }: PageProps) {
       {filteredStories.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-            <h2 className="text-xl font-medium mb-2">
-              {hasFilters ? "No matching stories" : "No stories yet"}
-            </h2>
+            <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">
-              {hasFilters 
-                ? "Try adjusting your search or filters"
-                : "Be the first to publish a story!"}
+              {search || genre ? "No stories match your filters" : "No stories published yet"}
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredStories.map((story) => (
             <Link key={story.id} href={`/story/${story.id}`}>
-              <Card className="h-full hover:bg-muted/50 transition-colors">
-                <CardContent className="p-4">
-                  {/* Cover */}
-                  {story.cover_url ? (
-                    <div className="w-full h-32 rounded-md mb-3 overflow-hidden">
-                      <img
-                        src={story.cover_url}
-                        alt={`Cover for ${story.title}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-full h-32 bg-gradient-to-br from-primary/20 to-primary/5 rounded-md mb-3 flex items-center justify-center">
-                      <BookOpen className="h-8 w-8 text-primary/40" />
-                    </div>
-                  )}
+              <Card className="h-full hover:bg-muted/50 transition-colors overflow-hidden">
+                {/* Cover Image */}
+                {story.cover_url ? (
+                  <div className="w-full h-40 overflow-hidden">
+                    <img
+                      src={story.cover_url}
+                      alt={`Cover for ${story.title}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full h-40 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                    <BookOpen className="h-12 w-12 text-primary/40" />
+                  </div>
+                )}
 
+                <CardContent className="pt-4">
                   <h2 className="font-semibold line-clamp-1 mb-1">
                     {story.title}
                   </h2>
                   
                   <p className="text-sm text-muted-foreground mb-2">
                     by{" "}
-                    {story.profiles?.username ? (
-                      <AuthorLink username={story.profiles.username} />
+                    {(story.profiles as unknown as { username: string } | null)?.username ? (
+                      <AuthorLink username={(story.profiles as unknown as { username: string }).username} />
                     ) : (
                       "Unknown"
                     )}
@@ -156,7 +153,7 @@ export default async function BrowsePage({ searchParams }: PageProps) {
                   {/* Tags */}
                   <div className="flex flex-wrap gap-1 mb-3">
                     {(story.genres || []).slice(0, 2).map((genre: string) => (
-                      <Badge key={genre} variant="default" className="text-xs">
+                      <Badge key={genre} variant="secondary" className="text-xs">
                         {genre}
                       </Badge>
                     ))}

@@ -100,6 +100,23 @@ export interface AnnouncementRead {
   read_at: string
 }
 
+export interface ChapterView {
+  id: string
+  chapter_id: string
+  story_id: string
+  user_id: string | null
+  session_id: string | null
+  viewed_at: string
+}
+
+export interface ChapterRead {
+  id: string
+  user_id: string
+  chapter_id: string
+  story_id: string
+  read_at: string
+}
+
 // Genre options for stories
 export const GENRES = [
   'Fantasy',
