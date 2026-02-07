@@ -4,14 +4,29 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Eye, Heart, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { BrowseFilters } from "@/components/browse/browse-filters";
+import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
-export default async function BrowsePage() {
+interface PageProps {
+  searchParams: Promise<{
+    q?: string;
+    genre?: string;
+    sort?: string;
+  }>;
+}
+
+export default async function BrowsePage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const search = params.q || "";
+  const genre = params.genre || "";
+  const sort = params.sort || "updated";
+
   const supabase = await createClient();
 
-  // Fetch all published stories (stories with at least one published chapter)
-  const { data: stories, error } = await supabase
+  // Build the query
+  let query = supabase
     .from("stories")
     .select(`
       *,
@@ -23,20 +38,71 @@ export default async function BrowsePage() {
         is_published
       )
     `)
-    .eq("chapters.is_published", true)
-    .order("updated_at", { ascending: false });
+    .eq("chapters.is_published", true);
+
+  // Apply genre filter
+  if (genre) {
+    query = query.contains("genres", [genre]);
+  }
+
+  // Apply sorting
+  switch (sort) {
+    case "newest":
+      query = query.order("created_at", { ascending: false });
+      break;
+    case "popular":
+      query = query.order("total_views", { ascending: false, nullsFirst: false });
+      break;
+    case "followers":
+      query = query.order("followers_count", { ascending: false, nullsFirst: false });
+      break;
+    case "updated":
+    default:
+      query = query.order("updated_at", { ascending: false });
+      break;
+  }
+
+  const { data: stories, error } = await query;
 
   // Deduplicate stories (the join creates duplicates)
-  const uniqueStories = stories 
+  let uniqueStories = stories 
     ? Array.from(new Map(stories.map(s => [s.id, s])).values())
     : [];
+
+  // Apply search filter (client-side since Supabase text search on multiple columns is complex)
+  if (search) {
+    const searchLower = search.toLowerCase();
+    uniqueStories = uniqueStories.filter(story => {
+      const titleMatch = story.title?.toLowerCase().includes(searchLower);
+      const authorMatch = story.profiles?.username?.toLowerCase().includes(searchLower);
+      const blurbMatch = story.blurb?.toLowerCase().includes(searchLower);
+      return titleMatch || authorMatch || blurbMatch;
+    });
+  }
+
+  const resultCount = uniqueStories.length;
+  const hasFilters = search || genre || sort !== "updated";
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-2">Browse Stories</h1>
-      <p className="text-muted-foreground mb-8">
+      <p className="text-muted-foreground mb-6">
         Discover your next favorite read
       </p>
+
+      {/* Filters - wrapped in Suspense for useSearchParams */}
+      <Suspense fallback={<div className="h-24" />}>
+        <BrowseFilters />
+      </Suspense>
+
+      {/* Results count when filtered */}
+      {hasFilters && (
+        <p className="text-sm text-muted-foreground mb-4">
+          {resultCount === 0 
+            ? "No stories match your filters" 
+            : `${resultCount} ${resultCount === 1 ? "story" : "stories"} found`}
+        </p>
+      )}
 
       {error && (
         <div className="text-red-500 mb-4">
@@ -48,9 +114,13 @@ export default async function BrowsePage() {
         <Card>
           <CardContent className="py-12 text-center">
             <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-            <h2 className="text-xl font-medium mb-2">No stories yet</h2>
+            <h2 className="text-xl font-medium mb-2">
+              {hasFilters ? "No matching stories" : "No stories yet"}
+            </h2>
             <p className="text-muted-foreground">
-              Be the first to publish a story!
+              {hasFilters 
+                ? "Try adjusting your search or filters"
+                : "Be the first to publish a story!"}
             </p>
           </CardContent>
         </Card>
@@ -84,7 +154,7 @@ export default async function BrowsePage() {
                   </p>
 
                   <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                    {story.description || "No description"}
+                    {story.blurb || "No description"}
                   </p>
 
                   {/* Tags */}
