@@ -38,7 +38,7 @@ export default async function StoryPage({ params }: PageProps) {
   // Fetch published chapters
   const { data: chapters } = await supabase
     .from("chapters")
-    .select("id, title, chapter_number, word_count, created_at, is_published")
+    .select("id, title, chapter_number, word_count, likes, created_at, is_published")
     .eq("story_id", id)
     .eq("is_published", true)
     .order("chapter_number", { ascending: true });
@@ -124,7 +124,7 @@ export default async function StoryPage({ params }: PageProps) {
         <CardContent className="pt-6">
           <h2 className="text-lg font-semibold mb-3">Description</h2>
           <p className="text-muted-foreground whitespace-pre-wrap">
-            {story.description || "No description provided."}
+            {story.blurb || "No description provided."}
           </p>
         </CardContent>
       </Card>
@@ -155,8 +155,14 @@ export default async function StoryPage({ params }: PageProps) {
                       <span className="font-medium">
                         Chapter {chapter.chapter_number}: {chapter.title}
                       </span>
-                      <div className="text-sm text-muted-foreground">
-                        {(chapter.word_count ?? 0).toLocaleString()} words
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        <span>{(chapter.word_count ?? 0).toLocaleString()} words</span>
+                        {(chapter.likes ?? 0) > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Heart className="h-3 w-3" />
+                            {(chapter.likes ?? 0).toLocaleString()}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <span className="text-sm text-muted-foreground">

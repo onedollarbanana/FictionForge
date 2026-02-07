@@ -43,8 +43,12 @@ export interface Chapter {
   word_count: number
   is_premium: boolean
   is_published: boolean
-  author_note: string | null
+  author_note_before: string | null
+  author_note_after: string | null
+  views: number
+  likes: number
   published_at: string | null
+  scheduled_for: string | null
   created_at: string
   updated_at: string
 }

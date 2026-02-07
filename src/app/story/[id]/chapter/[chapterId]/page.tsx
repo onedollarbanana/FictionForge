@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { TiptapRenderer } from "@/components/reader/tiptap-renderer";
 import { ChapterNav } from "@/components/reader/chapter-nav";
+import { ChapterLikeButton } from "@/components/reader/chapter-like-button";
 import { CommentList } from "@/components/reader/comment-list";
 import { ChevronLeft } from "lucide-react";
 
@@ -124,6 +125,16 @@ export default async function ChapterReadingPage({ params }: PageProps) {
             totalChapters={chapters.length}
             prevChapterId={prevChapter?.id}
             nextChapterId={nextChapter?.id}
+          />
+        </div>
+
+        {/* Like Button */}
+        <div className="mt-8 flex flex-col items-center gap-2 py-6 border-t border-b">
+          <p className="text-sm text-muted-foreground">Enjoyed this chapter?</p>
+          <ChapterLikeButton
+            chapterId={chapterId}
+            initialLikes={chapter.likes ?? 0}
+            currentUserId={user?.id ?? null}
           />
         </div>
 
