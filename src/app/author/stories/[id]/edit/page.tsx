@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CoverUpload } from "@/components/story/CoverUpload";
+import { CoverUpload } from "@/components/story/cover-upload";
 
 const GENRES = [
   "Fantasy",
@@ -154,7 +154,7 @@ export default function EditStoryPage({ params }: PageProps) {
         <CoverUpload
           storyId={storyId}
           currentCoverUrl={coverUrl}
-          onCoverChange={setCoverUrl}
+          onUpload={setCoverUrl}
         />
 
         <div>

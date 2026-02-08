@@ -6,7 +6,6 @@ import { ChapterNav } from "@/components/reader/chapter-nav";
 import { ChapterLikeButton } from "@/components/reader/chapter-like-button";
 import { ReadingProgressTracker } from "@/components/reader/reading-progress-tracker";
 import { ViewTracker } from "@/components/reader/view-tracker";
-import { MarkReadButton } from "@/components/reader/mark-read-button";
 import { CommentList } from "@/components/reader/comment-list";
 import { ChevronLeft } from "lucide-react";
 
@@ -142,23 +141,14 @@ export default async function ChapterReadingPage({ params }: PageProps) {
           />
         </div>
 
-        {/* Like Button & Mark Read */}
+        {/* Like Button */}
         <div className="mt-8 flex flex-col items-center gap-4 py-6 border-t border-b">
-          <div className="flex items-center gap-3">
-            <MarkReadButton
-              chapterId={chapterId}
-              storyId={storyId}
-              userId={user?.id ?? null}
-            />
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-sm text-muted-foreground">Enjoyed this chapter?</p>
-            <ChapterLikeButton
-              chapterId={chapterId}
-              initialLikes={chapter.likes ?? 0}
-              currentUserId={user?.id ?? null}
-            />
-          </div>
+          <p className="text-sm text-muted-foreground">Enjoyed this chapter?</p>
+          <ChapterLikeButton
+            chapterId={chapterId}
+            initialLikes={chapter.likes ?? 0}
+            currentUserId={user?.id ?? null}
+          />
         </div>
 
         {/* Comments */}

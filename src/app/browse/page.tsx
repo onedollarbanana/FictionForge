@@ -5,8 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { BookOpen, Eye, Heart, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Suspense } from "react";
-import { BrowseFilters } from "@/components/browse/BrowseFilters";
-import { AuthorLink } from "@/components/author/AuthorLink";
+import { BrowseFilters } from "@/components/browse/browse-filters";
+import { AuthorLink } from "@/components/browse/author-link";
 
 export const dynamic = "force-dynamic";
 
@@ -64,7 +64,7 @@ export default async function BrowsePage({
     console.error("Error fetching stories:", error);
   }
 
-  let filteredStories = (stories as Story[]) || [];
+  let filteredStories = (stories as unknown as Story[]) || [];
 
   // Apply search filter
   if (search) {
