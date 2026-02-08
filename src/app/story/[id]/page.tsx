@@ -99,7 +99,7 @@ export default async function StoryPage({ params }: PageProps) {
         {story.cover_url ? (
           <div className="w-full md:w-48 aspect-[2/3] rounded-lg overflow-hidden shrink-0">
             <img
-              src={story.cover_url}
+              src={`${story.cover_url}?t=${new Date(story.updated_at).getTime()}`}
               alt={`Cover for ${story.title}`}
               className="w-full h-full object-cover"
             />

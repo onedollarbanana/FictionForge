@@ -4,26 +4,44 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Eye, Heart, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { BrowseFilters } from "@/components/browse/browse-filters";
-import { AuthorLink } from "@/components/browse/author-link";
 import { Suspense } from "react";
+import { BrowseFilters } from "@/components/browse/BrowseFilters";
+import { AuthorLink } from "@/components/author/AuthorLink";
 
 export const dynamic = "force-dynamic";
 
-interface PageProps {
-  searchParams: Promise<{
-    q?: string;
-    genre?: string;
-    sort?: string;
-  }>;
+interface SearchParams {
+  search?: string;
+  genre?: string;
+  sort?: string;
 }
 
-export default async function BrowsePage({ searchParams }: PageProps) {
-  const { q: search, genre, sort = "updated" } = await searchParams;
+interface Story {
+  id: string;
+  title: string;
+  slug: string;
+  blurb: string | null;
+  cover_url: string | null;
+  genres: string[];
+  total_views: number | null;
+  follower_count: number | null;
+  chapter_count: number | null;
+  updated_at: string;
+  profiles: {
+    username: string;
+  } | null;
+}
+
+export default async function BrowsePage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const { search, genre, sort = "updated" } = await searchParams;
   const supabase = await createClient();
 
-  // Build query
-  let query = supabase
+  // Fetch all stories with author info
+  const { data: stories, error } = await supabase
     .from("stories")
     .select(`
       id,
@@ -31,59 +49,53 @@ export default async function BrowsePage({ searchParams }: PageProps) {
       slug,
       blurb,
       cover_url,
-      status,
       genres,
       total_views,
       follower_count,
+      chapter_count,
       updated_at,
-      created_at,
       profiles (
         username
       )
-    `);
+    `)
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching stories:", error);
+  }
+
+  let filteredStories = (stories as Story[]) || [];
+
+  // Apply search filter
+  if (search) {
+    const searchLower = search.toLowerCase();
+    filteredStories = filteredStories.filter((story) =>
+      story.title.toLowerCase().includes(searchLower) ||
+      story.blurb?.toLowerCase().includes(searchLower) ||
+      story.profiles?.username.toLowerCase().includes(searchLower)
+    );
+  }
 
   // Apply genre filter
   if (genre) {
-    query = query.contains("genres", [genre]);
+    filteredStories = filteredStories.filter((story) =>
+      story.genres?.includes(genre)
+    );
   }
 
-  // Apply sort
-  switch (sort) {
-    case "newest":
-      query = query.order("created_at", { ascending: false });
-      break;
-    case "popular":
-      query = query.order("total_views", { ascending: false });
-      break;
-    case "followers":
-      query = query.order("follower_count", { ascending: false });
-      break;
-    case "updated":
-    default:
-      query = query.order("updated_at", { ascending: false });
-      break;
-  }
-
-  const { data: stories } = await query;
-
-  // Remove duplicates (in case of join issues)
-  const uniqueStories = stories ? Array.from(
-    new Map(stories.map(s => [s.id, s])).values()
-  ) : [];
-
-  // Apply search filter (client-side for flexibility)
-  let filteredStories = uniqueStories;
-  if (search) {
-    const searchLower = search.toLowerCase();
-    filteredStories = uniqueStories.filter((story) => {
-      const titleMatch = story.title.toLowerCase().includes(searchLower);
-      // profiles is returned as a single object from Supabase join (cast through unknown for TS)
-      const profile = story.profiles as unknown as { username: string } | null;
-      const authorMatch = profile?.username?.toLowerCase().includes(searchLower);
-      const blurbMatch = story.blurb?.toLowerCase().includes(searchLower);
-      return titleMatch || authorMatch || blurbMatch;
-    });
-  }
+  // Apply sorting
+  filteredStories.sort((a, b) => {
+    switch (sort) {
+      case "newest":
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      case "popular":
+        return (b.total_views ?? 0) - (a.total_views ?? 0);
+      case "followers":
+        return (b.follower_count ?? 0) - (a.follower_count ?? 0);
+      default: // "updated"
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    }
+  });
 
   const resultCount = filteredStories.length;
   const hasFilters = search || genre || sort !== "updated";
@@ -120,7 +132,7 @@ export default async function BrowsePage({ searchParams }: PageProps) {
                 {story.cover_url ? (
                   <div className="w-full aspect-[2/3] overflow-hidden">
                     <img
-                      src={story.cover_url}
+                      src={`${story.cover_url}?t=${new Date(story.updated_at).getTime()}`}
                       alt={`Cover for ${story.title}`}
                       className="w-full h-full object-cover"
                     />
@@ -130,35 +142,32 @@ export default async function BrowsePage({ searchParams }: PageProps) {
                     <BookOpen className="h-12 w-12 text-primary/40" />
                   </div>
                 )}
-
-                <CardContent className="pt-4">
-                  <h2 className="font-semibold line-clamp-1 mb-1">
+                
+                <CardContent className="p-4">
+                  <h2 className="font-semibold text-lg mb-1 line-clamp-1">
                     {story.title}
                   </h2>
                   
-                  <p className="text-sm text-muted-foreground mb-2">
-                    by{" "}
-                    {(story.profiles as unknown as { username: string } | null)?.username ? (
-                      <AuthorLink username={(story.profiles as unknown as { username: string }).username} />
-                    ) : (
-                      "Unknown"
-                    )}
-                  </p>
-
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                    {story.blurb || "No description"}
-                  </p>
-
-                  {/* Tags */}
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {(story.genres || []).slice(0, 2).map((genre: string) => (
-                      <Badge key={genre} variant="secondary" className="text-xs">
-                        {genre}
-                      </Badge>
-                    ))}
+                  <div className="text-sm text-muted-foreground mb-2">
+                    by <AuthorLink username={story.profiles?.username || "Unknown"} />
                   </div>
 
-                  {/* Stats */}
+                  {story.blurb && (
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                      {story.blurb}
+                    </p>
+                  )}
+
+                  {story.genres && story.genres.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {story.genres.slice(0, 3).map((genre) => (
+                        <Badge key={genre} variant="secondary" className="text-xs">
+                          {genre}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Eye className="h-3 w-3" />

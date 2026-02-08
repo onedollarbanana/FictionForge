@@ -1,11 +1,12 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Library, Eye, CheckCircle, XCircle, BookOpen, Play, Megaphone } from 'lucide-react'
-import { StatusDropdown } from '@/components/story/StatusDropdown'
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { BookOpen, ChevronRight, Clock, Megaphone } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 type FollowWithStory = {
   id: string
@@ -17,6 +18,7 @@ type FollowWithStory = {
     slug: string
     blurb: string | null
     cover_url: string | null
+    updated_at: string
     chapter_count: number | null
     last_chapter_at: string | null
     author: {
@@ -30,18 +32,20 @@ type ReadingProgress = {
   chapter_number: number
 }
 
-type FollowStatus = "reading" | "finished" | "dropped"
+type AnnouncementCount = {
+  story_id: string
+  unread: number
+}
 
 export default async function LibraryPage() {
   const supabase = await createClient()
-  
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
-    redirect('/login?redirect=/library')
+    redirect('/login')
   }
 
-  // Fetch user's followed stories
+  // Fetch user's followed stories with story details
   const { data: follows } = await supabase
     .from('follows')
     .select(`
@@ -54,6 +58,7 @@ export default async function LibraryPage() {
         slug,
         blurb,
         cover_url,
+        updated_at,
         chapter_count,
         last_chapter_at,
         author:profiles!stories_author_id_fkey (
@@ -79,70 +84,90 @@ export default async function LibraryPage() {
   const stories = (follows || []) as unknown as FollowWithStory[]
   const storyIds = stories.map(f => f.story?.id).filter(Boolean) as string[]
 
-  // Fetch announcements for followed stories (last 30 days)
-  const thirtyDaysAgo = new Date()
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-  
-  const { data: allAnnouncements } = storyIds.length > 0 
-    ? await supabase
-        .from('announcements')
-        .select('id, story_id')
-        .in('story_id', storyIds)
-        .gte('created_at', thirtyDaysAgo.toISOString())
-    : { data: [] }
+  // Fetch unread announcement counts
+  let unreadAnnouncementsMap = new Map<string, number>()
+  if (storyIds.length > 0) {
+    // Get all announcements for followed stories from last 30 days
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    
+    const { data: announcements } = await supabase
+      .from('announcements')
+      .select('id, story_id')
+      .in('story_id', storyIds)
+      .gte('created_at', thirtyDaysAgo.toISOString())
 
-  // Fetch which announcements user has read
-  const announcementIds = (allAnnouncements || []).map(a => a.id)
-  const { data: readAnnouncements } = announcementIds.length > 0
-    ? await supabase
+    if (announcements && announcements.length > 0) {
+      // Get which ones the user has read
+      const announcementIds = announcements.map(a => a.id)
+      const { data: reads } = await supabase
         .from('announcement_reads')
         .select('announcement_id')
         .eq('user_id', user.id)
         .in('announcement_id', announcementIds)
-    : { data: [] }
 
-  const readIds = new Set((readAnnouncements || []).map(r => r.announcement_id))
-  
-  // Create map of story_id -> unread announcement count
-  const unreadAnnouncementsMap = new Map<string, number>()
-  ;(allAnnouncements || []).forEach(a => {
-    if (!readIds.has(a.id) && a.story_id) {
-      unreadAnnouncementsMap.set(a.story_id, (unreadAnnouncementsMap.get(a.story_id) ?? 0) + 1)
+      const readIds = new Set((reads || []).map(r => r.announcement_id))
+      
+      // Count unread per story
+      announcements.forEach(a => {
+        if (!readIds.has(a.id)) {
+          const current = unreadAnnouncementsMap.get(a.story_id) || 0
+          unreadAnnouncementsMap.set(a.story_id, current + 1)
+        }
+      })
     }
-  })
+  }
 
-  // For each story, find the next chapter to read
-  const storiesWithNextChapter = await Promise.all(
-    stories.map(async (follow) => {
-      if (!follow.story) return { ...follow, nextChapterId: null, chaptersRead: 0, unreadAnnouncements: 0 }
-      
-      const chaptersRead = progressMap.get(follow.story.id) ?? 0
-      const nextChapterNumber = chaptersRead + 1
-      const unreadAnnouncements = unreadAnnouncementsMap.get(follow.story.id) ?? 0
-      
-      const { data: nextChapter } = await supabase
-        .from('chapters')
-        .select('id')
-        .eq('story_id', follow.story.id)
-        .eq('chapter_number', nextChapterNumber)
-        .eq('is_published', true)
-        .single()
-      
-      return {
-        ...follow,
-        nextChapterId: nextChapter?.id || null,
-        chaptersRead,
-        unreadAnnouncements
-      }
+  // Fetch chapter reads to calculate progress
+  let chapterReadsMap = new Map<string, number>()
+  if (storyIds.length > 0) {
+    const { data: chapterReads } = await supabase
+      .from('chapter_reads')
+      .select('story_id')
+      .eq('user_id', user.id)
+      .in('story_id', storyIds)
+
+    // Count chapters read per story
+    ;(chapterReads || []).forEach((cr: { story_id: string }) => {
+      const current = chapterReadsMap.get(cr.story_id) || 0
+      chapterReadsMap.set(cr.story_id, current + 1)
     })
-  )
+  }
 
-  // Group by status
-  const reading = storiesWithNextChapter.filter(f => f.status === 'reading')
-  const finished = storiesWithNextChapter.filter(f => f.status === 'finished')
-  const dropped = storiesWithNextChapter.filter(f => f.status === 'dropped')
+  // Fetch next unread chapter for each story
+  let nextChapterMap = new Map<string, string | null>()
+  for (const storyId of storyIds) {
+    // Get chapters the user has read
+    const { data: readChapters } = await supabase
+      .from('chapter_reads')
+      .select('chapter_id')
+      .eq('user_id', user.id)
+      .eq('story_id', storyId)
 
-  const renderStoryCard = (follow: typeof storiesWithNextChapter[0]) => {
+    const readChapterIds = new Set((readChapters || []).map(rc => rc.chapter_id))
+
+    // Get all published chapters ordered by chapter_number
+    const { data: chapters } = await supabase
+      .from('chapters')
+      .select('id')
+      .eq('story_id', storyId)
+      .eq('is_published', true)
+      .order('chapter_number', { ascending: true })
+
+    // Find first unread chapter
+    const nextChapter = (chapters || []).find(ch => !readChapterIds.has(ch.id))
+    nextChapterMap.set(storyId, nextChapter?.id || null)
+  }
+
+  // Enhance follow data with computed values
+  const enhancedFollows = stories.map(follow => ({
+    ...follow,
+    chaptersRead: chapterReadsMap.get(follow.story?.id) || 0,
+    nextChapterId: nextChapterMap.get(follow.story?.id) || null,
+    unreadAnnouncements: unreadAnnouncementsMap.get(follow.story?.id) || 0
+  }))
+
+  const renderStoryCard = (follow: typeof enhancedFollows[number]) => {
     const story = follow.story
     if (!story) return null
 
@@ -157,7 +182,7 @@ export default async function LibraryPage() {
         <Link href={`/story/${story.id}`} className="shrink-0 relative">
           {story.cover_url ? (
             <img
-              src={story.cover_url}
+              src={`${story.cover_url}?t=${new Date(story.updated_at).getTime()}`}
               alt={story.title}
               className="w-16 h-24 object-cover rounded"
             />
@@ -173,141 +198,105 @@ export default async function LibraryPage() {
             </div>
           )}
         </Link>
-        
+
         <div className="flex-1 min-w-0">
-          <div className="flex items-start gap-2">
-            <Link href={`/story/${story.id}`}>
-              <h3 className="font-semibold truncate hover:underline">{story.title}</h3>
-            </Link>
-            {/* Inline announcement indicator */}
-            {unreadAnnouncements > 0 && (
-              <span className="shrink-0 text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 px-1.5 py-0.5 rounded flex items-center gap-1">
-                <Megaphone className="h-3 w-3" />
-                {unreadAnnouncements}
-              </span>
-            )}
-          </div>
+          <Link href={`/story/${story.id}`} className="hover:underline">
+            <h3 className="font-semibold truncate">{story.title}</h3>
+          </Link>
           <p className="text-sm text-muted-foreground">
-            by {story.author?.username || "Unknown"}
+            by {story.author?.username || 'Unknown'}
           </p>
-          
-          {/* Progress info */}
-          <div className="mt-2">
-            <p className="text-sm text-muted-foreground">
-              {chaptersRead} of {totalChapters} chapters read
-            </p>
-            {/* Progress bar */}
-            {totalChapters > 0 && (
-              <div className="h-1.5 bg-muted rounded-full mt-1 overflow-hidden">
-                <div 
-                  className="h-full bg-primary rounded-full transition-all"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
+
+          <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+            <span>{chaptersRead} / {totalChapters} chapters</span>
+            <span>•</span>
+            <span>{progressPercent}%</span>
+          </div>
+
+          {/* Progress bar */}
+          <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary transition-all"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between mt-3">
+            <div className="flex items-center gap-2">
+              <Badge variant={follow.status === 'reading' ? 'default' : 'secondary'}>
+                {follow.status}
+              </Badge>
+              {story.last_chapter_at && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {formatDistanceToNow(new Date(story.last_chapter_at), { addSuffix: true })}
+                </span>
+              )}
+            </div>
+
+            {hasUnread && follow.nextChapterId && (
+              <Link 
+                href={`/story/${story.id}/chapter/${follow.nextChapterId}`}
+                className="text-sm text-primary hover:underline flex items-center gap-1"
+              >
+                Continue <ChevronRight className="h-4 w-4" />
+              </Link>
             )}
           </div>
         </div>
-        
-        <div className="shrink-0 self-center flex flex-col gap-2 items-end">
-          {/* Continue button */}
-          {hasUnread && follow.status === 'reading' && (
-            <Button asChild size="sm" className="gap-1">
-              <Link href={`/story/${story.id}/chapter/${follow.nextChapterId}`}>
-                <Play className="h-3 w-3" />
-                Continue
-              </Link>
-            </Button>
-          )}
-          
-          {/* Caught up badge */}
-          {!hasUnread && totalChapters > 0 && follow.status === 'reading' && (
-            <span className="text-xs bg-green-500/10 text-green-600 px-2 py-1 rounded">
-              Caught up!
-            </span>
-          )}
-          
-          {/* Status dropdown */}
-          <StatusDropdown
-            followId={follow.id}
-            storyId={story.id}
-            currentStatus={follow.status as FollowStatus}
-          />
-        </div>
       </div>
     )
   }
 
-  const renderStoryList = (items: typeof storiesWithNextChapter, emptyMessage: string) => {
-    if (items.length === 0) {
-      return (
-        <div className="text-center py-8 text-muted-foreground border rounded-lg bg-muted/20">
-          <p>{emptyMessage}</p>
-        </div>
-      )
-    }
-
-    return (
-      <div className="space-y-3">
-        {items.map((follow) => renderStoryCard(follow))}
-      </div>
-    )
-  }
+  const readingStories = enhancedFollows.filter(f => f.status === 'reading')
+  const finishedStories = enhancedFollows.filter(f => f.status === 'finished')
+  const droppedStories = enhancedFollows.filter(f => f.status === 'dropped')
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="flex items-center gap-3 mb-8">
-        <Library className="h-8 w-8" />
-        <h1 className="text-3xl font-bold">My Library</h1>
-      </div>
+      <h1 className="text-3xl font-bold mb-6">My Library</h1>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="text-center p-4 border rounded-lg">
-          <p className="text-3xl font-bold">{reading.length}</p>
-          <p className="text-sm text-muted-foreground">Reading</p>
-        </div>
-        <div className="text-center p-4 border rounded-lg">
-          <p className="text-3xl font-bold">{finished.length}</p>
-          <p className="text-sm text-muted-foreground">Finished</p>
-        </div>
-        <div className="text-center p-4 border rounded-lg">
-          <p className="text-3xl font-bold">{dropped.length}</p>
-          <p className="text-sm text-muted-foreground">Dropped</p>
-        </div>
-      </div>
+      {enhancedFollows.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground mb-4">Your library is empty</p>
+            <Link href="/browse" className="text-primary hover:underline">
+              Browse stories to get started
+            </Link>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-8">
+          {readingStories.length > 0 && (
+            <section>
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                Currently Reading ({readingStories.length})
+              </h2>
+              <div className="space-y-4">
+                {readingStories.map(renderStoryCard)}
+              </div>
+            </section>
+          )}
 
-      {/* Sections */}
-      <div className="space-y-8">
-        <section>
-          <h2 className="flex items-center gap-2 text-xl font-semibold mb-4">
-            <Eye className="h-5 w-5" />
-            Currently Reading
-          </h2>
-          {renderStoryList(reading, "You're not reading any stories yet. Browse to find something good!")}
-        </section>
+          {finishedStories.length > 0 && (
+            <section>
+              <h2 className="text-xl font-semibold mb-4">Finished ({finishedStories.length})</h2>
+              <div className="space-y-4">
+                {finishedStories.map(renderStoryCard)}
+              </div>
+            </section>
+          )}
 
-        <section>
-          <h2 className="flex items-center gap-2 text-xl font-semibold mb-4">
-            <CheckCircle className="h-5 w-5" />
-            Finished
-          </h2>
-          {renderStoryList(finished, "No finished stories yet.")}
-        </section>
-
-        <section>
-          <h2 className="flex items-center gap-2 text-xl font-semibold mb-4">
-            <XCircle className="h-5 w-5" />
-            Dropped
-          </h2>
-          {renderStoryList(dropped, "No dropped stories.")}
-        </section>
-      </div>
-
-      {stories.length === 0 && (
-        <div className="text-center py-8">
-          <Button asChild>
-            <Link href="/browse">Browse Stories</Link>
-          </Button>
+          {droppedStories.length > 0 && (
+            <section>
+              <h2 className="text-xl font-semibold mb-4">Dropped ({droppedStories.length})</h2>
+              <div className="space-y-4">
+                {droppedStories.map(renderStoryCard)}
+              </div>
+            </section>
+          )}
         </div>
       )}
     </div>
