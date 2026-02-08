@@ -56,6 +56,7 @@ export default function NewStoryPage() {
         status,
         genres,
         tags: tagArray,
+        is_published: true,
       })
       .select()
       .single();
