@@ -40,8 +40,7 @@ export default async function BrowsePage({ searchParams }: PageProps) {
       profiles (
         username
       )
-    `)
-    .eq("is_published", true);
+    `);
 
   // Apply genre filter
   if (genre) {
