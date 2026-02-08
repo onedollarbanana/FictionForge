@@ -116,9 +116,9 @@ export default async function BrowsePage({ searchParams }: PageProps) {
           {filteredStories.map((story) => (
             <Link key={story.id} href={`/story/${story.id}`}>
               <Card className="h-full hover:bg-muted/50 transition-colors overflow-hidden">
-                {/* Cover Image */}
+                {/* Cover Image - 2:3 aspect ratio */}
                 {story.cover_url ? (
-                  <div className="w-full h-40 overflow-hidden">
+                  <div className="w-full aspect-[2/3] overflow-hidden">
                     <img
                       src={story.cover_url}
                       alt={`Cover for ${story.title}`}
@@ -126,7 +126,7 @@ export default async function BrowsePage({ searchParams }: PageProps) {
                     />
                   </div>
                 ) : (
-                  <div className="w-full h-40 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                  <div className="w-full aspect-[2/3] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
                     <BookOpen className="h-12 w-12 text-primary/40" />
                   </div>
                 )}

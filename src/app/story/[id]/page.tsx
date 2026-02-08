@@ -95,9 +95,9 @@ export default async function StoryPage({ params }: PageProps) {
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Story Header */}
       <div className="flex flex-col md:flex-row gap-6 mb-8">
-        {/* Cover Image */}
+        {/* Cover Image - 2:3 aspect ratio */}
         {story.cover_url ? (
-          <div className="w-full md:w-48 h-64 rounded-lg overflow-hidden shrink-0">
+          <div className="w-full md:w-48 aspect-[2/3] rounded-lg overflow-hidden shrink-0">
             <img
               src={story.cover_url}
               alt={`Cover for ${story.title}`}
@@ -105,7 +105,7 @@ export default async function StoryPage({ params }: PageProps) {
             />
           </div>
         ) : (
-          <div className="w-full md:w-48 h-64 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center shrink-0">
+          <div className="w-full md:w-48 aspect-[2/3] bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center shrink-0">
             <BookOpen className="h-16 w-16 text-primary/40" />
           </div>
         )}
@@ -146,19 +146,28 @@ export default async function StoryPage({ params }: PageProps) {
             {story.status?.charAt(0).toUpperCase() + story.status?.slice(1) || "Ongoing"}
           </Badge>
 
-          {/* Genres & Tags */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            {(story.genres || []).map((genre: string) => (
-              <Badge key={genre} variant="default">
-                {genre}
-              </Badge>
-            ))}
-            {(story.tags || []).map((tag: string) => (
-              <Badge key={tag} variant="outline">
-                {tag}
-              </Badge>
-            ))}
-          </div>
+          {/* Genres */}
+          {story.genres && story.genres.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              {(story.genres || []).map((genre: string) => (
+                <Badge key={genre} variant="default">
+                  {genre}
+                </Badge>
+              ))}
+            </div>
+          )}
+          
+          {/* Tags */}
+          {story.tags && story.tags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <span className="text-sm text-muted-foreground">Tags:</span>
+              {(story.tags || []).map((tag: string) => (
+                <Badge key={tag} variant="secondary">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex gap-3">
@@ -180,9 +189,10 @@ export default async function StoryPage({ params }: PageProps) {
       </div>
 
       {/* Announcements Banner */}
-      {unreadAnnouncements.length > 0 && (
+      {(allAnnouncements && allAnnouncements.length > 0) && (
         <AnnouncementBanner 
-          announcements={unreadAnnouncements}
+          announcements={allAnnouncements}
+          unreadIds={unreadAnnouncements.map(a => a.id)}
           userId={user?.id || null}
         />
       )}
