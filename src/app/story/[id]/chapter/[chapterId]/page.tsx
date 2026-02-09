@@ -112,7 +112,7 @@ export default async function ChapterReadingPage({ params }: PageProps) {
         {chapter.stories?.default_author_note_before && (
           <div className="mb-6 p-4 rounded-lg bg-muted/50 border-l-4 border-primary">
             <p className="text-sm font-medium text-muted-foreground mb-1">Author&apos;s Note</p>
-            <p className="text-sm whitespace-pre-wrap">{chapter.stories.default_author_note_before}</p>
+            <p className="text-sm whitespace-pre-wrap break-words">{chapter.stories.default_author_note_before}</p>
           </div>
         )}
 
@@ -120,7 +120,7 @@ export default async function ChapterReadingPage({ params }: PageProps) {
         {chapter.author_note_before && (
           <div className="mb-8 p-4 rounded-lg bg-muted/50 border-l-4 border-secondary">
             <p className="text-sm font-medium text-muted-foreground mb-1">Chapter Note</p>
-            <p className="text-sm whitespace-pre-wrap">{chapter.author_note_before}</p>
+            <p className="text-sm whitespace-pre-wrap break-words">{chapter.author_note_before}</p>
           </div>
         )}
 
@@ -133,7 +133,7 @@ export default async function ChapterReadingPage({ params }: PageProps) {
         {chapter.author_note_after && (
           <div className="mt-8 p-4 rounded-lg bg-muted/50 border-l-4 border-secondary">
             <p className="text-sm font-medium text-muted-foreground mb-1">Chapter Note</p>
-            <p className="text-sm whitespace-pre-wrap">{chapter.author_note_after}</p>
+            <p className="text-sm whitespace-pre-wrap break-words">{chapter.author_note_after}</p>
           </div>
         )}
 
@@ -141,7 +141,7 @@ export default async function ChapterReadingPage({ params }: PageProps) {
         {chapter.stories?.default_author_note_after && (
           <div className="mt-6 p-4 rounded-lg bg-muted/50 border-l-4 border-primary">
             <p className="text-sm font-medium text-muted-foreground mb-1">Author&apos;s Note</p>
-            <p className="text-sm whitespace-pre-wrap">{chapter.stories.default_author_note_after}</p>
+            <p className="text-sm whitespace-pre-wrap break-words">{chapter.stories.default_author_note_after}</p>
           </div>
         )}
 
