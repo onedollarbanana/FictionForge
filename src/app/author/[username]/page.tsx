@@ -118,10 +118,10 @@ export default async function AuthorPage({ params }: PageProps) {
               <Link
                 key={story.id}
                 href={`/story/${story.slug}`}
-                className="flex gap-4 p-4 bg-white border rounded-lg hover:shadow-md transition-shadow"
+                className="flex gap-4 p-4 bg-card border rounded-lg hover:shadow-md transition-shadow"
               >
                 {/* Cover */}
-                <div className="relative w-20 h-28 flex-shrink-0 rounded overflow-hidden bg-gray-100">
+                <div className="relative w-20 h-28 flex-shrink-0 rounded overflow-hidden bg-muted">
                   {story.cover_url ? (
                     <Image
                       src={`${story.cover_url}?t=${new Date(story.updated_at).getTime()}`}
