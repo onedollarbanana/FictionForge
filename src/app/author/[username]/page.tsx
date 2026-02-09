@@ -40,7 +40,7 @@ export default async function AuthorPage({ params }: PageProps) {
       cover_url,
       status,
       genres,
-      total_word_count,
+      word_count,
       follower_count,
       updated_at,
       created_at
@@ -49,7 +49,7 @@ export default async function AuthorPage({ params }: PageProps) {
     .order("updated_at", { ascending: false });
 
   const publishedStories = stories || [];
-  const totalWords = publishedStories.reduce((sum, s) => sum + (s.total_word_count || 0), 0);
+  const totalWords = publishedStories.reduce((sum, s) => sum + (s.word_count || 0), 0);
   const totalFollowers = publishedStories.reduce((sum, s) => sum + (s.follower_count || 0), 0);
 
   return (
@@ -158,7 +158,7 @@ export default async function AuthorPage({ params }: PageProps) {
                   )}
 
                   <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                    <span>{(story.total_word_count || 0).toLocaleString()} words</span>
+                    <span>{(story.word_count || 0).toLocaleString()} words</span>
                     <span>•</span>
                     <span>{(story.follower_count || 0).toLocaleString()} followers</span>
                     <span>•</span>
