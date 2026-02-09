@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,12 +34,9 @@ const GENRES = [
   "Historical",
 ];
 
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
-
-export default function EditStoryPage({ params }: PageProps) {
-  const { id: storyId } = use(params);
+export default function EditStoryPage() {
+  const params = useParams();
+  const storyId = params.id as string;
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [blurb, setBlurb] = useState("");
