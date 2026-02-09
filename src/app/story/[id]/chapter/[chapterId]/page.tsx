@@ -22,7 +22,7 @@ export default async function ChapterReadingPage({ params }: PageProps) {
   // Get current user (may be null if not logged in)
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Fetch chapter with story info
+  // Fetch chapter with story info (including default author notes)
   const { data: chapter, error } = await supabase
     .from("chapters")
     .select(`
@@ -31,6 +31,8 @@ export default async function ChapterReadingPage({ params }: PageProps) {
         id,
         title,
         author_id,
+        default_author_note_before,
+        default_author_note_after,
         profiles (
           username
         )
@@ -106,10 +108,18 @@ export default async function ChapterReadingPage({ params }: PageProps) {
           </p>
         </header>
 
-        {/* Author's Note (Before) */}
-        {chapter.author_note_before && (
-          <div className="mb-8 p-4 rounded-lg bg-muted/50 border-l-4 border-primary">
+        {/* Story Default Author's Note (Before) */}
+        {chapter.stories?.default_author_note_before && (
+          <div className="mb-6 p-4 rounded-lg bg-muted/50 border-l-4 border-primary">
             <p className="text-sm font-medium text-muted-foreground mb-1">Author&apos;s Note</p>
+            <p className="text-sm whitespace-pre-wrap">{chapter.stories.default_author_note_before}</p>
+          </div>
+        )}
+
+        {/* Chapter-Specific Author's Note (Before) */}
+        {chapter.author_note_before && (
+          <div className="mb-8 p-4 rounded-lg bg-muted/50 border-l-4 border-secondary">
+            <p className="text-sm font-medium text-muted-foreground mb-1">Chapter Note</p>
             <p className="text-sm whitespace-pre-wrap">{chapter.author_note_before}</p>
           </div>
         )}
@@ -119,11 +129,19 @@ export default async function ChapterReadingPage({ params }: PageProps) {
           <TiptapRenderer content={chapter.content} />
         </div>
 
-        {/* Author's Note (After) */}
+        {/* Chapter-Specific Author's Note (After) */}
         {chapter.author_note_after && (
-          <div className="mt-8 p-4 rounded-lg bg-muted/50 border-l-4 border-primary">
-            <p className="text-sm font-medium text-muted-foreground mb-1">Author&apos;s Note</p>
+          <div className="mt-8 p-4 rounded-lg bg-muted/50 border-l-4 border-secondary">
+            <p className="text-sm font-medium text-muted-foreground mb-1">Chapter Note</p>
             <p className="text-sm whitespace-pre-wrap">{chapter.author_note_after}</p>
+          </div>
+        )}
+
+        {/* Story Default Author's Note (After) */}
+        {chapter.stories?.default_author_note_after && (
+          <div className="mt-6 p-4 rounded-lg bg-muted/50 border-l-4 border-primary">
+            <p className="text-sm font-medium text-muted-foreground mb-1">Author&apos;s Note</p>
+            <p className="text-sm whitespace-pre-wrap">{chapter.stories.default_author_note_after}</p>
           </div>
         )}
 
