@@ -132,15 +132,17 @@ export default async function ChapterReadingPage({ params }: PageProps) {
           <ChapterLikeButton
             chapterId={chapterId}
             initialLikes={chapter.likes ?? 0}
-            userId={user?.id ?? null}
+            currentUserId={user?.id ?? null}
           />
         </div>
 
         {/* Chapter Navigation */}
         <ChapterNav
           storyId={storyId}
-          prevChapter={prevChapter}
-          nextChapter={nextChapter}
+          currentChapter={chapter.chapter_number}
+          totalChapters={chapters.length}
+          prevChapterId={prevChapter?.id}
+          nextChapterId={nextChapter?.id}
         />
 
         {/* Comments */}
