@@ -78,83 +78,76 @@ export default async function ChapterReadingPage({ params }: PageProps) {
       {/* Compact Header */}
       <div className="border-b sticky top-0 bg-background/95 backdrop-blur z-10">
         <div className="container mx-auto px-4 py-3 max-w-3xl">
-          <Link 
-            href={`/story/${storyId}`}
-            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            {chapter.stories?.title}
-          </Link>
+          <div className="flex items-center justify-between">
+            <Link
+              href={`/story/${storyId}`}
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="truncate max-w-[200px]">{chapter.stories?.title}</span>
+            </Link>
+            <span className="text-sm font-medium">Chapter {chapter.chapter_number}</span>
+          </div>
         </div>
       </div>
 
       {/* Chapter Content */}
       <article className="container mx-auto px-4 py-8 max-w-3xl">
-        {/* Chapter Title */}
-        <header className="mb-8 text-center">
-          <p className="text-sm text-muted-foreground mb-2">
-            Chapter {chapter.chapter_number}
-          </p>
-          <h1 className="text-3xl font-bold">{chapter.title}</h1>
-          <p className="text-sm text-muted-foreground mt-2">
-            {(chapter.word_count ?? 0).toLocaleString()} words
+        <header className="mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold">{chapter.title}</h1>
+          <p className="text-muted-foreground mt-2">
+            By{" "}
+            <Link
+              href={`/author/${chapter.stories?.profiles?.username}`}
+              className="hover:underline"
+            >
+              {chapter.stories?.profiles?.username || "Unknown"}
+            </Link>
           </p>
         </header>
 
-        {/* Author Note Before */}
+        {/* Author's Note (Before) */}
         {chapter.author_note_before && (
-          <div className="mb-8 p-4 bg-muted/50 rounded-lg border-l-4 border-primary">
-            <p className="text-sm font-medium mb-1">Author&apos;s Note</p>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-              {chapter.author_note_before}
-            </p>
+          <div className="mb-8 p-4 rounded-lg bg-muted/50 border-l-4 border-primary">
+            <p className="text-sm font-medium text-muted-foreground mb-1">Author&apos;s Note</p>
+            <p className="text-sm whitespace-pre-wrap">{chapter.author_note_before}</p>
           </div>
         )}
 
-        {/* Chapter Content */}
-        <div className="prose prose-lg dark:prose-invert max-w-none">
-          {chapter.content ? (
-            <TiptapRenderer content={chapter.content} />
-          ) : (
-            <p className="text-muted-foreground italic">This chapter has no content yet.</p>
-          )}
+        {/* Main Content */}
+        <div className="prose dark:prose-invert max-w-none">
+          <TiptapRenderer content={chapter.content} />
         </div>
 
-        {/* Author Note After */}
+        {/* Author's Note (After) */}
         {chapter.author_note_after && (
-          <div className="mt-8 p-4 bg-muted/50 rounded-lg border-l-4 border-primary">
-            <p className="text-sm font-medium mb-1">Author&apos;s Note</p>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-              {chapter.author_note_after}
-            </p>
+          <div className="mt-8 p-4 rounded-lg bg-muted/50 border-l-4 border-primary">
+            <p className="text-sm font-medium text-muted-foreground mb-1">Author&apos;s Note</p>
+            <p className="text-sm whitespace-pre-wrap">{chapter.author_note_after}</p>
           </div>
         )}
-
-        {/* Navigation */}
-        <div className="mt-8">
-          <ChapterNav
-            storyId={storyId}
-            currentChapter={chapter.chapter_number}
-            totalChapters={chapters.length}
-            prevChapterId={prevChapter?.id}
-            nextChapterId={nextChapter?.id}
-          />
-        </div>
 
         {/* Like Button */}
-        <div className="mt-8 flex flex-col items-center gap-4 py-6 border-t border-b">
-          <p className="text-sm text-muted-foreground">Enjoyed this chapter?</p>
+        <div className="mt-8 flex justify-center">
           <ChapterLikeButton
             chapterId={chapterId}
             initialLikes={chapter.likes ?? 0}
-            currentUserId={user?.id ?? null}
+            userId={user?.id ?? null}
           />
         </div>
+
+        {/* Chapter Navigation */}
+        <ChapterNav
+          storyId={storyId}
+          prevChapter={prevChapter}
+          nextChapter={nextChapter}
+        />
 
         {/* Comments */}
         <CommentList
           chapterId={chapterId}
           currentUserId={user?.id ?? null}
+          storyAuthorId={chapter.stories?.author_id ?? ""}
         />
       </article>
     </div>

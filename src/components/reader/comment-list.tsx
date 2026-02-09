@@ -37,6 +37,7 @@ type SortOption = "newest" | "oldest" | "popular";
 interface CommentListProps {
   chapterId: string;
   currentUserId: string | null;
+  storyAuthorId: string;
 }
 
 // Helper to normalize profiles from Supabase (can be array or single object)
@@ -50,7 +51,7 @@ function normalizeProfile(profiles: ProfileData | ProfileData[] | null): Profile
   return profiles;
 }
 
-export function CommentList({ chapterId, currentUserId }: CommentListProps) {
+export function CommentList({ chapterId, currentUserId, storyAuthorId }: CommentListProps) {
   const [comments, setComments] = useState<CommentData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
@@ -182,6 +183,7 @@ export function CommentList({ chapterId, currentUserId }: CommentListProps) {
                 comment={comment}
                 currentUserId={currentUserId}
                 chapterId={chapterId}
+                storyAuthorId={storyAuthorId}
                 onReplyPosted={handleCommentPosted}
               />
             ))}

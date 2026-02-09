@@ -24,6 +24,7 @@ interface CommentProps {
   comment: CommentData;
   currentUserId: string | null;
   chapterId: string;
+  storyAuthorId: string;
   onReplyPosted: () => void;
   isReply?: boolean;
 }
@@ -32,9 +33,11 @@ export function Comment({
   comment, 
   currentUserId, 
   chapterId, 
+  storyAuthorId,
   onReplyPosted,
   isReply = false 
 }: CommentProps) {
+  const isAuthor = comment.user_id === storyAuthorId;
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [replyContent, setReplyContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -140,6 +143,11 @@ export function Comment({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 text-sm">
             <span className="font-medium">{comment.profiles?.username || "Anonymous"}</span>
+            {isAuthor && (
+              <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-primary/20 text-primary">
+                Author
+              </span>
+            )}
             <span className="text-muted-foreground">
               {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
             </span>
@@ -200,6 +208,7 @@ export function Comment({
                   comment={reply}
                   currentUserId={currentUserId}
                   chapterId={chapterId}
+                  storyAuthorId={storyAuthorId}
                   onReplyPosted={onReplyPosted}
                   isReply={true}
                 />
