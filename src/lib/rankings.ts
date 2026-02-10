@@ -96,7 +96,7 @@ export async function getRisingStars(limit: number = 10): Promise<RankedStory[]>
   const supabase = await createClient();
   
   const { data, error } = await supabase.rpc("get_rising_stars", {
-    limit_count: limit,
+    result_limit: limit,
   });
 
   if (error) {
@@ -104,12 +104,12 @@ export async function getRisingStars(limit: number = 10): Promise<RankedStory[]>
     return [];
   }
 
-  const storyIds = (data || []).map((r: { story_id: string }) => r.story_id);
+  const storyIds = (data || []).map((r: { id: string }) => r.id);
   const stories = await getStoriesWithDetails(storyIds);
   
   // Attach scores
   const scoreMap = new Map<string, number>(
-    (data || []).map((r: { story_id: string; score: number }) => [r.story_id, r.score])
+    (data || []).map((r: { id: string; score: number }) => [r.id, r.score])
   );
   
   return stories.map((s) => ({ ...s, score: scoreMap.get(s.id) || 0 }));
@@ -122,7 +122,7 @@ export async function getPopularThisWeek(limit: number = 10): Promise<RankedStor
   const supabase = await createClient();
   
   const { data, error } = await supabase.rpc("get_popular_this_week", {
-    limit_count: limit,
+    result_limit: limit,
   });
 
   if (error) {
@@ -130,11 +130,11 @@ export async function getPopularThisWeek(limit: number = 10): Promise<RankedStor
     return [];
   }
 
-  const storyIds = (data || []).map((r: { story_id: string }) => r.story_id);
+  const storyIds = (data || []).map((r: { id: string }) => r.id);
   const stories = await getStoriesWithDetails(storyIds);
   
   const scoreMap = new Map<string, number>(
-    (data || []).map((r: { story_id: string; score: number }) => [r.story_id, r.score])
+    (data || []).map((r: { id: string; score: number }) => [r.id, r.score])
   );
   
   return stories.map((s) => ({ ...s, score: scoreMap.get(s.id) || 0 }));
@@ -148,7 +148,7 @@ export async function getBestRated(limit: number = 10): Promise<RankedStory[]> {
   const supabase = await createClient();
   
   const { data, error } = await supabase.rpc("get_best_rated", {
-    limit_count: limit,
+    result_limit: limit,
   });
 
   if (error) {
@@ -161,12 +161,12 @@ export async function getBestRated(limit: number = 10): Promise<RankedStory[]> {
     return getMostFollowed(limit);
   }
 
-  const storyIds = (data || []).map((r: { story_id: string }) => r.story_id);
+  const storyIds = (data || []).map((r: { id: string }) => r.id);
   const stories = await getStoriesWithDetails(storyIds);
   
   const ratingMap = new Map<string, { avg_rating: number; rating_count: number }>(
-    (data || []).map((r: { story_id: string; avg_rating: number; rating_count: number }) => [
-      r.story_id,
+    (data || []).map((r: { id: string; avg_rating: number; rating_count: number }) => [
+      r.id,
       { avg_rating: r.avg_rating, rating_count: r.rating_count },
     ])
   );
@@ -185,7 +185,7 @@ export async function getLatestUpdates(limit: number = 10): Promise<RankedStory[
   const supabase = await createClient();
   
   const { data, error } = await supabase.rpc("get_latest_updates", {
-    limit_count: limit,
+    result_limit: limit,
   });
 
   if (error) {
@@ -193,12 +193,12 @@ export async function getLatestUpdates(limit: number = 10): Promise<RankedStory[
     return [];
   }
 
-  const storyIds = (data || []).map((r: { story_id: string }) => r.story_id);
+  const storyIds = (data || []).map((r: { id: string }) => r.id);
   const stories = await getStoriesWithDetails(storyIds);
   
   const dateMap = new Map<string, string>(
-    (data || []).map((r: { story_id: string; last_chapter_at: string }) => [
-      r.story_id,
+    (data || []).map((r: { id: string; last_chapter_at: string }) => [
+      r.id,
       r.last_chapter_at,
     ])
   );
@@ -216,7 +216,7 @@ export async function getMostFollowed(limit: number = 10): Promise<RankedStory[]
   const supabase = await createClient();
   
   const { data, error } = await supabase.rpc("get_most_followed", {
-    limit_count: limit,
+    result_limit: limit,
   });
 
   if (error) {
@@ -224,7 +224,7 @@ export async function getMostFollowed(limit: number = 10): Promise<RankedStory[]
     return [];
   }
 
-  const storyIds = (data || []).map((r: { story_id: string }) => r.story_id);
+  const storyIds = (data || []).map((r: { id: string }) => r.id);
   return getStoriesWithDetails(storyIds);
 }
 
@@ -235,7 +235,7 @@ export async function getBestCompleted(limit: number = 10): Promise<RankedStory[
   const supabase = await createClient();
   
   const { data, error } = await supabase.rpc("get_best_completed", {
-    limit_count: limit,
+    result_limit: limit,
   });
 
   if (error) {
@@ -243,6 +243,6 @@ export async function getBestCompleted(limit: number = 10): Promise<RankedStory[
     return [];
   }
 
-  const storyIds = (data || []).map((r: { story_id: string }) => r.story_id);
+  const storyIds = (data || []).map((r: { id: string }) => r.id);
   return getStoriesWithDetails(storyIds);
 }
