@@ -92,7 +92,7 @@ export function MobileNav({ onLogout }: MobileNavProps) {
                 <span>Browse Stories</span>
               </Link>
               
-              {user && profile && (
+              {user && (
                 <>
                   <div className="my-4 border-t" />
                   <Link
@@ -123,11 +123,13 @@ export function MobileNav({ onLogout }: MobileNavProps) {
 
           {/* Footer with auth actions */}
           <div className="p-4 border-t">
-            {user && profile ? (
+            {user ? (
               <div className="space-y-3">
-                <p className="text-sm text-muted-foreground px-3">
-                  Signed in as <span className="font-medium text-foreground">{profile.username}</span>
-                </p>
+                {profile && (
+                  <p className="text-sm text-muted-foreground px-3">
+                    Signed in as <span className="font-medium text-foreground">{profile.username}</span>
+                  </p>
+                )}
                 <Button
                   variant="outline"
                   className="w-full"

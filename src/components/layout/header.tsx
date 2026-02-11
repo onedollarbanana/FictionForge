@@ -6,11 +6,11 @@ import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { useUser } from '@/lib/hooks/useUser'
 import { createClient } from '@/lib/supabase/client'
-import { Pen, LogOut, Library, Settings } from 'lucide-react'
+import { Pen, LogOut, Settings } from 'lucide-react'
 import { MobileNav } from './mobile-nav'
 
 export function Header() {
-  const { user, profile, loading } = useUser()
+  const { user, loading } = useUser()
   const router = useRouter()
 
   const handleLogout = async () => {
@@ -31,7 +31,7 @@ export function Header() {
             <Link href="/browse" className="text-sm text-muted-foreground hover:text-foreground">
               Browse
             </Link>
-            {user && profile && (
+            {user && (
               <Link href="/library" className="text-sm text-muted-foreground hover:text-foreground">
                 Library
               </Link>
@@ -45,7 +45,7 @@ export function Header() {
           {/* Desktop nav */}
           {!loading && (
             <div className="hidden md:flex items-center gap-2">
-              {user && profile ? (
+              {user ? (
                 <>
                   <Link href="/author/dashboard">
                     <Button variant="ghost" size="sm">
