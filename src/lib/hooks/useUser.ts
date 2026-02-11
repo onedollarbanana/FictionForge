@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 
@@ -26,120 +26,52 @@ export function useUser(): UseUserReturn {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    try {
-      const supabase = createClient()
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle()
-
-      if (profileError) {
-        console.error('Error fetching profile:', profileError)
-        return null
-      }
-
-      return profileData
-    } catch (e) {
-      console.error('fetchProfile exception:', e)
-      return null
-    }
-  }, [])
-
   useEffect(() => {
     const supabase = createClient()
-    let isMounted = true
 
-    async function getUser() {
+    // Use getSession() - instant from localStorage, no network call
+    async function loadUser() {
       try {
-        // First check if there's a session at all
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        const { data: { session } } = await supabase.auth.getSession()
         
-        if (sessionError) {
-          console.warn('getSession error:', sessionError.message)
-        }
-        
-        // No session = definitely logged out
-        if (!session) {
-          if (isMounted) {
-            setUser(null)
-            setProfile(null)
-            setLoading(false)
-          }
-          return
-        }
-        
-        // We have a session, validate it with getUser
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
-        
-        if (userError) {
-          console.warn('getUser error (clearing stale session):', userError.message)
-          // Session is stale/invalid - sign out to clear it
-          await supabase.auth.signOut()
-          if (isMounted) {
-            setUser(null)
-            setProfile(null)
-            setLoading(false)
-          }
-          return
-        }
-        
-        if (!isMounted) return
+        if (session?.user) {
+          setUser(session.user)
+          
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single()
 
-        setUser(user)
-
-        if (user) {
-          const profileData = await fetchProfile(user.id)
-          if (isMounted) {
-            setProfile(profileData)
-          }
+          setProfile(profileData)
         }
       } catch (e) {
-        console.error('Exception in getUser:', e)
-        // On any exception, try to clear potentially corrupted state
-        try {
-          const supabase = createClient()
-          await supabase.auth.signOut()
-        } catch {}
-        if (isMounted) {
-          setError(e as Error)
-          setUser(null)
-          setProfile(null)
-        }
+        setError(e as Error)
       } finally {
-        if (isMounted) {
-          setLoading(false)
-        }
+        setLoading(false)
       }
     }
 
-    getUser()
+    loadUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!isMounted) return
-      
-      console.log('Auth state change:', event)
-
-      if (event === 'SIGNED_IN' && session?.user) {
-        setUser(session.user)
-        const profileData = await fetchProfile(session.user.id)
-        if (isMounted) {
-          setProfile(profileData)
-        }
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null)
+    // Listen for auth changes (login/logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      if (!session?.user) {
         setProfile(null)
-      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-        setUser(session.user)
+      } else {
+        // Refresh profile on login
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data }) => setProfile(data))
       }
     })
 
-    return () => {
-      isMounted = false
-      subscription.unsubscribe()
-    }
-  }, [fetchProfile])
+    return () => subscription.unsubscribe()
+  }, [])
 
   return { user, profile, loading, error }
 }
