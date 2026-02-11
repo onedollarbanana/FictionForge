@@ -2,12 +2,11 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { useUser } from '@/lib/hooks/useUser'
 import { createClient } from '@/lib/supabase/client'
-import { Pen, LogOut, Settings } from 'lucide-react'
-import { MobileNav } from './mobile-nav'
+import { useUser } from '@/lib/hooks/useUser'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { MobileNav } from '@/components/layout/mobile-nav'
+import { LayoutDashboard, Settings, LogOut, Loader2 } from 'lucide-react'
 
 export function Header() {
   const { user, loading } = useUser()
@@ -21,61 +20,74 @@ export function Header() {
   }
 
   return (
-    <header className="border-b">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container mx-auto px-4 flex h-14 items-center justify-between">
         <div className="flex items-center gap-6">
           <Link href="/" className="text-xl font-bold text-primary">
             FictionForge
           </Link>
           <nav className="hidden md:flex items-center gap-4">
-            <Link href="/browse" className="text-sm text-muted-foreground hover:text-foreground">
+            <Link href="/browse" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Browse
             </Link>
-            {user && (
-              <Link href="/library" className="text-sm text-muted-foreground hover:text-foreground">
-                Library
-              </Link>
-            )}
+            <Link href="/library" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Library
+            </Link>
           </nav>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <ThemeToggle />
           
-          {/* Desktop nav */}
-          {!loading && (
-            <div className="hidden md:flex items-center gap-2">
-              {user ? (
-                <>
-                  <Link href="/author/dashboard">
-                    <Button variant="ghost" size="sm">
-                      <Pen className="h-4 w-4 mr-2" />
-                      Dashboard
-                    </Button>
-                  </Link>
-                  <Link href="/settings/profile">
-                    <Button variant="ghost" size="sm">
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Button variant="ghost" size="sm" onClick={handleLogout}>
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Link href="/login">
-                    <Button variant="ghost" size="sm">Sign In</Button>
-                  </Link>
-                  <Link href="/signup">
-                    <Button size="sm">Sign Up</Button>
-                  </Link>
-                </>
-              )}
-            </div>
-          )}
-          
-          {/* Mobile nav */}
+          {/* Desktop auth buttons */}
+          <div className="hidden md:flex items-center gap-2">
+            {loading ? (
+              // Show subtle loader during auth check
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            ) : user ? (
+              <>
+                <Link
+                  href="/author/dashboard"
+                  className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                  title="Dashboard"
+                >
+                  <LayoutDashboard className="h-5 w-5" />
+                </Link>
+                <Link
+                  href="/settings"
+                  className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                  title="Settings"
+                >
+                  <Settings className="h-5 w-5" />
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                  title="Logout"
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/signup"
+                  className="text-sm bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-2 rounded-md transition-colors"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )
+          }
+          </div>
+
+          {/* Mobile navigation */}
           <MobileNav onLogout={handleLogout} />
         </div>
       </div>

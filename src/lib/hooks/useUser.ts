@@ -33,7 +33,7 @@ export function useUser(): UseUserReturn {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .maybeSingle() // Use maybeSingle to avoid error if no profile
+        .maybeSingle()
 
       if (profileError) {
         console.error('Error fetching profile:', profileError)
@@ -53,12 +53,30 @@ export function useUser(): UseUserReturn {
 
     async function getUser() {
       try {
+        // First check if there's a session at all
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          console.warn('getSession error:', sessionError.message)
+        }
+        
+        // No session = definitely logged out
+        if (!session) {
+          if (isMounted) {
+            setUser(null)
+            setProfile(null)
+            setLoading(false)
+          }
+          return
+        }
+        
+        // We have a session, validate it with getUser
         const { data: { user }, error: userError } = await supabase.auth.getUser()
         
-        // Don't throw on auth errors - just treat as no user
-        // This handles incognito/storage restriction cases gracefully
         if (userError) {
-          console.warn('Auth getUser returned error (treating as logged out):', userError.message)
+          console.warn('getUser error (clearing stale session):', userError.message)
+          // Session is stale/invalid - sign out to clear it
+          await supabase.auth.signOut()
           if (isMounted) {
             setUser(null)
             setProfile(null)
@@ -79,6 +97,11 @@ export function useUser(): UseUserReturn {
         }
       } catch (e) {
         console.error('Exception in getUser:', e)
+        // On any exception, try to clear potentially corrupted state
+        try {
+          const supabase = createClient()
+          await supabase.auth.signOut()
+        } catch {}
         if (isMounted) {
           setError(e as Error)
           setUser(null)
@@ -95,8 +118,9 @@ export function useUser(): UseUserReturn {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted) return
+      
+      console.log('Auth state change:', event)
 
-      // Handle auth state changes
       if (event === 'SIGNED_IN' && session?.user) {
         setUser(session.user)
         const profileData = await fetchProfile(session.user.id)
@@ -107,7 +131,6 @@ export function useUser(): UseUserReturn {
         setUser(null)
         setProfile(null)
       } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-        // Update user on token refresh
         setUser(session.user)
       }
     })
