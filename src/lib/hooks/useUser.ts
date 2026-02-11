@@ -20,29 +20,29 @@ interface UseUserReturn {
   error: Error | null
 }
 
+// Simple, fast user hook following Supabase best practices
 export function useUser(): UseUserReturn {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const fetchProfile = useCallback(async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     try {
       const supabase = createClient()
-      const { data: profileData, error: profileError } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle()
 
-      if (profileError) {
-        console.error('Error fetching profile:', profileError)
+      if (error) {
+        console.error('Profile fetch error:', error.message)
         return null
       }
-
-      return profileData
+      return data
     } catch (e) {
-      console.error('fetchProfile exception:', e)
+      console.error('Profile fetch exception:', e)
       return null
     }
   }, [])
@@ -51,89 +51,51 @@ export function useUser(): UseUserReturn {
     const supabase = createClient()
     let isMounted = true
 
-    async function getUser() {
+    // Initial load - use getSession (fast, from localStorage)
+    async function initAuth() {
       try {
-        // First check if there's a session at all
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-        
-        if (sessionError) {
-          console.warn('getSession error:', sessionError.message)
-        }
-        
-        // No session = definitely logged out
-        if (!session) {
-          if (isMounted) {
-            setUser(null)
-            setProfile(null)
-            setLoading(false)
-          }
-          return
-        }
-        
-        // We have a session, validate it with getUser
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
-        
-        if (userError) {
-          console.warn('getUser error (clearing stale session):', userError.message)
-          // Session is stale/invalid - sign out to clear it
-          await supabase.auth.signOut()
-          if (isMounted) {
-            setUser(null)
-            setProfile(null)
-            setLoading(false)
-          }
-          return
-        }
+        const { data: { session } } = await supabase.auth.getSession()
         
         if (!isMounted) return
 
-        setUser(user)
-
-        if (user) {
-          const profileData = await fetchProfile(user.id)
-          if (isMounted) {
-            setProfile(profileData)
-          }
-        }
-      } catch (e) {
-        console.error('Exception in getUser:', e)
-        // On any exception, try to clear potentially corrupted state
-        try {
-          const supabase = createClient()
-          await supabase.auth.signOut()
-        } catch {}
-        if (isMounted) {
-          setError(e as Error)
+        if (session?.user) {
+          setUser(session.user)
+          // Fetch profile in background, don't block UI
+          fetchProfile(session.user.id).then(profileData => {
+            if (isMounted) setProfile(profileData)
+          })
+        } else {
           setUser(null)
           setProfile(null)
         }
+      } catch (e) {
+        console.error('Auth init error:', e)
+        if (isMounted) setError(e as Error)
       } finally {
-        if (isMounted) {
-          setLoading(false)
-        }
+        if (isMounted) setLoading(false)
       }
     }
 
-    getUser()
+    initAuth()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!isMounted) return
-      
-      console.log('Auth state change:', event)
+    // Listen for auth changes (handles sign in/out)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!isMounted) return
 
-      if (event === 'SIGNED_IN' && session?.user) {
-        setUser(session.user)
-        const profileData = await fetchProfile(session.user.id)
-        if (isMounted) {
-          setProfile(profileData)
+        if (session?.user) {
+          setUser(session.user)
+          // Fetch fresh profile on sign in
+          if (event === 'SIGNED_IN') {
+            const profileData = await fetchProfile(session.user.id)
+            if (isMounted) setProfile(profileData)
+          }
+        } else {
+          setUser(null)
+          setProfile(null)
         }
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null)
-        setProfile(null)
-      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-        setUser(session.user)
       }
-    })
+    )
 
     return () => {
       isMounted = false
