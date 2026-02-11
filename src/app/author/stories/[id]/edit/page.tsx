@@ -39,6 +39,7 @@ export default function EditStoryPage() {
   const storyId = params.id as string;
   const router = useRouter();
   const [title, setTitle] = useState("");
+  const [tagline, setTagline] = useState("");
   const [blurb, setBlurb] = useState("");
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [status, setStatus] = useState("ongoing");
@@ -65,6 +66,7 @@ export default function EditStoryPage() {
       }
 
       setTitle(data.title);
+      setTagline(data.tagline || "");
       setBlurb(data.blurb || "");
       setCoverUrl(data.cover_url || null);
       setStatus(data.status || "ongoing");
@@ -93,6 +95,7 @@ export default function EditStoryPage() {
       .from("stories")
       .update({
         title,
+        tagline: tagline || null,
         blurb: blurb || null,
         cover_url: coverUrl,
         status,
@@ -141,6 +144,20 @@ export default function EditStoryPage() {
             required
             placeholder="My Awesome Story"
           />
+        </div>
+
+        <div>
+          <Label htmlFor="tagline">Tagline</Label>
+          <Input
+            id="tagline"
+            value={tagline}
+            onChange={(e) => setTagline(e.target.value)}
+            placeholder="e.g., Dark fantasy meets post-apocalyptic Pokemon"
+            maxLength={100}
+          />
+          <p className="text-sm text-muted-foreground mt-1">
+            A punchy one-liner that sells your story ({tagline.length}/100)
+          </p>
         </div>
 
         <div>

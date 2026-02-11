@@ -1,0 +1,359 @@
+"use client";
+
+import Link from "next/link";
+import { BookOpen, Eye, Heart, BookMarked, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
+
+export interface StoryCardData {
+  id: string;
+  title: string;
+  tagline?: string | null;
+  blurb?: string | null;
+  cover_url?: string | null;
+  genres?: string[];
+  tags?: string[];
+  status?: string;
+  total_views?: number | null;
+  follower_count?: number | null;
+  chapter_count?: number | null;
+  word_count?: number | null;
+  updated_at?: string;
+  created_at?: string;
+  author?: {
+    username?: string;
+    display_name?: string | null;
+  } | null;
+  profiles?: {
+    username: string;
+    display_name?: string | null;
+  } | null;
+}
+
+interface StoryCardProps {
+  story: StoryCardData;
+  /** Card layout orientation */
+  variant?: "vertical" | "horizontal";
+  /** Size preset */
+  size?: "sm" | "md" | "lg";
+  /** Show reading progress bar */
+  showProgress?: boolean;
+  progress?: { chapter_number: number; total_chapters: number };
+  /** Link destination (defaults to /story/[id]) */
+  href?: string;
+  /** Additional className */
+  className?: string;
+  /** Render children at card bottom (e.g., action buttons) */
+  children?: React.ReactNode;
+}
+
+// Genre color mapping for gradient fallbacks
+const genreGradients: Record<string, string> = {
+  Fantasy: "from-purple-600/30 to-purple-900/50",
+  "Sci-Fi": "from-cyan-600/30 to-cyan-900/50",
+  Romance: "from-pink-600/30 to-pink-900/50",
+  Mystery: "from-slate-600/30 to-slate-900/50",
+  Horror: "from-red-800/30 to-red-950/50",
+  LitRPG: "from-emerald-600/30 to-emerald-900/50",
+  Historical: "from-amber-600/30 to-amber-900/50",
+  Adventure: "from-orange-600/30 to-orange-900/50",
+  Thriller: "from-gray-600/30 to-gray-900/50",
+};
+
+const statusColors: Record<string, string> = {
+  ongoing: "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200",
+  completed: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200",
+  hiatus: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200",
+};
+
+function formatNumber(num: number): string {
+  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+  return num.toString();
+}
+
+function getAuthorName(story: StoryCardData): string {
+  if (story.author?.display_name) return story.author.display_name;
+  if (story.author?.username) return story.author.username;
+  if (story.profiles?.display_name) return story.profiles.display_name;
+  if (story.profiles?.username) return story.profiles.username;
+  return "Unknown";
+}
+
+function getAuthorUsername(story: StoryCardData): string | null {
+  return story.author?.username || story.profiles?.username || null;
+}
+
+export function StoryCard({
+  story,
+  variant = "vertical",
+  size = "md",
+  showProgress = false,
+  progress,
+  href,
+  className,
+  children,
+}: StoryCardProps) {
+  const primaryGenre = story.genres?.[0] || "Fantasy";
+  const gradientClass = genreGradients[primaryGenre] || genreGradients.Fantasy;
+  const linkHref = href || `/story/${story.id}`;
+  const authorUsername = getAuthorUsername(story);
+
+  // Size-based dimensions
+  const sizeConfig = {
+    sm: { width: "w-[140px]", coverHeight: "aspect-[2/3]", titleSize: "text-sm", spacing: "gap-1" },
+    md: { width: "w-[180px]", coverHeight: "aspect-[2/3]", titleSize: "text-base", spacing: "gap-2" },
+    lg: { width: "w-[220px]", coverHeight: "aspect-[2/3]", titleSize: "text-lg", spacing: "gap-3" },
+  };
+
+  const config = sizeConfig[size];
+
+  if (variant === "horizontal") {
+    return (
+      <div className={cn(
+        "flex gap-4 p-4 border rounded-lg bg-card hover:bg-muted/50 transition-colors",
+        className
+      )}>
+        {/* Cover */}
+        <Link href={linkHref} className="shrink-0">
+          {story.cover_url ? (
+            <img
+              src={`${story.cover_url}?t=${new Date(story.updated_at || Date.now()).getTime()}`}
+              alt={`Cover for ${story.title}`}
+              className="w-20 h-28 object-cover rounded"
+            />
+          ) : (
+            <div className={cn(
+              "w-20 h-28 rounded flex items-center justify-center bg-gradient-to-br",
+              gradientClass
+            )}>
+              <BookOpen className="h-6 w-6 text-white/40" />
+            </div>
+          )}
+        </Link>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <Link href={linkHref}>
+                <h3 className="font-semibold text-lg hover:text-primary transition-colors line-clamp-1">
+                  {story.title}
+                </h3>
+              </Link>
+              
+              {authorUsername ? (
+                <Link 
+                  href={`/author/${authorUsername}`}
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  by {getAuthorName(story)}
+                </Link>
+              ) : (
+                <p className="text-sm text-muted-foreground">by {getAuthorName(story)}</p>
+              )}
+            </div>
+
+            {story.status && (
+              <span className={cn(
+                "px-2 py-0.5 rounded text-xs font-medium shrink-0",
+                statusColors[story.status] || statusColors.ongoing
+              )}>
+                {story.status.charAt(0).toUpperCase() + story.status.slice(1)}
+              </span>
+            )}
+          </div>
+
+          {/* Tagline */}
+          {story.tagline && (
+            <p className="text-sm font-medium text-primary/80 mt-1 line-clamp-1">
+              {story.tagline}
+            </p>
+          )}
+
+          {/* Blurb (fallback if no tagline) */}
+          {!story.tagline && story.blurb && (
+            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+              {story.blurb}
+            </p>
+          )}
+
+          {/* Genres */}
+          {story.genres && story.genres.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {story.genres.slice(0, 3).map((genre) => (
+                <Badge key={genre} variant="secondary" className="text-xs">
+                  {genre}
+                </Badge>
+              ))}
+            </div>
+          )}
+
+          {/* Stats row */}
+          <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <BookMarked className="h-3 w-3" />
+              {story.chapter_count || 0} ch
+            </span>
+            <span className="flex items-center gap-1">
+              <Eye className="h-3 w-3" />
+              {formatNumber(story.total_views ?? 0)}
+            </span>
+            <span className="flex items-center gap-1">
+              <Heart className="h-3 w-3" />
+              {formatNumber(story.follower_count ?? 0)}
+            </span>
+            {story.updated_at && (
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {formatDistanceToNow(new Date(story.updated_at), { addSuffix: true })}
+              </span>
+            )}
+          </div>
+
+          {/* Optional action buttons slot */}
+          {children && <div className="mt-3">{children}</div>}
+        </div>
+      </div>
+    );
+  }
+
+  // Vertical variant (default)
+  return (
+    <Link
+      href={linkHref}
+      className={cn(
+        "group block flex-shrink-0",
+        config.width,
+        className
+      )}
+    >
+      <div className="relative overflow-hidden rounded-lg transition-all duration-200 group-hover:scale-[1.02] group-hover:shadow-lg">
+        {/* Cover Image */}
+        <div className={cn("relative overflow-hidden rounded-lg bg-muted", config.coverHeight)}>
+          {story.cover_url ? (
+            <img
+              src={`${story.cover_url}?t=${new Date(story.updated_at || Date.now()).getTime()}`}
+              alt={`Cover for ${story.title}`}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className={cn(
+              "w-full h-full flex items-center justify-center bg-gradient-to-br",
+              gradientClass
+            )}>
+              <BookOpen className="h-10 w-10 text-white/40" />
+            </div>
+          )}
+
+          {/* Hover overlay */}
+          <div className="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-3">
+            {/* Genres on hover */}
+            {story.genres && story.genres.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {story.genres.slice(0, 2).map((genre) => (
+                  <span
+                    key={genre}
+                    className="px-2 py-0.5 bg-white/20 rounded text-xs text-white"
+                  >
+                    {genre}
+                  </span>
+                ))}
+              </div>
+            )}
+            
+            {/* Tags on hover */}
+            {story.tags && story.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {story.tags.slice(0, 3).map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-1.5 py-0.5 bg-primary/30 rounded text-xs text-white/90"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Stats on hover */}
+            <div className="flex items-center gap-2 text-xs text-white/80">
+              <span className="flex items-center gap-1">
+                <Heart className="h-3 w-3" />
+                {formatNumber(story.follower_count ?? 0)}
+              </span>
+              <span className="flex items-center gap-1">
+                <Eye className="h-3 w-3" />
+                {formatNumber(story.total_views ?? 0)}
+              </span>
+              <span className="flex items-center gap-1">
+                <BookMarked className="h-3 w-3" />
+                {story.chapter_count || 0}
+              </span>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          {showProgress && progress && progress.total_chapters > 0 && (
+            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/50">
+              <div
+                className="h-full bg-primary transition-all"
+                style={{
+                  width: `${Math.min(100, (progress.chapter_number / progress.total_chapters) * 100)}%`,
+                }}
+              />
+            </div>
+          )}
+
+          {/* Status badge */}
+          {story.status && story.status !== "ongoing" && (
+            <div className="absolute top-2 right-2">
+              <span className={cn(
+                "px-1.5 py-0.5 rounded text-xs font-medium",
+                statusColors[story.status] || statusColors.ongoing
+              )}>
+                {story.status.charAt(0).toUpperCase() + story.status.slice(1)}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Text content below cover */}
+      <div className={cn("mt-2 px-1", config.spacing)}>
+        <h3 className={cn(
+          "font-medium line-clamp-2 group-hover:text-primary transition-colors",
+          config.titleSize
+        )}>
+          {story.title}
+        </h3>
+        
+        {/* Tagline (if present, shown prominently) */}
+        {story.tagline && (
+          <p className="text-xs text-primary/70 font-medium line-clamp-1 mt-0.5">
+            {story.tagline}
+          </p>
+        )}
+
+        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+          by {getAuthorName(story)}
+        </p>
+
+        {/* Visible stats (non-hover) for medium and large */}
+        {size !== "sm" && (
+          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+            <span className="flex items-center gap-0.5">
+              <Heart className="h-3 w-3" />
+              {formatNumber(story.follower_count ?? 0)}
+            </span>
+            <span className="flex items-center gap-0.5">
+              <BookMarked className="h-3 w-3" />
+              {story.chapter_count || 0}
+            </span>
+          </div>
+        )}
+      </div>
+    </Link>
+  );
+}

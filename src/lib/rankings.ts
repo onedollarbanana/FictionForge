@@ -4,13 +4,16 @@ export interface RankedStory {
   id: string;
   title: string;
   slug: string;
+  tagline: string | null;
   blurb: string;
   cover_url: string | null;
   genres: string[];
+  tags: string[];
   status: string;
   word_count: number;
   chapter_count: number;
   follower_count: number;
+  total_views: number;
   created_at: string;
   updated_at: string;
   author: {
@@ -40,13 +43,16 @@ async function getStoriesWithDetails(
       id,
       title,
       slug,
+      tagline,
       blurb,
       cover_url,
       genres,
+      tags,
       status,
       word_count,
       chapter_count,
       follower_count,
+      total_views,
       created_at,
       updated_at,
       profiles:author_id (

@@ -18,6 +18,7 @@ const STATUS_OPTIONS = [
 
 export default function NewStoryPage() {
   const [title, setTitle] = useState("");
+  const [tagline, setTagline] = useState("");
   const [blurb, setBlurb] = useState("");
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [status, setStatus] = useState("ongoing");
@@ -51,6 +52,7 @@ export default function NewStoryPage() {
       .insert({
         author_id: user.id,
         title,
+        tagline: tagline || null,
         blurb: blurb || null,
         cover_url: coverUrl,
         status,
@@ -98,6 +100,20 @@ export default function NewStoryPage() {
             required
             maxLength={200}
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="tagline">Tagline</Label>
+          <Input
+            id="tagline"
+            value={tagline}
+            onChange={(e) => setTagline(e.target.value)}
+            placeholder="e.g., Dark fantasy meets post-apocalyptic Pokemon"
+            maxLength={100}
+          />
+          <p className="text-xs text-muted-foreground">
+            A punchy one-liner that sells your story ({tagline.length}/100)
+          </p>
         </div>
 
         <div className="space-y-2">

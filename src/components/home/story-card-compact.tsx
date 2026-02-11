@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Heart, BookMarked } from "lucide-react";
+import { BookOpen, Heart, BookMarked, Eye } from "lucide-react";
 import type { RankedStory } from "@/lib/rankings";
 
 interface StoryCardCompactProps {
@@ -52,7 +52,7 @@ export function StoryCardCompact({ story, showProgress, progress }: StoryCardCom
           )}
 
           {/* Hover overlay with stats */}
-          <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-3">
+          <div className="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-3">
             {story.genres && story.genres.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-2">
                 {story.genres.slice(0, 2).map((genre) => (
@@ -65,10 +65,26 @@ export function StoryCardCompact({ story, showProgress, progress }: StoryCardCom
                 ))}
               </div>
             )}
+            {story.tags && story.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {story.tags.slice(0, 3).map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-1.5 py-0.5 bg-primary/30 rounded text-xs text-white/90"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="flex items-center gap-2 text-xs text-white/80">
               <span className="flex items-center gap-1">
                 <Heart className="h-3 w-3" />
                 {formatNumber(story.follower_count || 0)}
+              </span>
+              <span className="flex items-center gap-1">
+                <Eye className="h-3 w-3" />
+                {formatNumber(story.total_views || 0)}
               </span>
               <span className="flex items-center gap-1">
                 <BookMarked className="h-3 w-3" />
@@ -91,11 +107,16 @@ export function StoryCardCompact({ story, showProgress, progress }: StoryCardCom
         )}
       </div>
 
-      {/* Title and Author */}
+      {/* Title, Tagline, and Author */}
       <div className="mt-2 px-1">
         <h3 className="font-medium text-sm line-clamp-2 group-hover:text-primary transition-colors">
           {story.title}
         </h3>
+        {story.tagline && (
+          <p className="text-xs text-primary/70 font-medium line-clamp-1 mt-0.5">
+            {story.tagline}
+          </p>
+        )}
         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
           by {story.author?.display_name || story.author?.username || "Unknown"}
         </p>

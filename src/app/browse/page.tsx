@@ -1,12 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
-import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { BookOpen, Eye, Heart, Clock } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { BookOpen } from "lucide-react";
 import { Suspense } from "react";
 import { BrowseFilters } from "@/components/browse/browse-filters";
-import { AuthorLink } from "@/components/browse/author-link";
+import { StoryCard, type StoryCardData } from "@/components/story/story-card";
 
 export const dynamic = "force-dynamic";
 
@@ -14,22 +11,6 @@ interface SearchParams {
   search?: string;
   genre?: string;
   sort?: string;
-}
-
-interface Story {
-  id: string;
-  title: string;
-  slug: string;
-  blurb: string | null;
-  cover_url: string | null;
-  genres: string[];
-  total_views: number | null;
-  follower_count: number | null;
-  chapter_count: number | null;
-  updated_at: string;
-  profiles: {
-    username: string;
-  } | null;
 }
 
 export default async function BrowsePage({
@@ -46,16 +27,19 @@ export default async function BrowsePage({
     .select(`
       id,
       title,
-      slug,
+      tagline,
       blurb,
       cover_url,
       genres,
+      tags,
+      status,
       total_views,
       follower_count,
       chapter_count,
       updated_at,
       profiles (
-        username
+        username,
+        display_name
       )
     `)
     .order("updated_at", { ascending: false });
@@ -64,13 +48,14 @@ export default async function BrowsePage({
     console.error("Error fetching stories:", error);
   }
 
-  let filteredStories = (stories as unknown as Story[]) || [];
+  let filteredStories = (stories as unknown as StoryCardData[]) || [];
 
   // Apply search filter
   if (search) {
     const searchLower = search.toLowerCase();
     filteredStories = filteredStories.filter((story) =>
       story.title.toLowerCase().includes(searchLower) ||
+      story.tagline?.toLowerCase().includes(searchLower) ||
       story.blurb?.toLowerCase().includes(searchLower) ||
       story.profiles?.username.toLowerCase().includes(searchLower)
     );
@@ -87,13 +72,13 @@ export default async function BrowsePage({
   filteredStories.sort((a, b) => {
     switch (sort) {
       case "newest":
-        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        return new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime();
       case "popular":
         return (b.total_views ?? 0) - (a.total_views ?? 0);
       case "followers":
         return (b.follower_count ?? 0) - (a.follower_count ?? 0);
       default: // "updated"
-        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        return new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime();
     }
   });
 
@@ -124,67 +109,14 @@ export default async function BrowsePage({
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
           {filteredStories.map((story) => (
-            <Link key={story.id} href={`/story/${story.id}`}>
-              <Card className="h-full hover:bg-muted/50 transition-colors overflow-hidden">
-                {/* Cover Image - 2:3 aspect ratio */}
-                {story.cover_url ? (
-                  <div className="w-full aspect-[2/3] overflow-hidden">
-                    <img
-                      src={`${story.cover_url}?t=${new Date(story.updated_at).getTime()}`}
-                      alt={`Cover for ${story.title}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-full aspect-[2/3] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                    <BookOpen className="h-12 w-12 text-primary/40" />
-                  </div>
-                )}
-                
-                <CardContent className="p-4">
-                  <h2 className="font-semibold text-lg mb-1 line-clamp-1">
-                    {story.title}
-                  </h2>
-                  
-                  <div className="text-sm text-muted-foreground mb-2">
-                    by <AuthorLink username={story.profiles?.username || "Unknown"} />
-                  </div>
-
-                  {story.blurb && (
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                      {story.blurb}
-                    </p>
-                  )}
-
-                  {story.genres && story.genres.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {story.genres.slice(0, 3).map((genre) => (
-                        <Badge key={genre} variant="secondary" className="text-xs">
-                          {genre}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Eye className="h-3 w-3" />
-                      {(story.total_views ?? 0).toLocaleString()}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Heart className="h-3 w-3" />
-                      {(story.follower_count ?? 0).toLocaleString()}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {formatDistanceToNow(new Date(story.updated_at), { addSuffix: true })}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
+            <StoryCard
+              key={story.id}
+              story={story}
+              variant="vertical"
+              size="md"
+            />
           ))}
         </div>
       )}
