@@ -16,6 +16,7 @@ export const dynamic = "force-dynamic";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export default async function Home() {
+  // Create a single Supabase client for all queries
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -30,6 +31,14 @@ export default async function Home() {
     author_name: string;
     updated_at: string;
   }[] = [];
+
+  // Start fetching rankings in parallel immediately (don't wait for continue reading)
+  const rankingsPromise = Promise.all([
+    getRisingStars(10, supabase),
+    getPopularThisWeek(10, supabase),
+    getLatestUpdates(10, supabase),
+    getMostFollowed(10, supabase),
+  ]);
 
   if (user) {
     // Get reading progress with story details
@@ -100,13 +109,8 @@ export default async function Home() {
     }
   }
 
-  // Fetch ranking data in parallel
-  const [risingStars, popularThisWeek, latestUpdates, mostFollowed] = await Promise.all([
-    getRisingStars(10),
-    getPopularThisWeek(10),
-    getLatestUpdates(10),
-    getMostFollowed(10),
-  ]);
+  // Wait for rankings to complete
+  const [risingStars, popularThisWeek, latestUpdates, mostFollowed] = await rankingsPromise;
 
   const isLoggedIn = !!user;
 
