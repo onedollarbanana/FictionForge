@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 
@@ -26,8 +26,25 @@ export function useUser(): UseUserReturn {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
+  const fetchProfile = useCallback(async (userId: string) => {
+    const supabase = createClient()
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (profileError && profileError.code !== 'PGRST116') {
+      console.error('Error fetching profile:', profileError)
+      return null
+    }
+
+    return profileData
+  }, [])
+
   useEffect(() => {
     const supabase = createClient()
+    let isMounted = true
 
     async function getUser() {
       try {
@@ -35,49 +52,51 @@ export function useUser(): UseUserReturn {
         
         if (userError) throw userError
         
+        if (!isMounted) return
+
         setUser(user)
 
         if (user) {
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single()
-
-          if (profileError && profileError.code !== 'PGRST116') {
-            throw profileError
+          const profileData = await fetchProfile(user.id)
+          if (isMounted) {
+            setProfile(profileData)
           }
-
-          setProfile(profileData)
         }
       } catch (e) {
-        setError(e as Error)
+        console.error('Error in getUser:', e)
+        if (isMounted) {
+          setError(e as Error)
+        }
       } finally {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
       }
     }
 
     getUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const currentUser = session?.user ?? null
-      setUser(currentUser)
-      
-      if (currentUser) {
-        // Re-fetch profile when user logs in
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', currentUser.id)
-          .single()
-        setProfile(profileData)
-      } else {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return
+
+      // Only handle actual sign-in/sign-out events to avoid race conditions
+      if (event === 'SIGNED_IN' && session?.user) {
+        setUser(session.user)
+        const profileData = await fetchProfile(session.user.id)
+        if (isMounted) {
+          setProfile(profileData)
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null)
         setProfile(null)
       }
     })
 
-    return () => subscription.unsubscribe()
-  }, [])
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
+  }, [fetchProfile])
 
   return { user, profile, loading, error }
 }
