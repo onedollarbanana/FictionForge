@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react'
 import { X, CheckCircle, AlertCircle, Info } from 'lucide-react'
 
 type ToastType = 'success' | 'error' | 'info'
@@ -17,6 +17,20 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | null>(null)
 
+// Global toast queue for use outside React components
+let globalShowToast: ((message: string, type?: ToastType) => void) | null = null
+const pendingToasts: Array<{ message: string; type: ToastType }> = []
+
+// Standalone showToast function for use outside components
+export function showToast(message: string, type: ToastType = 'info') {
+  if (globalShowToast) {
+    globalShowToast(message, type)
+  } else {
+    // Queue toast if provider not ready yet
+    pendingToasts.push({ message, type })
+  }
+}
+
 export function useToast() {
   const context = useContext(ToastContext)
   if (!context) {
@@ -28,7 +42,7 @@ export function useToast() {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
 
-  const showToast = useCallback((message: string, type: ToastType = 'info') => {
+  const showToastInternal = useCallback((message: string, type: ToastType = 'info') => {
     const id = Math.random().toString(36).substring(2, 9)
     setToasts(prev => [...prev, { id, message, type }])
     
@@ -37,6 +51,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       setToasts(prev => prev.filter(t => t.id !== id))
     }, 4000)
   }, [])
+
+  // Register global showToast and flush pending toasts
+  useEffect(() => {
+    globalShowToast = showToastInternal
+    
+    // Flush any pending toasts
+    pendingToasts.forEach(t => showToastInternal(t.message, t.type))
+    pendingToasts.length = 0
+    
+    return () => {
+      globalShowToast = null
+    }
+  }, [showToastInternal])
 
   const removeToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id))
@@ -65,7 +92,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={{ showToast: showToastInternal }}>
       {children}
       
       {/* Toast container */}
