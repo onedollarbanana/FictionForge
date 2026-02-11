@@ -1,13 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { BookOpen, Eye, Heart, Users } from 'lucide-react'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { BookOpen, Eye, Heart, Users, Star } from 'lucide-react'
 
 interface StoryCardCompactProps {
   story: {
@@ -22,6 +16,7 @@ interface StoryCardCompactProps {
     total_views?: number | null
     total_likes?: number | null
     follower_count?: number | null
+    rating_average?: number | null
     author?: {
       username: string
     } | null
@@ -39,95 +34,115 @@ export function StoryCardCompact({ story, rank, showRank = false }: StoryCardCom
   }
 
   return (
-    <TooltipProvider>
-      <Tooltip delayDuration={300}>
-        <TooltipTrigger asChild>
-          <Link href={`/story/${story.id}`} className="block group flex-shrink-0 w-[160px] sm:w-[180px]">
-            <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden bg-muted shadow-md group-hover:shadow-lg transition-shadow">
-              {showRank && rank && (
-                <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm shadow">
-                  {rank}
-                </div>
-              )}
-              {story.cover_url ? (
-                <img
-                  src={`${story.cover_url}?t=${Date.now()}`}
-                  alt={story.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-                  <BookOpen className="w-12 h-12 text-primary/40" />
-                </div>
-              )}
-              {/* Gradient overlay for text readability */}
-              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-              {/* Title overlay */}
-              <div className="absolute inset-x-0 bottom-0 p-3">
-                <h3 className="font-semibold text-white text-sm line-clamp-2 leading-tight drop-shadow-lg">
-                  {story.title}
-                </h3>
-                {story.author && (
-                  <p className="text-white/70 text-xs mt-0.5 truncate">
-                    by {story.author.username}
-                  </p>
-                )}
-              </div>
+    <Link href={`/story/${story.id}`} className="block group flex-shrink-0 w-[180px] sm:w-[200px]">
+      <div className="bg-card border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow h-full flex flex-col">
+        {/* Cover Image */}
+        <div className="relative w-full aspect-[3/4] overflow-hidden bg-muted">
+          {showRank && rank && (
+            <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm shadow">
+              {rank}
             </div>
-          </Link>
-        </TooltipTrigger>
-        <TooltipContent side="bottom" className="max-w-xs p-3">
-          <div className="space-y-2">
-            <p className="font-semibold">{story.title}</p>
-            {story.tagline && (
-              <p className="text-xs text-primary/70 font-medium mt-0.5">
-                {story.tagline}
+          )}
+          {story.cover_url ? (
+            <img
+              src={`${story.cover_url}?t=${Date.now()}`}
+              alt={story.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+              <BookOpen className="w-10 h-10 text-primary/40" />
+            </div>
+          )}
+        </div>
+        
+        {/* Content Section */}
+        <div className="p-3 flex-1 flex flex-col gap-2">
+          {/* Title & Author */}
+          <div>
+            <h3 className="font-semibold text-sm line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+              {story.title}
+            </h3>
+            {story.author && (
+              <p className="text-muted-foreground text-xs mt-0.5 truncate">
+                by {story.author.username}
               </p>
             )}
-            {(story.genres?.length || story.tags?.length) ? (
-              <div className="flex flex-wrap gap-1">
-                {story.genres?.slice(0, 2).map(genre => (
-                  <span key={genre} className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
-                    {genre}
-                  </span>
-                ))}
-                {story.tags?.slice(0, 3).map(tag => (
-                  <span key={tag} className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            ) : null}
-            <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1 border-t">
-              <span className="flex items-center gap-1">
-                <BookOpen className="w-3 h-3" />
-                {story.chapter_count ?? 0}
-              </span>
-              <span className="flex items-center gap-1">
-                <Eye className="w-3 h-3" />
-                {formatNumber(story.total_views)}
-              </span>
-              <span className="flex items-center gap-1">
-                <Heart className="w-3 h-3" />
-                {formatNumber(story.total_likes)}
-              </span>
-              <span className="flex items-center gap-1">
-                <Users className="w-3 h-3" />
-                {formatNumber(story.follower_count)}
-              </span>
-            </div>
           </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+          
+          {/* Tagline */}
+          {story.tagline && (
+            <p className="text-xs text-muted-foreground line-clamp-2 leading-snug">
+              {story.tagline}
+            </p>
+          )}
+          
+          {/* Genres & Tags */}
+          {(story.genres?.length || story.tags?.length) ? (
+            <div className="flex flex-wrap gap-1">
+              {story.genres?.slice(0, 2).map(genre => (
+                <span key={genre} className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.5 rounded font-medium">
+                  {genre}
+                </span>
+              ))}
+              {story.tags?.slice(0, 2).map(tag => (
+                <span key={tag} className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          
+          {/* Stats Row */}
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-auto pt-2 border-t">
+            <span className="flex items-center gap-0.5" title="Chapters">
+              <BookOpen className="w-3 h-3" />
+              {story.chapter_count ?? 0}
+            </span>
+            <span className="flex items-center gap-0.5" title="Views">
+              <Eye className="w-3 h-3" />
+              {formatNumber(story.total_views)}
+            </span>
+            <span className="flex items-center gap-0.5" title="Likes">
+              <Heart className="w-3 h-3" />
+              {formatNumber(story.total_likes)}
+            </span>
+            <span className="flex items-center gap-0.5" title="Followers">
+              <Users className="w-3 h-3" />
+              {formatNumber(story.follower_count)}
+            </span>
+            {story.rating_average && story.rating_average > 0 && (
+              <span className="flex items-center gap-0.5 ml-auto text-amber-500" title="Rating">
+                <Star className="w-3 h-3 fill-current" />
+                {story.rating_average.toFixed(1)}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </Link>
   )
 }
 
 // Skeleton for loading state
 export function StoryCardCompactSkeleton() {
   return (
-    <div className="w-[160px] sm:w-[180px] aspect-[2/3] rounded-lg overflow-hidden bg-muted animate-pulse">
-      <div className="w-full h-full bg-gradient-to-br from-muted to-muted-foreground/10" />
+    <div className="w-[180px] sm:w-[200px] bg-card border rounded-lg overflow-hidden">
+      <div className="w-full aspect-[3/4] bg-muted animate-pulse" />
+      <div className="p-3 space-y-2">
+        <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
+        <div className="h-3 bg-muted rounded animate-pulse w-1/2" />
+        <div className="h-3 bg-muted rounded animate-pulse w-full" />
+        <div className="flex gap-1 pt-1">
+          <div className="h-4 w-12 bg-muted rounded animate-pulse" />
+          <div className="h-4 w-10 bg-muted rounded animate-pulse" />
+        </div>
+        <div className="flex gap-2 pt-2 border-t">
+          <div className="h-3 w-6 bg-muted rounded animate-pulse" />
+          <div className="h-3 w-6 bg-muted rounded animate-pulse" />
+          <div className="h-3 w-6 bg-muted rounded animate-pulse" />
+        </div>
+      </div>
     </div>
   )
 }
