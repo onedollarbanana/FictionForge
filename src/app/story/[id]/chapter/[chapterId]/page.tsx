@@ -8,6 +8,7 @@ import { ReadingProgressTracker } from "@/components/reader/reading-progress-tra
 import { ViewTracker } from "@/components/reader/view-tracker";
 import { CommentList } from "@/components/reader/comment-list";
 import { ChapterContentWrapper } from "@/components/reader/chapter-content-wrapper";
+import { KeyboardNavigation } from "@/components/reader/keyboard-navigation";
 import { ChevronLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -91,6 +92,13 @@ export default async function ChapterReadingPage({ params }: PageProps) {
 
       {/* Track views (unique per session/user) */}
       <ViewTracker chapterId={chapterId} storyId={storyId} />
+
+      {/* Keyboard navigation: arrows for prev/next, Escape for story page */}
+      <KeyboardNavigation
+        storyId={storyId}
+        prevChapterId={prevChapter?.id}
+        nextChapterId={nextChapter?.id}
+      />
 
       <ChapterContentWrapper headerContent={headerContent}>
         <header className="mb-8">

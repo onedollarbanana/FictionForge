@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react'
 import { ReadingSettingsPanel } from './reading-settings-panel'
+import { ScrollProgressBar } from './scroll-progress-bar'
 import {
   useReadingSettings,
   fontFamilyClasses,
@@ -42,6 +43,9 @@ export function ChapterContentWrapper({ children, headerContent }: ChapterConten
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${theme.bg} ${theme.text}`}>
+      {/* Scroll Progress Bar */}
+      <ScrollProgressBar />
+      
       {/* Compact Header with Settings Button */}
       <div className={`border-b sticky top-0 z-10 backdrop-blur ${theme.bg}/95 ${theme.border}`}>
         <div className={`container mx-auto px-4 py-3 ${widthClass}`}>
