@@ -16,6 +16,7 @@ interface LibraryStoryCardProps {
       title: string;
       slug: string;
       blurb: string | null;
+      tagline: string | null;
       cover_url: string | null;
       chapter_count: number | null;
       author: {
@@ -60,6 +61,11 @@ export function LibraryStoryCard({ follow, onRemove }: LibraryStoryCardProps) {
         <p className="text-sm text-muted-foreground">
           by {story.author?.username || "Unknown"}
         </p>
+        {story.tagline && (
+          <p className="text-sm text-muted-foreground/80 italic mt-1 line-clamp-1">
+            {story.tagline}
+          </p>
+        )}
         <p className="text-sm text-muted-foreground mt-1">
           {story.chapter_count || 0} chapters
         </p>

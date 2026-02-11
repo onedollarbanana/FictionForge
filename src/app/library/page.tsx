@@ -17,6 +17,7 @@ type FollowWithStory = {
     title: string
     slug: string
     blurb: string | null
+    tagline: string | null
     cover_url: string | null
     updated_at: string
     chapter_count: number | null
@@ -57,6 +58,7 @@ export default async function LibraryPage() {
         title,
         slug,
         blurb,
+        tagline,
         cover_url,
         updated_at,
         chapter_count,
@@ -206,6 +208,11 @@ export default async function LibraryPage() {
           <p className="text-sm text-muted-foreground">
             by {story.author?.username || 'Unknown'}
           </p>
+          {story.tagline && (
+            <p className="text-sm text-muted-foreground/80 italic mt-1 line-clamp-1">
+              {story.tagline}
+            </p>
+          )}
 
           <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
             <span>{chaptersRead} / {totalChapters} chapters</span>

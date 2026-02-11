@@ -8,6 +8,7 @@ interface Story {
   id: string;
   title: string;
   blurb: string | null;
+  tagline: string | null;
   cover_url: string | null;
   status: string;
   created_at: string;
@@ -62,6 +63,11 @@ export function StoryCard({ story }: StoryCardProps) {
               </span>
             </div>
             
+            {story.tagline && (
+              <p className="text-sm text-primary/80 italic mb-1">
+                {story.tagline}
+              </p>
+            )}
             {story.blurb && (
               <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
                 {story.blurb}

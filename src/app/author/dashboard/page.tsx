@@ -5,11 +5,13 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { StoryCard } from "@/components/author/story-card";
+import { DashboardStatsSkeleton, StoryListItemSkeleton } from "@/components/ui/skeleton";
 
 interface Story {
   id: string;
   title: string;
   blurb: string | null;
+  tagline: string | null;
   cover_url: string | null;
   status: string;
   created_at: string;
@@ -65,8 +67,19 @@ export default function AuthorDashboard() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <div className="h-9 w-48 bg-muted rounded animate-pulse" />
+          <div className="h-10 w-28 bg-muted rounded animate-pulse" />
+        </div>
+        <div className="mb-8">
+          <DashboardStatsSkeleton />
+        </div>
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <StoryListItemSkeleton key={i} />
+          ))}
+        </div>
       </div>
     );
   }
