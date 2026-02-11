@@ -1,102 +1,99 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { GenrePicker } from "@/components/author/genre-picker";
-import { CoverUpload } from "@/components/story/cover-upload";
-
-const STATUS_OPTIONS = [
-  { value: "ongoing", label: "Ongoing" },
-  { value: "completed", label: "Completed" },
-  { value: "hiatus", label: "On Hiatus" },
-];
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { createClient } from '@/lib/supabase/client'
+import { showToast } from '@/components/ui/toast'
+import { ArrowLeft, Loader2 } from 'lucide-react'
+import Link from 'next/link'
+import { MultiSelect } from '@/components/ui/multi-select'
+import { GENRES, TAGS } from '@/lib/constants'
 
 export default function NewStoryPage() {
-  const [title, setTitle] = useState("");
-  const [tagline, setTagline] = useState("");
-  const [blurb, setBlurb] = useState("");
-  const [coverUrl, setCoverUrl] = useState<string | null>(null);
-  const [status, setStatus] = useState("ongoing");
-  const [genres, setGenres] = useState<string[]>([]);
-  const [tags, setTags] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+  const [title, setTitle] = useState('')
+  const [tagline, setTagline] = useState('')
+  const [blurb, setBlurb] = useState('')
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([])
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    e.preventDefault()
     
-    if (!user) {
-      setError("You must be logged in to create a story");
-      setLoading(false);
-      return;
+    if (!title.trim()) {
+      showToast('Please enter a title', 'error')
+      return
     }
 
-    const tagArray = tags
-      .split(",")
-      .map((t) => t.trim().toLowerCase())
-      .filter((t) => t.length > 0);
-
-    const { data, error: insertError } = await supabase
-      .from("stories")
-      .insert({
-        author_id: user.id,
-        title,
-        tagline: tagline || null,
-        blurb: blurb || null,
-        cover_url: coverUrl,
-        status,
-        genres,
-        tags: tagArray,
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      setError(insertError.message);
-      setLoading(false);
-      return;
+    if (selectedGenres.length === 0) {
+      showToast('Please select at least one genre', 'error')
+      return
     }
 
-    router.push(`/author/stories/${data.id}`);
-  };
+    setIsLoading(true)
+
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        showToast('Please log in to create a story', 'error')
+        router.push('/login')
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('stories')
+        .insert({
+          title: title.trim(),
+          tagline: tagline.trim() || null,
+          blurb: blurb.trim() || null,
+          author_id: user.id,
+          genres: selectedGenres,
+          tags: selectedTags.length > 0 ? selectedTags : null,
+          status: 'ongoing',
+          word_count: 0,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      showToast('Story created! Now add your first chapter.', 'success')
+      router.push(`/author/stories/${data.id}`)
+    } catch (error) {
+      console.error('Error creating story:', error)
+      showToast('Failed to create story', 'error')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
+    <div className="max-w-2xl mx-auto py-8 px-4">
+      <Link 
+        href="/author/dashboard"
+        className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-6"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Dashboard
+      </Link>
+
       <h1 className="text-3xl font-bold mb-8">Create New Story</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {error && (
-          <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-950 rounded">
-            {error}
-          </div>
-        )}
-
         <div className="space-y-2">
-          <Label>Cover Image</Label>
-          <CoverUpload currentCoverUrl={coverUrl} onUpload={setCoverUrl} />
-          <p className="text-xs text-muted-foreground">
-            Recommended: 400x600px (2:3 ratio). You can add this later.
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="title">Title *</Label>
+          <Label htmlFor="title">Title</Label>
           <Input
             id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Your story title"
+            placeholder="Enter your story title..."
             required
             maxLength={200}
           />
@@ -109,10 +106,10 @@ export default function NewStoryPage() {
             value={tagline}
             onChange={(e) => setTagline(e.target.value)}
             placeholder="e.g., Dark fantasy meets post-apocalyptic Pokemon"
-            maxLength={100}
+            maxLength={80}
           />
           <p className="text-xs text-muted-foreground">
-            A punchy one-liner that sells your story ({tagline.length}/100)
+            A punchy one-liner that sells your story ({tagline.length}/80)
           </p>
         </div>
 
@@ -132,44 +129,28 @@ export default function NewStoryPage() {
         </div>
 
         <div className="space-y-2">
-          <Label>Status</Label>
-          <div className="flex gap-2">
-            {STATUS_OPTIONS.map((opt) => (
-              <Button
-                key={opt.value}
-                type="button"
-                variant={status === opt.value ? "default" : "outline"}
-                size="sm"
-                onClick={() => setStatus(opt.value)}
-              >
-                {opt.label}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Genres (select up to 5)</Label>
-          <GenrePicker selected={genres} onChange={setGenres} max={5} />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="tags">Tags</Label>
-          <Input
-            id="tags"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            placeholder="litrpg, progression, magic system (comma separated)"
+          <Label>Genres (select up to 3)</Label>
+          <MultiSelect
+            options={GENRES}
+            selected={selectedGenres}
+            onChange={setSelectedGenres}
+            maxItems={3}
+            placeholder="Select genres..."
           />
-          <p className="text-xs text-muted-foreground">
-            Comma-separated tags to help readers find your story
-          </p>
         </div>
 
-        <div className="flex gap-4">
-          <Button type="submit" disabled={loading || !title.trim()}>
-            {loading ? "Creating..." : "Create Story"}
-          </Button>
+        <div className="space-y-2">
+          <Label>Tags (optional, up to 10)</Label>
+          <MultiSelect
+            options={TAGS}
+            selected={selectedTags}
+            onChange={setSelectedTags}
+            maxItems={10}
+            placeholder="Select tags..."
+          />
+        </div>
+
+        <div className="flex justify-end gap-3">
           <Button
             type="button"
             variant="outline"
@@ -177,8 +158,12 @@ export default function NewStoryPage() {
           >
             Cancel
           </Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Create Story
+          </Button>
         </div>
       </form>
     </div>
-  );
+  )
 }

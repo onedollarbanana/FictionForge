@@ -1,126 +1,135 @@
-"use client";
+'use client'
 
-import Link from "next/link";
-import { BookOpen, Heart, BookMarked, Eye } from "lucide-react";
-import type { RankedStory } from "@/lib/rankings";
+import Link from 'next/link'
+import Image from 'next/image'
+import { BookOpen, Eye, Heart, Users, ChevronUp } from 'lucide-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 interface StoryCardCompactProps {
-  story: RankedStory;
-  showProgress?: boolean;
-  progress?: { chapter_number: number; total_chapters: number };
+  story: {
+    id: string
+    title: string
+    blurb: string | null
+    tagline: string | null
+    cover_url: string | null
+    genres: string[] | null
+    tags: string[] | null
+    chapter_count?: number | null
+    total_views?: number | null
+    total_likes?: number | null
+    follower_count?: number | null
+    author?: {
+      username: string
+    } | null
+  }
+  rank?: number
+  showRank?: boolean
 }
 
-export function StoryCardCompact({ story, showProgress, progress }: StoryCardCompactProps) {
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-    return num.toString();
-  };
-
-  // Genre color mapping for gradient fallbacks
-  const genreColors: Record<string, string> = {
-    Fantasy: "from-purple-600/30 to-purple-900/50",
-    "Sci-Fi": "from-cyan-600/30 to-cyan-900/50",
-    Romance: "from-pink-600/30 to-pink-900/50",
-    Mystery: "from-slate-600/30 to-slate-900/50",
-    Horror: "from-red-800/30 to-red-950/50",
-    LitRPG: "from-emerald-600/30 to-emerald-900/50",
-    Historical: "from-amber-600/30 to-amber-900/50",
-  };
-
-  const primaryGenre = story.genres?.[0] || "Fantasy";
-  const gradientClass = genreColors[primaryGenre] || genreColors.Fantasy;
+export function StoryCardCompact({ story, rank, showRank = false }: StoryCardCompactProps) {
+  const formatNumber = (num: number | null | undefined) => {
+    if (!num) return '0'
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
+    return num.toString()
+  }
 
   return (
-    <Link 
-      href={`/story/${story.id}`}
-      className="group block flex-shrink-0 w-[160px] sm:w-[180px]"
-    >
-      <div className="relative overflow-hidden rounded-lg transition-all duration-200 group-hover:scale-[1.02] group-hover:shadow-lg">
-        {/* Cover Image - 2:3 aspect ratio */}
-        <div className="aspect-[2/3] relative overflow-hidden rounded-lg bg-muted">
-          {story.cover_url ? (
-            <img
-              src={`${story.cover_url}?t=${new Date(story.updated_at || Date.now()).getTime()}`}
-              alt={`Cover for ${story.title}`}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className={`w-full h-full bg-gradient-to-br ${gradientClass} flex items-center justify-center`}>
-              <BookOpen className="h-10 w-10 text-white/40" />
+    <TooltipProvider>
+      <Tooltip delayDuration={300}>
+        <TooltipTrigger asChild>
+          <Link href={`/story/${story.id}`} className="block group">
+            <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden bg-muted shadow-md group-hover:shadow-lg transition-shadow">
+              {showRank && rank && (
+                <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm shadow">
+                  {rank}
+                </div>
+              )}
+              {story.cover_url ? (
+                <Image
+                  src={story.cover_url}
+                  alt={story.title}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+                  <BookOpen className="w-12 h-12 text-primary/40" />
+                </div>
+              )}
+              {/* Gradient overlay for text readability */}
+              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+              {/* Title overlay */}
+              <div className="absolute inset-x-0 bottom-0 p-3">
+                <h3 className="font-semibold text-white text-sm line-clamp-2 leading-tight drop-shadow-lg">
+                  {story.title}
+                </h3>
+                {story.author && (
+                  <p className="text-white/70 text-xs mt-0.5 truncate">
+                    by {story.author.username}
+                  </p>
+                )}
+              </div>
             </div>
-          )}
-
-          {/* Hover overlay with stats */}
-          <div className="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-3">
-            {story.genres && story.genres.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-2">
-                {story.genres.slice(0, 2).map((genre) => (
-                  <span
-                    key={genre}
-                    className="px-2 py-0.5 bg-white/20 rounded text-xs text-white"
-                  >
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-xs p-3">
+          <div className="space-y-2">
+            <p className="font-semibold">{story.title}</p>
+            {story.tagline && (
+              <p className="text-xs text-primary/70 font-medium mt-0.5">
+                {story.tagline}
+              </p>
+            )}
+            {(story.genres?.length || story.tags?.length) ? (
+              <div className="flex flex-wrap gap-1">
+                {story.genres?.slice(0, 2).map(genre => (
+                  <span key={genre} className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
                     {genre}
                   </span>
                 ))}
-              </div>
-            )}
-            {story.tags && story.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-2">
-                {story.tags.slice(0, 3).map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-1.5 py-0.5 bg-primary/30 rounded text-xs text-white/90"
-                  >
-                    #{tag}
+                {story.tags?.slice(0, 3).map(tag => (
+                  <span key={tag} className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+                    {tag}
                   </span>
                 ))}
               </div>
-            )}
-            <div className="flex items-center gap-2 text-xs text-white/80">
+            ) : null}
+            <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1 border-t">
               <span className="flex items-center gap-1">
-                <Heart className="h-3 w-3" />
-                {formatNumber(story.follower_count || 0)}
+                <BookOpen className="w-3 h-3" />
+                {story.chapter_count ?? 0}
               </span>
               <span className="flex items-center gap-1">
-                <Eye className="h-3 w-3" />
-                {formatNumber(story.total_views || 0)}
+                <Eye className="w-3 h-3" />
+                {formatNumber(story.total_views)}
               </span>
               <span className="flex items-center gap-1">
-                <BookMarked className="h-3 w-3" />
-                {story.chapter_count || 0} ch
+                <Heart className="w-3 h-3" />
+                {formatNumber(story.total_likes)}
+              </span>
+              <span className="flex items-center gap-1">
+                <Users className="w-3 h-3" />
+                {formatNumber(story.follower_count)}
               </span>
             </div>
           </div>
-        </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
+}
 
-        {/* Progress bar for Continue Reading */}
-        {showProgress && progress && progress.total_chapters > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/50">
-            <div
-              className="h-full bg-primary transition-all"
-              style={{
-                width: `${Math.min(100, (progress.chapter_number / progress.total_chapters) * 100)}%`,
-              }}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Title, Tagline, and Author */}
-      <div className="mt-2 px-1">
-        <h3 className="font-medium text-sm line-clamp-2 group-hover:text-primary transition-colors">
-          {story.title}
-        </h3>
-        {story.tagline && (
-          <p className="text-xs text-primary/70 font-medium line-clamp-1 mt-0.5">
-            {story.tagline}
-          </p>
-        )}
-        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-          by {story.author?.display_name || story.author?.username || "Unknown"}
-        </p>
-      </div>
-    </Link>
-  );
+// Skeleton for loading state
+export function StoryCardCompactSkeleton() {
+  return (
+    <div className="w-full aspect-[2/3] rounded-lg overflow-hidden bg-muted animate-pulse">
+      <div className="w-full h-full bg-gradient-to-br from-muted to-muted-foreground/10" />
+    </div>
+  )
 }

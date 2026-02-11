@@ -56,7 +56,7 @@ export function MobileNav({ onLogout }: MobileNavProps) {
 
       {/* Slide-out nav */}
       <div
-        className={`fixed top-0 right-0 h-full w-72 bg-background border-l shadow-xl z-50 transform transition-transform duration-200 ease-in-out md:hidden ${
+        className={`fixed top-0 right-0 h-full w-72 bg-background dark:bg-zinc-900 border-l border-border shadow-xl z-50 transform transition-transform duration-200 ease-in-out md:hidden ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

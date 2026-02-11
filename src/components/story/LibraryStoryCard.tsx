@@ -1,84 +1,86 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import Link from "next/link";
-import { BookOpen } from "lucide-react";
-import { StatusDropdown } from "./StatusDropdown";
-
-type FollowStatus = "reading" | "finished" | "dropped";
+import Link from 'next/link'
+import Image from 'next/image'
+import { StatusDropdown } from './StatusDropdown'
+import { useState } from 'react'
 
 interface LibraryStoryCardProps {
-  follow: {
-    id: string;
-    status: string;
-    story: {
-      id: string;
-      title: string;
-      slug: string;
-      blurb: string | null;
-      tagline: string | null;
-      cover_url: string | null;
-      chapter_count: number | null;
-      author: {
-        username: string;
-      } | null;
-    };
-  };
-  onRemove?: () => void;
+  story: {
+    id: string
+    title: string
+    blurb: string | null
+    tagline: string | null
+    cover_url: string | null
+    author: {
+      username: string
+    } | null
+    chapters?: {
+      count: number
+    }[]
+    chapter_count?: number
+  }
+  status: string
 }
 
-export function LibraryStoryCard({ follow, onRemove }: LibraryStoryCardProps) {
-  const [removed, setRemoved] = useState(false);
-  const story = follow.story;
-
-  if (removed || !story) return null;
-
-  function handleUnfollow() {
-    setRemoved(true);
-    onRemove?.();
-  }
-
+export function LibraryStoryCard({ story, status: initialStatus }: LibraryStoryCardProps) {
+  const [status, setStatus] = useState<string | null>(initialStatus)
+  
+  // If removed from library, don't render
+  if (status === null) return null
+  
+  const chapterCount = story.chapter_count ?? story.chapters?.[0]?.count ?? 0
+  
   return (
-    <div className="flex gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+    <div className="flex gap-4 p-4 border rounded-lg hover:border-primary/50 transition-colors bg-card">
+      {/* Cover */}
       <Link href={`/story/${story.id}`} className="shrink-0">
-        {story.cover_url ? (
-          <img
-            src={story.cover_url}
-            alt={story.title}
-            className="w-16 h-24 object-cover rounded"
-          />
-        ) : (
-          <div className="w-16 h-24 bg-muted rounded flex items-center justify-center">
-            <BookOpen className="h-6 w-6 text-muted-foreground" />
-          </div>
-        )}
+        <div className="relative w-20 h-28 rounded overflow-hidden bg-muted">
+          {story.cover_url ? (
+            <Image
+              src={story.cover_url}
+              alt={story.title}
+              fill
+              className="object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-2xl">
+              📖
+            </div>
+          )}
+        </div>
       </Link>
       
+      {/* Content */}
       <div className="flex-1 min-w-0">
-        <Link href={`/story/${story.id}`}>
-          <h3 className="font-semibold truncate hover:underline">{story.title}</h3>
-        </Link>
-        <p className="text-sm text-muted-foreground">
-          by {story.author?.username || "Unknown"}
-        </p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <Link href={`/story/${story.id}`}>
+              <h3 className="font-semibold hover:text-primary transition-colors line-clamp-1">
+                {story.title}
+              </h3>
+            </Link>
+            <p className="text-sm text-muted-foreground">
+              by {story.author?.username || 'Unknown'}
+            </p>
+          </div>
+          <StatusDropdown
+            storyId={story.id}
+            currentStatus={status}
+            onStatusChange={setStatus}
+          />
+        </div>
+        
         {story.tagline && (
-          <p className="text-sm text-muted-foreground/80 italic mt-1 line-clamp-1">
+          <p className="text-sm text-muted-foreground/80 italic mt-1">
             {story.tagline}
           </p>
         )}
+        
         <p className="text-sm text-muted-foreground mt-1">
-          {story.chapter_count || 0} chapters
+          {chapterCount} chapter{chapterCount !== 1 ? 's' : ''}
         </p>
       </div>
-      
-      <div className="shrink-0 self-center">
-        <StatusDropdown
-          followId={follow.id}
-          storyId={story.id}
-          currentStatus={follow.status as FollowStatus}
-          onUnfollow={handleUnfollow}
-        />
-      </div>
     </div>
-  );
+  )
 }
