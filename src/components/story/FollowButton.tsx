@@ -31,35 +31,60 @@ export function FollowButton({ storyId, initialFollowerCount = 0 }: FollowButton
 
   // Load current follow state on mount
   useEffect(() => {
+    let isMounted = true;
+    
     async function loadFollowState() {
-      const supabase = createClient();
-      
-      // Check if user is logged in
-      const { data: { user } } = await supabase.auth.getUser();
-      setUserId(user?.id ?? null);
-      
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+      try {
+        const supabase = createClient();
+        
+        // Check if user is logged in
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError) {
+          console.error("Auth error in FollowButton:", authError);
+        }
+        
+        if (!isMounted) return;
+        
+        setUserId(user?.id ?? null);
+        
+        if (!user) {
+          setLoading(false);
+          return;
+        }
 
-      // Check if user follows this story
-      const { data: follow } = await supabase
-        .from("follows")
-        .select("id, status")
-        .eq("user_id", user.id)
-        .eq("story_id", storyId)
-        .single();
+        // Check if user follows this story
+        const { data: follow, error: followError } = await supabase
+          .from("follows")
+          .select("id, status")
+          .eq("user_id", user.id)
+          .eq("story_id", storyId)
+          .maybeSingle(); // Use maybeSingle() instead of single() to avoid error when no row
 
-      if (follow) {
-        setIsFollowing(true);
-        setStatus(follow.status as FollowStatus);
+        if (followError) {
+          console.error("Follow query error:", followError);
+        }
+
+        if (!isMounted) return;
+
+        if (follow) {
+          setIsFollowing(true);
+          setStatus(follow.status as FollowStatus);
+        }
+      } catch (err) {
+        console.error("FollowButton loadFollowState error:", err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-      
-      setLoading(false);
     }
 
     loadFollowState();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [storyId]);
 
   // Close dropdown when clicking outside
