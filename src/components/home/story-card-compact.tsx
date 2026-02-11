@@ -1,8 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
-import { BookOpen, Eye, Heart, Users, ChevronUp } from 'lucide-react'
+import { BookOpen, Eye, Heart, Users } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
@@ -43,7 +42,7 @@ export function StoryCardCompact({ story, rank, showRank = false }: StoryCardCom
     <TooltipProvider>
       <Tooltip delayDuration={300}>
         <TooltipTrigger asChild>
-          <Link href={`/story/${story.id}`} className="block group">
+          <Link href={`/story/${story.id}`} className="block group flex-shrink-0 w-[160px] sm:w-[180px]">
             <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden bg-muted shadow-md group-hover:shadow-lg transition-shadow">
               {showRank && rank && (
                 <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm shadow">
@@ -51,11 +50,10 @@ export function StoryCardCompact({ story, rank, showRank = false }: StoryCardCom
                 </div>
               )}
               {story.cover_url ? (
-                <Image
-                  src={story.cover_url}
+                <img
+                  src={`${story.cover_url}?t=${Date.now()}`}
                   alt={story.title}
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
@@ -128,7 +126,7 @@ export function StoryCardCompact({ story, rank, showRank = false }: StoryCardCom
 // Skeleton for loading state
 export function StoryCardCompactSkeleton() {
   return (
-    <div className="w-full aspect-[2/3] rounded-lg overflow-hidden bg-muted animate-pulse">
+    <div className="w-[160px] sm:w-[180px] aspect-[2/3] rounded-lg overflow-hidden bg-muted animate-pulse">
       <div className="w-full h-full bg-gradient-to-br from-muted to-muted-foreground/10" />
     </div>
   )
