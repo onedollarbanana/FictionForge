@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { AuthorStoryCard } from '@/components/author/story-card'
-import { ViewsChart } from '@/components/author/views-chart'
+import { ViewsOverTimeChart } from '@/components/author/views-over-time-chart'
 import { Button } from '@/components/ui/button'
 import { Plus, BookOpen, Eye, Users, Heart, FileText, BarChart3 } from 'lucide-react'
 
@@ -260,7 +260,7 @@ export default function AuthorDashboard() {
       )}
 
       {/* Views Chart */}
-      <ViewsChart authorId={user.id} />
+      <ViewsOverTimeChart authorId={user.id} />
 
       {/* Stories Section */}
       <div>
@@ -285,7 +285,7 @@ export default function AuthorDashboard() {
           <div className="grid gap-4">
             {stories.map((story) => (
               <AuthorStoryCard key={story.id} story={story} />
-            )}
+            ))}
           </div>
         )}
       </div>
