@@ -9,7 +9,7 @@ interface Story {
   id: string;
   title: string;
   tagline: string | null;
-  description: string;
+  blurb: string;
   cover_url: string | null;
   status: string;
   created_at: string;
