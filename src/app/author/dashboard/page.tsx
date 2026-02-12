@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { AuthorStoryCard } from '@/components/author/story-card'
 import { ViewsChart } from '@/components/author/views-chart'
+import { ChapterEngagementTable } from '@/components/author/chapter-engagement-table'
 import { Button } from '@/components/ui/button'
 import { Plus, BookOpen, Eye, Users, Heart, FileText, BarChart3 } from 'lucide-react'
 
@@ -256,6 +257,9 @@ export default function AuthorDashboard() {
 
       {/* Views Chart */}
       <ViewsChart authorId={user.id} />
+
+      {/* Chapter Engagement Table */}
+      <ChapterEngagementTable authorId={user.id} />
 
       {/* Stories List */}
       <div>
