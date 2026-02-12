@@ -1,9 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, ChevronRight, Clock, Megaphone } from "lucide-react";
+import { BookOpen, ChevronRight, Clock, Megaphone, Star } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,8 @@ type FollowWithStory = {
     updated_at: string
     chapter_count: number | null
     last_chapter_at: string | null
+    rating_average: number | null
+    rating_count: number | null
     author: {
       username: string
     } | null
@@ -46,7 +49,7 @@ export default async function LibraryPage() {
     redirect('/login')
   }
 
-  // Fetch user's followed stories with story details
+  // Fetch user's followed stories with story details including ratings
   const { data: follows } = await supabase
     .from('follows')
     .select(`
@@ -63,6 +66,8 @@ export default async function LibraryPage() {
         updated_at,
         chapter_count,
         last_chapter_at,
+        rating_average,
+        rating_count,
         author:profiles!stories_author_id_fkey (
           username
         )
@@ -179,15 +184,25 @@ export default async function LibraryPage() {
     const progressPercent = totalChapters > 0 ? Math.round((chaptersRead / totalChapters) * 100) : 0
     const unreadAnnouncements = follow.unreadAnnouncements
 
+    // Use updated_at for cache busting
+    const imageTimestamp = story.updated_at 
+      ? new Date(story.updated_at).getTime() 
+      : 'v1'
+
     return (
       <div key={follow.id} className="flex gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
         <Link href={`/story/${story.id}`} className="shrink-0 relative">
           {story.cover_url ? (
-            <img
-              src={`${story.cover_url}?t=${new Date(story.updated_at).getTime()}`}
-              alt={story.title}
-              className="w-16 h-24 object-cover rounded"
-            />
+            <div className="relative w-16 h-24 rounded overflow-hidden">
+              <Image
+                src={`${story.cover_url}?t=${imageTimestamp}`}
+                alt={story.title}
+                fill
+                sizes="64px"
+                className="object-cover"
+                loading="lazy"
+              />
+            </div>
           ) : (
             <div className="w-16 h-24 bg-muted rounded flex items-center justify-center">
               <BookOpen className="h-6 w-6 text-muted-foreground" />
@@ -203,7 +218,7 @@ export default async function LibraryPage() {
 
         <div className="flex-1 min-w-0">
           <Link href={`/story/${story.id}`} className="hover:underline">
-            <h3 className="font-semibold truncate">{story.title}</h3>
+            <h3 className="font-semibold line-clamp-2">{story.title}</h3>
           </Link>
           <p className="text-sm text-muted-foreground">
             by {story.author?.username || 'Unknown'}
@@ -218,6 +233,15 @@ export default async function LibraryPage() {
             <span>{chaptersRead} / {totalChapters} chapters</span>
             <span>•</span>
             <span>{progressPercent}%</span>
+            {story.rating_average && Number(story.rating_average) > 0 && (
+              <>
+                <span>•</span>
+                <span className="flex items-center gap-0.5 text-amber-500 font-medium">
+                  <Star className="h-3 w-3 fill-current" />
+                  {Number(story.rating_average).toFixed(1)}
+                </span>
+              </>
+            )}
           </div>
 
           {/* Progress bar */}

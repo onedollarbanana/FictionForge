@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { BookOpen, Eye, Heart, Users, Star } from 'lucide-react'
 
 interface StoryCardCompactProps {
@@ -17,6 +18,8 @@ interface StoryCardCompactProps {
     total_likes?: number | null
     follower_count?: number | null
     rating_average?: number | null
+    rating_count?: number | null
+    updated_at?: string | null
     author?: {
       username: string
     } | null
@@ -33,6 +36,11 @@ export function StoryCardCompact({ story, rank, showRank = false }: StoryCardCom
     return num.toString()
   }
 
+  // Use updated_at for cache busting, fallback to a stable value
+  const imageTimestamp = story.updated_at 
+    ? new Date(story.updated_at).getTime() 
+    : 'v1'
+
   return (
     <Link href={`/story/${story.id}`} className="block group flex-shrink-0 w-[180px] sm:w-[200px]">
       <div className="bg-card border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow h-full flex flex-col">
@@ -44,10 +52,13 @@ export function StoryCardCompact({ story, rank, showRank = false }: StoryCardCom
             </div>
           )}
           {story.cover_url ? (
-            <img
-              src={`${story.cover_url}?t=${Date.now()}`}
+            <Image
+              src={`${story.cover_url}?t=${imageTimestamp}`}
               alt={story.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              fill
+              sizes="(max-width: 640px) 180px, 200px"
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
@@ -58,9 +69,9 @@ export function StoryCardCompact({ story, rank, showRank = false }: StoryCardCom
         
         {/* Content Section */}
         <div className="p-3 flex-1 flex flex-col gap-2">
-          {/* Title & Author */}
+          {/* Title & Author - Title gets 2 lines */}
           <div>
-            <h3 className="font-semibold text-sm line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+            <h3 className="font-semibold text-sm line-clamp-2 leading-tight group-hover:text-primary transition-colors min-h-[2.5rem]">
               {story.title}
             </h3>
             {story.author && (
@@ -111,10 +122,11 @@ export function StoryCardCompact({ story, rank, showRank = false }: StoryCardCom
               <Users className="w-3 h-3" />
               {formatNumber(story.follower_count)}
             </span>
+            {/* Rating - shown if exists */}
             {story.rating_average && story.rating_average > 0 && (
-              <span className="flex items-center gap-0.5 ml-auto text-amber-500" title="Rating">
+              <span className="flex items-center gap-0.5 ml-auto text-amber-500 font-medium" title={`${story.rating_count || 0} ratings`}>
                 <Star className="w-3 h-3 fill-current" />
-                {story.rating_average.toFixed(1)}
+                {Number(story.rating_average).toFixed(1)}
               </span>
             )}
           </div>
@@ -131,7 +143,7 @@ export function StoryCardCompactSkeleton() {
       <div className="w-full aspect-[3/4] bg-muted animate-pulse" />
       <div className="p-3 space-y-2">
         <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
-        <div className="h-3 bg-muted rounded animate-pulse w-1/2" />
+        <div className="h-4 bg-muted rounded animate-pulse w-1/2" />
         <div className="h-3 bg-muted rounded animate-pulse w-full" />
         <div className="flex gap-1 pt-1">
           <div className="h-4 w-12 bg-muted rounded animate-pulse" />

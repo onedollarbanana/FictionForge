@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Eye, Heart, BookMarked, Clock } from "lucide-react";
+import Image from "next/image";
+import { BookOpen, Eye, Heart, BookMarked, Clock, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -19,6 +20,8 @@ export interface StoryCardData {
   follower_count?: number | null;
   chapter_count?: number | null;
   word_count?: number | null;
+  rating_average?: number | null;
+  rating_count?: number | null;
   updated_at?: string;
   created_at?: string;
   author?: {
@@ -85,6 +88,20 @@ function getAuthorUsername(story: StoryCardData): string | null {
   return story.author?.username || story.profiles?.username || null;
 }
 
+// Rating display component
+function RatingDisplay({ rating, count }: { rating?: number | null; count?: number | null }) {
+  if (!rating || rating <= 0) return null;
+  return (
+    <span 
+      className="flex items-center gap-0.5 text-amber-500 font-medium" 
+      title={`${count || 0} ratings`}
+    >
+      <Star className="h-3 w-3 fill-current" />
+      {Number(rating).toFixed(1)}
+    </span>
+  );
+}
+
 export function StoryCard({
   story,
   variant = "vertical",
@@ -99,6 +116,11 @@ export function StoryCard({
   const gradientClass = genreGradients[primaryGenre] || genreGradients.Fantasy;
   const linkHref = href || `/story/${story.id}`;
   const authorUsername = getAuthorUsername(story);
+
+  // Use updated_at for cache busting, fallback to stable value
+  const imageTimestamp = story.updated_at 
+    ? new Date(story.updated_at).getTime() 
+    : 'v1';
 
   // Size-based dimensions
   const sizeConfig = {
@@ -118,11 +140,16 @@ export function StoryCard({
         {/* Cover */}
         <Link href={linkHref} className="shrink-0">
           {story.cover_url ? (
-            <img
-              src={`${story.cover_url}?t=${new Date(story.updated_at || Date.now()).getTime()}`}
-              alt={`Cover for ${story.title}`}
-              className="w-20 h-28 object-cover rounded"
-            />
+            <div className="relative w-20 h-28">
+              <Image
+                src={`${story.cover_url}?t=${imageTimestamp}`}
+                alt={`Cover for ${story.title}`}
+                fill
+                sizes="80px"
+                className="object-cover rounded"
+                loading="lazy"
+              />
+            </div>
           ) : (
             <div className={cn(
               "w-20 h-28 rounded flex items-center justify-center bg-gradient-to-br",
@@ -138,7 +165,7 @@ export function StoryCard({
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
               <Link href={linkHref}>
-                <h3 className="font-semibold text-lg hover:text-primary transition-colors line-clamp-1">
+                <h3 className="font-semibold text-lg hover:text-primary transition-colors line-clamp-2">
                   {story.title}
                 </h3>
               </Link>
@@ -167,7 +194,7 @@ export function StoryCard({
 
           {/* Tagline */}
           {story.tagline && (
-            <p className="text-sm font-medium text-primary/80 mt-1 line-clamp-1">
+            <p className="text-sm font-medium text-primary/80 mt-1 line-clamp-2">
               {story.tagline}
             </p>
           )}
@@ -204,6 +231,7 @@ export function StoryCard({
               <Heart className="h-3 w-3" />
               {formatNumber(story.follower_count ?? 0)}
             </span>
+            <RatingDisplay rating={story.rating_average} count={story.rating_count} />
             {story.updated_at && (
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
@@ -233,10 +261,13 @@ export function StoryCard({
         {/* Cover Image */}
         <div className={cn("relative overflow-hidden rounded-lg bg-muted", config.coverHeight)}>
           {story.cover_url ? (
-            <img
-              src={`${story.cover_url}?t=${new Date(story.updated_at || Date.now()).getTime()}`}
+            <Image
+              src={`${story.cover_url}?t=${imageTimestamp}`}
               alt={`Cover for ${story.title}`}
-              className="w-full h-full object-cover"
+              fill
+              sizes="(max-width: 640px) 140px, 180px"
+              className="object-cover"
+              loading="lazy"
             />
           ) : (
             <div className={cn(
@@ -291,6 +322,12 @@ export function StoryCard({
                 <BookMarked className="h-3 w-3" />
                 {story.chapter_count || 0}
               </span>
+              {story.rating_average && story.rating_average > 0 && (
+                <span className="flex items-center gap-1 text-amber-400">
+                  <Star className="h-3 w-3 fill-current" />
+                  {Number(story.rating_average).toFixed(1)}
+                </span>
+              )}
             </div>
           </div>
 
@@ -323,7 +360,7 @@ export function StoryCard({
       {/* Text content below cover */}
       <div className={cn("mt-2 px-1", config.spacing)}>
         <h3 className={cn(
-          "font-medium line-clamp-2 group-hover:text-primary transition-colors",
+          "font-medium line-clamp-2 group-hover:text-primary transition-colors min-h-[2.5em]",
           config.titleSize
         )}>
           {story.title}
@@ -331,7 +368,7 @@ export function StoryCard({
         
         {/* Tagline (if present, shown prominently) */}
         {story.tagline && (
-          <p className="text-xs text-primary/70 font-medium line-clamp-1 mt-0.5">
+          <p className="text-xs text-primary/70 font-medium line-clamp-2 mt-0.5">
             {story.tagline}
           </p>
         )}
@@ -351,6 +388,7 @@ export function StoryCard({
               <BookMarked className="h-3 w-3" />
               {story.chapter_count || 0}
             </span>
+            <RatingDisplay rating={story.rating_average} count={story.rating_count} />
           </div>
         )}
       </div>

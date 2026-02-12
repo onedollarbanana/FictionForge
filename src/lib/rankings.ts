@@ -15,6 +15,8 @@ export interface RankedStory {
   chapter_count: number;
   follower_count: number;
   total_views: number;
+  rating_average: number;
+  rating_count: number;
   created_at: string;
   updated_at: string;
   author: {
@@ -26,7 +28,6 @@ export interface RankedStory {
   // Ranking specific fields
   score?: number;
   avg_rating?: number;
-  rating_count?: number;
   last_chapter_at?: string;
 }
 
@@ -53,6 +54,8 @@ async function getStoriesWithDetails(
       chapter_count,
       follower_count,
       total_views,
+      rating_average,
+      rating_count,
       created_at,
       updated_at,
       profiles:author_id (
@@ -78,6 +81,8 @@ async function getStoriesWithDetails(
         story.id,
         {
           ...story,
+          rating_average: Number(story.rating_average) || 0,
+          rating_count: story.rating_count || 0,
           author: profile || {
             id: "",
             username: "unknown",
@@ -179,8 +184,8 @@ export async function getBestRated(limit: number = 10, supabase?: SupabaseClient
   
   return stories.map((s) => ({
     ...s,
-    avg_rating: ratingMap.get(s.id)?.avg_rating || 0,
-    rating_count: ratingMap.get(s.id)?.rating_count || 0,
+    avg_rating: ratingMap.get(s.id)?.avg_rating || s.rating_average,
+    rating_count: ratingMap.get(s.id)?.rating_count || s.rating_count,
   }));
 }
 

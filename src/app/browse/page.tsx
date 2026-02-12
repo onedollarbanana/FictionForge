@@ -21,7 +21,7 @@ export default async function BrowsePage({
   const { search, genre, sort = "updated" } = await searchParams;
   const supabase = await createClient();
 
-  // Fetch all stories with author info
+  // Fetch all stories with author info and ratings
   const { data: stories, error } = await supabase
     .from("stories")
     .select(`
@@ -36,6 +36,8 @@ export default async function BrowsePage({
       total_views,
       follower_count,
       chapter_count,
+      rating_average,
+      rating_count,
       updated_at,
       profiles (
         username,
@@ -77,6 +79,8 @@ export default async function BrowsePage({
         return (b.total_views ?? 0) - (a.total_views ?? 0);
       case "followers":
         return (b.follower_count ?? 0) - (a.follower_count ?? 0);
+      case "rating":
+        return (Number(b.rating_average) || 0) - (Number(a.rating_average) || 0);
       default: // "updated"
         return new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime();
     }
