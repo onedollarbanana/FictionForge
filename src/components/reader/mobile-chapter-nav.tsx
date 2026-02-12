@@ -37,7 +37,7 @@ export function MobileChapterNav({
   const { settings, updateSettings, resetSettings } = useReadingSettings()
   
   const isAutoTheme = settings.theme === 'auto'
-  const explicitTheme = !isAutoTheme ? themeInlineStyles[settings.theme] : null
+  const explicitTheme = !isAutoTheme ? themeInlineStyles[settings.theme as keyof typeof themeInlineStyles] : null
   const widthClass = widthClasses[settings.width]
 
   return (

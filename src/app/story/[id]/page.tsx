@@ -8,6 +8,7 @@ import { BookOpen, Check, Clock, Eye, Heart, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { FollowButton } from "@/components/story/FollowButton";
 import { AnnouncementBanner } from "@/components/announcements";
+import { StoryRatingSection } from "@/components/story/story-rating-section";
 
 export const dynamic = "force-dynamic";
 
@@ -198,7 +199,7 @@ export default async function StoryPage({ params }: PageProps) {
       )}
 
       {/* Description */}
-      <Card className="mb-8">
+      <Card className="mb-6">
         <CardContent className="pt-6">
           <h2 className="text-lg font-semibold mb-3">Description</h2>
           <p className="text-muted-foreground whitespace-pre-wrap">
@@ -206,6 +207,11 @@ export default async function StoryPage({ params }: PageProps) {
           </p>
         </CardContent>
       </Card>
+
+      {/* Ratings Section */}
+      <div className="mb-8">
+        <StoryRatingSection storyId={id} authorId={story.author_id} />
+      </div>
 
       {/* Chapter List */}
       <div>

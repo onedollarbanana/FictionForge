@@ -50,7 +50,7 @@ export function ChapterContentWrapper({ children, headerContent }: ChapterConten
   // For 'auto', use Tailwind dark mode classes (follows site theme)
   // For explicit themes, use inline styles to override
   const isAutoTheme = settings.theme === 'auto'
-  const explicitTheme = !isAutoTheme ? themeInlineStyles[settings.theme] : null
+  const explicitTheme = !isAutoTheme ? themeInlineStyles[settings.theme as keyof typeof themeInlineStyles] : null
 
   return (
     <div 

@@ -58,7 +58,7 @@ export default async function ChapterReadingPage({ params }: PageProps) {
   // Fetch all chapters for navigation
   const { data: allChapters } = await supabase
     .from("chapters")
-    .select("id, chapter_number, is_published")
+    .select("id, title, chapter_number, is_published")
     .eq("story_id", storyId)
     .eq("is_published", true)
     .order("chapter_number", { ascending: true });
@@ -190,10 +190,11 @@ export default async function ChapterReadingPage({ params }: PageProps) {
         {/* Mobile Bottom Navigation */}
         <MobileChapterNav
           storyId={storyId}
-          currentChapter={chapter.chapter_number}
+          storyTitle={chapter.stories?.title ?? ""}
+          prevChapter={prevChapter ? { id: prevChapter.id, title: prevChapter.title } : null}
+          nextChapter={nextChapter ? { id: nextChapter.id, title: nextChapter.title } : null}
+          currentChapterNumber={chapter.chapter_number}
           totalChapters={chapters.length}
-          prevChapterId={prevChapter?.id}
-          nextChapterId={nextChapter?.id}
         />
       </ChapterContentWrapper>
     </>
