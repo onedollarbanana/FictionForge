@@ -60,7 +60,7 @@ export function MultiSelect({
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           'flex flex-wrap gap-1 min-h-[42px] p-2 border rounded-md cursor-pointer transition-colors',
-          'bg-background hover:bg-accent/50',
+          'bg-white dark:bg-zinc-900 hover:bg-accent/50',
           isOpen && 'ring-2 ring-ring ring-offset-2'
         )}
       >
@@ -91,7 +91,7 @@ export function MultiSelect({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full bg-background border rounded-md shadow-lg">
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-zinc-900 border rounded-md shadow-lg">
           {/* Search input */}
           <div className="p-2 border-b">
             <input

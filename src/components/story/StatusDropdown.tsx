@@ -113,7 +113,7 @@ export function StatusDropdown({ storyId, currentStatus, onStatusChange }: Statu
       </Button>
 
       {isOpen && (
-        <div className="absolute top-full mt-1 right-0 z-50 min-w-[160px] bg-background border border-border rounded-md shadow-lg py-1">
+        <div className="absolute top-full mt-1 right-0 z-50 min-w-[160px] bg-white dark:bg-zinc-900 border border-border rounded-md shadow-lg py-1">
           {Object.entries(statusConfig).map(([key, config]) => (
             <button
               key={key}
