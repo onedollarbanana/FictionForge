@@ -4,6 +4,7 @@ import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { ToastProvider } from '@/components/ui/toast'
 import { Header } from '@/components/layout/header'
+import { Footer } from '@/components/layout/footer'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -48,6 +49,7 @@ export default function RootLayout({
               <main className="flex-1">
                 {children}
               </main>
+              <Footer />
             </div>
           </ToastProvider>
         </ThemeProvider>
