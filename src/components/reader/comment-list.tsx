@@ -18,6 +18,7 @@ interface CommentData {
   created_at: string;
   user_id: string;
   parent_id: string | null;
+  is_pinned: boolean;
   profiles: ProfileData;
   replies?: CommentData[];
 }
@@ -29,6 +30,7 @@ interface RawCommentData {
   created_at: string;
   user_id: string;
   parent_id: string | null;
+  is_pinned: boolean;
   profiles: ProfileData | ProfileData[] | null;
 }
 
@@ -53,8 +55,10 @@ function normalizeProfile(profiles: ProfileData | ProfileData[] | null): Profile
 
 export function CommentList({ chapterId, currentUserId, storyAuthorId }: CommentListProps) {
   const [comments, setComments] = useState<CommentData[]>([]);
+  const [pinnedComment, setPinnedComment] = useState<CommentData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [commenters, setCommenters] = useState<{ username: string }[]>([]);
 
   const fetchComments = useCallback(async () => {
     const supabase = createClient();
@@ -68,6 +72,7 @@ export function CommentList({ chapterId, currentUserId, storyAuthorId }: Comment
         created_at,
         user_id,
         parent_id,
+        is_pinned,
         profiles (
           username,
           avatar_url
@@ -95,6 +100,7 @@ export function CommentList({ chapterId, currentUserId, storyAuthorId }: Comment
     // Organize comments into threads (parent comments with their replies)
     const commentMap = new Map<string, CommentData>();
     const topLevelComments: CommentData[] = [];
+    let pinned: CommentData | null = null;
     const rawData = (data || []) as RawCommentData[];
 
     // First pass: create map of all comments with normalized profiles
@@ -113,10 +119,26 @@ export function CommentList({ chapterId, currentUserId, storyAuthorId }: Comment
       if (comment.parent_id && commentMap.has(comment.parent_id)) {
         commentMap.get(comment.parent_id)!.replies!.push(fullComment);
       } else if (!comment.parent_id) {
-        topLevelComments.push(fullComment);
+        // Check if this is the pinned comment
+        if (comment.is_pinned) {
+          pinned = fullComment;
+        } else {
+          topLevelComments.push(fullComment);
+        }
       }
     });
 
+    // Build unique commenters list for @mentions
+    const uniqueCommenters = new Map<string, { username: string }>();
+    rawData.forEach((comment) => {
+      const profile = normalizeProfile(comment.profiles);
+      if (profile.username && profile.username !== "Anonymous") {
+        uniqueCommenters.set(profile.username, { username: profile.username });
+      }
+    });
+    setCommenters(Array.from(uniqueCommenters.values()));
+
+    setPinnedComment(pinned);
     setComments(topLevelComments);
     setIsLoading(false);
   }, [chapterId, sortBy]);
@@ -129,12 +151,14 @@ export function CommentList({ chapterId, currentUserId, storyAuthorId }: Comment
     fetchComments();
   };
 
+  const totalCount = comments.length + (pinnedComment ? 1 : 0);
+
   return (
     <div className="mt-8 pt-8 border-t">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold flex items-center gap-2">
           <MessageSquare className="h-5 w-5" />
-          Comments ({comments.length})
+          Comments ({totalCount})
         </h2>
         
         <div className="flex items-center gap-2">
@@ -142,7 +166,7 @@ export function CommentList({ chapterId, currentUserId, storyAuthorId }: Comment
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="text-sm border rounded px-2 py-1 bg-background"
+            className="text-sm border rounded px-2 py-1 bg-white dark:bg-zinc-900"
           >
             <option value="newest">Newest</option>
             <option value="oldest">Oldest</option>
@@ -155,6 +179,7 @@ export function CommentList({ chapterId, currentUserId, storyAuthorId }: Comment
         chapterId={chapterId}
         currentUserId={currentUserId}
         onCommentPosted={handleCommentPosted}
+        commenters={commenters}
       />
 
       <div className="mt-6">
@@ -170,13 +195,27 @@ export function CommentList({ chapterId, currentUserId, storyAuthorId }: Comment
               </div>
             ))}
           </div>
-        ) : comments.length === 0 ? (
+        ) : totalCount === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
             <p>No comments yet. Be the first to share your thoughts!</p>
           </div>
         ) : (
           <div className="divide-y">
+            {/* Pinned comment always at top */}
+            {pinnedComment && (
+              <Comment
+                key={pinnedComment.id}
+                comment={pinnedComment}
+                currentUserId={currentUserId}
+                chapterId={chapterId}
+                storyAuthorId={storyAuthorId}
+                onReplyPosted={handleCommentPosted}
+                onCommentUpdated={handleCommentPosted}
+              />
+            )}
+            
+            {/* Regular comments */}
             {comments.map((comment) => (
               <Comment
                 key={comment.id}
@@ -185,6 +224,7 @@ export function CommentList({ chapterId, currentUserId, storyAuthorId }: Comment
                 chapterId={chapterId}
                 storyAuthorId={storyAuthorId}
                 onReplyPosted={handleCommentPosted}
+                onCommentUpdated={handleCommentPosted}
               />
             ))}
           </div>
