@@ -1,6 +1,11 @@
-export { TiptapRenderer } from "./tiptap-renderer";
-export { ChapterNav } from "./chapter-nav";
-export { Comment } from "./comment";
-export { CommentInput } from "./comment-input";
-export { CommentList } from "./comment-list";
-export { ViewTracker } from "./view-tracker";
+export { ChapterNav } from './chapter-nav'
+export { ChapterLikeButton } from './chapter-like-button'
+export { TiptapRenderer } from './tiptap-renderer'
+export { CommentList } from './comment-list'
+export { Comment } from './comment'
+export { ReadingSettingsPanel } from './reading-settings-panel'
+export { ChapterContentWrapper } from './chapter-content-wrapper'
+export { ScrollProgressBar } from './scroll-progress-bar'
+export { KeyboardNavigation } from './keyboard-navigation'
+export { SwipeNavigation } from './swipe-navigation'
+export { MobileChapterNav } from './mobile-chapter-nav'

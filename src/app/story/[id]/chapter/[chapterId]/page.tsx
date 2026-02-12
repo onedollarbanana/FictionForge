@@ -9,6 +9,8 @@ import { ViewTracker } from "@/components/reader/view-tracker";
 import { CommentList } from "@/components/reader/comment-list";
 import { ChapterContentWrapper } from "@/components/reader/chapter-content-wrapper";
 import { KeyboardNavigation } from "@/components/reader/keyboard-navigation";
+import { SwipeNavigation } from "@/components/reader/swipe-navigation";
+import { MobileChapterNav } from "@/components/reader/mobile-chapter-nav";
 import { ChevronLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -100,6 +102,13 @@ export default async function ChapterReadingPage({ params }: PageProps) {
         nextChapterId={nextChapter?.id}
       />
 
+      {/* Mobile swipe navigation */}
+      <SwipeNavigation
+        storyId={storyId}
+        prevChapterId={prevChapter?.id}
+        nextChapterId={nextChapter?.id}
+      />
+
       <ChapterContentWrapper headerContent={headerContent}>
         <header className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold">{chapter.title}</h1>
@@ -160,20 +169,31 @@ export default async function ChapterReadingPage({ params }: PageProps) {
           />
         </div>
 
-        {/* Chapter Navigation */}
-        <ChapterNav
-          storyId={storyId}
-          currentChapter={chapter.chapter_number}
-          totalChapters={chapters.length}
-          prevChapterId={prevChapter?.id}
-          nextChapterId={nextChapter?.id}
-        />
+        {/* Chapter Navigation - Hidden on mobile (bottom nav shows instead) */}
+        <div className="hidden md:block">
+          <ChapterNav
+            storyId={storyId}
+            currentChapter={chapter.chapter_number}
+            totalChapters={chapters.length}
+            prevChapterId={prevChapter?.id}
+            nextChapterId={nextChapter?.id}
+          />
+        </div>
 
         {/* Comments */}
         <CommentList
           chapterId={chapterId}
           currentUserId={user?.id ?? null}
           storyAuthorId={chapter.stories?.author_id ?? ""}
+        />
+
+        {/* Mobile Bottom Navigation */}
+        <MobileChapterNav
+          storyId={storyId}
+          currentChapter={chapter.chapter_number}
+          totalChapters={chapters.length}
+          prevChapterId={prevChapter?.id}
+          nextChapterId={nextChapter?.id}
         />
       </ChapterContentWrapper>
     </>
