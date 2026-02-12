@@ -2,6 +2,11 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  // Skip if env vars not configured (prevents crash)
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return NextResponse.next()
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -9,8 +14,8 @@ export async function middleware(request: NextRequest) {
   })
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         get(name: string) {
@@ -34,29 +39,34 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
 
-  // Protected routes - require auth
-  if (request.nextUrl.pathname.startsWith('/author')) {
-    if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url))
+    // Protected routes - require auth
+    if (request.nextUrl.pathname.startsWith('/author')) {
+      if (!user) {
+        return NextResponse.redirect(new URL('/login', request.url))
+      }
+
+      // Check if user has profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single()
+
+      if (!profile && !request.nextUrl.pathname.startsWith('/create-profile')) {
+        return NextResponse.redirect(new URL('/create-profile', request.url))
+      }
     }
 
-    // Check if user has profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile && !request.nextUrl.pathname.startsWith('/create-profile')) {
-      return NextResponse.redirect(new URL('/create-profile', request.url))
+    // Redirect logged-in users away from auth pages
+    if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
+      return NextResponse.redirect(new URL('/author/dashboard', request.url))
     }
-  }
-
-  // Redirect logged-in users away from auth pages
-  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
-    return NextResponse.redirect(new URL('/author/dashboard', request.url))
+  } catch (error) {
+    // If auth check fails, allow request to continue
+    console.error('Middleware auth error:', error)
   }
 
   return response
