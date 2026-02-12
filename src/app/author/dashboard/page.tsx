@@ -8,6 +8,7 @@ import { useUser } from '@/lib/hooks/useUser'
 import { AuthorStoryCard } from '@/components/author/story-card'
 import { ViewsChart } from '@/components/author/views-chart'
 import { ChapterEngagementTable } from '@/components/author/chapter-engagement-table'
+import { ActivityFeed } from '@/components/author/activity-feed'
 import { Button } from '@/components/ui/button'
 import { Plus, BookOpen, Eye, Users, Heart, FileText, BarChart3 } from 'lucide-react'
 
@@ -255,8 +256,11 @@ export default function AuthorDashboard() {
         </div>
       )}
 
-      {/* Views Chart */}
-      <ViewsChart authorId={user.id} />
+      {/* Views Chart and Activity Feed - Side by Side on Desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ViewsChart authorId={user.id} />
+        <ActivityFeed authorId={user.id} />
+      </div>
 
       {/* Chapter Engagement Table */}
       <ChapterEngagementTable authorId={user.id} />
