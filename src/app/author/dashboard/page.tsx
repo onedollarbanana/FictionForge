@@ -14,7 +14,7 @@ interface Story {
   id: string
   title: string
   tagline: string | null
-  description: string
+  blurb: string
   cover_url: string | null
   status: string
   created_at: string
@@ -127,7 +127,7 @@ export default function AuthorDashboard() {
     // Fetch stories
     const { data: storiesData } = await supabase
       .from('stories')
-      .select('id, title, tagline, description, cover_url, status, created_at, updated_at, chapter_count, word_count, follower_count, total_views, total_likes, rating_average, rating_count')
+      .select('id, title, tagline, blurb, cover_url, status, created_at, updated_at, chapter_count, word_count, follower_count, total_views, total_likes, rating_average, rating_count')
       .eq('author_id', user!.id)
       .order('updated_at', { ascending: false })
 
