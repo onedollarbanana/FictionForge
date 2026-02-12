@@ -3,23 +3,24 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Star } from "lucide-react";
+import { BookOpen, Star, Eye, Users, Heart } from "lucide-react";
 
 interface Story {
   id: string;
   title: string;
-  blurb: string | null;
   tagline: string | null;
-  cover_url: string | null;
+  description: string;
+  cover_image_url: string | null;
   status: string;
   created_at: string;
   updated_at?: string;
   chapter_count: number;
-  total_word_count: number | null;
-  total_views: number | null;
-  follower_count: number | null;
-  rating_average?: number | null;
-  rating_count?: number | null;
+  word_count: number;
+  total_views: number;
+  total_likes: number;
+  follower_count: number;
+  rating_average: number | null;
+  rating_count: number | null;
 }
 
 interface StoryCardProps {
@@ -30,87 +31,92 @@ const statusColors: Record<string, string> = {
   ongoing: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   completed: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
   hiatus: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+  dropped: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
 };
 
-export function StoryCard({ story }: StoryCardProps) {
-  const statusLabel = story.status.charAt(0).toUpperCase() + story.status.slice(1);
-  
-  // Use updated_at for cache busting
-  const imageTimestamp = story.updated_at 
-    ? new Date(story.updated_at).getTime() 
-    : 'v1';
-  
+export function AuthorStoryCard({ story }: StoryCardProps) {
   return (
-    <div className="p-4 border rounded-lg bg-card hover:border-primary/50 transition-colors">
-      <div className="flex gap-4">
-        {/* Cover Thumbnail */}
-        <Link href={`/author/stories/${story.id}`} className="shrink-0">
-          {story.cover_url ? (
-            <div className="relative w-16 h-24">
-              <Image
-                src={`${story.cover_url}?t=${imageTimestamp}`}
-                alt={story.title}
-                fill
-                sizes="64px"
-                className="object-cover rounded"
-                loading="lazy"
-              />
-            </div>
-          ) : (
-            <div className="w-16 h-24 bg-muted rounded flex items-center justify-center">
-              <BookOpen className="h-6 w-6 text-muted-foreground" />
-            </div>
-          )}
-        </Link>
+    <div className="flex gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:shadow-md transition-shadow">
+      {/* Cover */}
+      <Link href={`/story/${story.id}`} className="shrink-0">
+        {story.cover_image_url ? (
+          <div className="relative w-20 h-28 rounded-lg overflow-hidden">
+            <Image
+              src={story.cover_image_url}
+              alt={story.title}
+              fill
+              sizes="80px"
+              className="object-cover"
+            />
+          </div>
+        ) : (
+          <div className="w-20 h-28 rounded-lg bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-700 dark:to-zinc-800 flex items-center justify-center">
+            <BookOpen className="w-6 h-6 text-zinc-400" />
+          </div>
+        )}
+      </Link>
 
-        <div className="flex justify-between items-start gap-4 flex-1 min-w-0">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start gap-2 mb-1">
-              <Link 
-                href={`/author/stories/${story.id}`}
-                className="text-lg font-semibold hover:text-primary line-clamp-2 flex-1"
-              >
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <Link href={`/story/${story.id}`}>
+              <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 hover:text-blue-600 dark:hover:text-blue-400 line-clamp-1">
                 {story.title}
-              </Link>
-              <span className={`px-2 py-0.5 rounded text-xs font-medium shrink-0 ${statusColors[story.status] || statusColors.ongoing}`}>
-                {statusLabel}
-              </span>
-            </div>
-            
+              </h3>
+            </Link>
             {story.tagline && (
-              <p className="text-sm text-primary/80 italic mb-1">
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-0.5 line-clamp-1">
                 {story.tagline}
               </p>
             )}
-            {story.blurb && (
-              <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                {story.blurb}
-              </p>
-            )}
-            
-            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-              <span>{story.chapter_count ?? 0} chapters</span>
-              <span>{(story.total_word_count ?? 0).toLocaleString()} words</span>
-              <span>{(story.total_views ?? 0).toLocaleString()} views</span>
-              <span>{story.follower_count ?? 0} followers</span>
-              {story.rating_average && story.rating_average > 0 && (
-                <span className="flex items-center gap-0.5 text-amber-500 font-medium">
-                  <Star className="h-3.5 w-3.5 fill-current" />
-                  {Number(story.rating_average).toFixed(1)}
-                  <span className="text-muted-foreground font-normal">({story.rating_count || 0})</span>
-                </span>
-              )}
-            </div>
           </div>
-          
-          <div className="flex gap-2 shrink-0">
-            <Link href={`/author/stories/${story.id}`}>
-              <Button variant="outline" size="sm">Manage</Button>
-            </Link>
-            <Link href={`/author/stories/${story.id}/chapters/new`}>
-              <Button size="sm">+ Chapter</Button>
-            </Link>
-          </div>
+          <span className={`shrink-0 text-xs font-medium px-2 py-1 rounded-full capitalize ${statusColors[story.status] || 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200'}`}>
+            {story.status}
+          </span>
+        </div>
+
+        {/* Stats Row */}
+        <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-zinc-500">
+          <span className="flex items-center gap-1">
+            <BookOpen className="w-4 h-4" />
+            {story.chapter_count} ch
+          </span>
+          <span className="flex items-center gap-1">
+            <Eye className="w-4 h-4" />
+            {(story.total_views ?? 0).toLocaleString()}
+          </span>
+          <span className="flex items-center gap-1">
+            <Users className="w-4 h-4" />
+            {(story.follower_count ?? 0).toLocaleString()}
+          </span>
+          <span className="flex items-center gap-1">
+            <Heart className="w-4 h-4" />
+            {(story.total_likes ?? 0).toLocaleString()}
+          </span>
+          {(story.rating_count ?? 0) > 0 && (
+            <span className="flex items-center gap-1">
+              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+              {story.rating_average?.toFixed(1)}
+              <span className="text-zinc-400">({story.rating_count})</span>
+            </span>
+          )}
+          <span className="text-zinc-400">
+            {(story.word_count ?? 0).toLocaleString()} words
+          </span>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 mt-3">
+          <Link href={`/author/stories/${story.id}/edit`}>
+            <Button variant="outline" size="sm">Edit Story</Button>
+          </Link>
+          <Link href={`/author/stories/${story.id}/chapters`}>
+            <Button variant="outline" size="sm">Chapters</Button>
+          </Link>
+          <Link href={`/story/${story.id}`}>
+            <Button variant="ghost" size="sm">View</Button>
+          </Link>
         </div>
       </div>
     </div>
