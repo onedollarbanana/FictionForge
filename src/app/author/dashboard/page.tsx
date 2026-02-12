@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { AuthorStoryCard } from '@/components/author/story-card'
-import { ViewsOverTimeChart } from '@/components/author/views-over-time-chart'
+import { ViewsChart } from '@/components/author/views-chart'
 import { Button } from '@/components/ui/button'
 import { Plus, BookOpen, Eye, Users, Heart, FileText, BarChart3 } from 'lucide-react'
 
@@ -167,24 +167,20 @@ export default function AuthorDashboard() {
   if (userLoading || loading) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-6">
+        <div className="animate-pulse space-y-8">
           <div className="h-8 bg-zinc-200 dark:bg-zinc-800 rounded w-48"></div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-36 bg-zinc-200 dark:bg-zinc-800 rounded-xl"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-40 bg-zinc-200 dark:bg-zinc-800 rounded-xl"></div>
             ))}
           </div>
-          <div className="h-80 bg-zinc-200 dark:bg-zinc-800 rounded-xl"></div>
+          <div className="h-64 bg-zinc-200 dark:bg-zinc-800 rounded-xl"></div>
         </div>
       </div>
     )
   }
 
   if (!user) return null
-
-  const avgWordsPerChapter = stats && stats.total_chapters > 0 
-    ? Math.round(stats.total_words / stats.total_chapters)
-    : 0
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
@@ -202,82 +198,77 @@ export default function AuthorDashboard() {
         </Link>
       </div>
 
-      {/* Stats Grid */}
+      {/* Primary Stats - Week over Week */}
       {stats && (
-        <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard
-              icon={Eye}
-              label="Total Views"
-              value={stats.total_views}
-              thisWeek={stats.views_this_week}
-              lastWeek={stats.views_last_week}
-              color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-            />
-            <StatCard
-              icon={Users}
-              label="Followers"
-              value={stats.total_followers}
-              thisWeek={stats.followers_this_week}
-              lastWeek={stats.followers_last_week}
-              color="bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
-            />
-            <StatCard
-              icon={Heart}
-              label="Likes"
-              value={stats.total_likes}
-              thisWeek={stats.likes_this_week}
-              lastWeek={stats.likes_last_week}
-              color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-            />
-            <StatCard
-              icon={BookOpen}
-              label="Chapters"
-              value={stats.total_chapters}
-              color="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
-            />
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <StatCard
+            icon={Eye}
+            label="Total Views"
+            value={stats.total_views}
+            thisWeek={stats.views_this_week}
+            lastWeek={stats.views_last_week}
+            color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+          />
+          <StatCard
+            icon={Users}
+            label="Total Followers"
+            value={stats.total_followers}
+            thisWeek={stats.followers_this_week}
+            lastWeek={stats.followers_last_week}
+            color="bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+          />
+          <StatCard
+            icon={Heart}
+            label="Total Likes"
+            value={stats.total_likes}
+            thisWeek={stats.likes_this_week}
+            lastWeek={stats.likes_last_week}
+            color="bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400"
+          />
+        </div>
+      )}
 
-          {/* Secondary Stats */}
-          <div className="grid grid-cols-3 gap-4">
-            <SecondaryStatCard 
-              icon={FileText} 
-              label="Stories" 
-              value={stats.total_stories.toLocaleString()} 
-            />
-            <SecondaryStatCard 
-              icon={BarChart3} 
-              label="Total Words" 
-              value={stats.total_words.toLocaleString()} 
-            />
-            <SecondaryStatCard 
-              icon={BookOpen} 
-              label="Avg Words/Chapter" 
-              value={avgWordsPerChapter.toLocaleString()} 
-            />
-          </div>
-        </>
+      {/* Secondary Stats */}
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <SecondaryStatCard
+            icon={BookOpen}
+            label="Stories"
+            value={stats.total_stories.toString()}
+          />
+          <SecondaryStatCard
+            icon={FileText}
+            label="Chapters"
+            value={stats.total_chapters.toLocaleString()}
+          />
+          <SecondaryStatCard
+            icon={BarChart3}
+            label="Words Written"
+            value={stats.total_words >= 1000 ? `${(stats.total_words / 1000).toFixed(1)}k` : stats.total_words.toString()}
+          />
+          <SecondaryStatCard
+            icon={Eye}
+            label="Avg Views/Chapter"
+            value={stats.total_chapters > 0 ? Math.round(stats.total_views / stats.total_chapters).toLocaleString() : '0'}
+          />
+        </div>
       )}
 
       {/* Views Chart */}
-      <ViewsOverTimeChart authorId={user.id} />
+      <ViewsChart authorId={user.id} />
 
-      {/* Stories Section */}
+      {/* Stories List */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Your Stories</h2>
-          <span className="text-sm text-zinc-500">{stories.length} {stories.length === 1 ? 'story' : 'stories'}</span>
-        </div>
-        
+        <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Your Stories</h2>
         {stories.length === 0 ? (
-          <div className="text-center py-12 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
-            <BookOpen className="w-12 h-12 text-zinc-400 mx-auto mb-4" />
+          <div className="text-center py-12 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+            <BookOpen className="w-12 h-12 mx-auto text-zinc-400 mb-4" />
             <h3 className="text-lg font-medium text-zinc-900 dark:text-zinc-100 mb-2">No stories yet</h3>
-            <p className="text-zinc-500 mb-4">Create your first story to get started</p>
+            <p className="text-zinc-500 mb-4">Start your writing journey today!</p>
             <Link href="/author/stories/new">
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
-                Create Story
+                Create Your First Story
               </Button>
             </Link>
           </div>
