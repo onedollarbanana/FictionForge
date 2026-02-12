@@ -15,7 +15,7 @@ interface Story {
   title: string
   tagline: string | null
   description: string
-  cover_image_url: string | null
+  cover_url: string | null
   status: string
   created_at: string
   updated_at: string
@@ -127,7 +127,7 @@ export default function AuthorDashboard() {
     // Fetch stories
     const { data: storiesData } = await supabase
       .from('stories')
-      .select('id, title, tagline, description, cover_image_url, status, created_at, updated_at, chapter_count, word_count, follower_count, total_views, total_likes, rating_average, rating_count')
+      .select('id, title, tagline, description, cover_url, status, created_at, updated_at, chapter_count, word_count, follower_count, total_views, total_likes, rating_average, rating_count')
       .eq('author_id', user!.id)
       .order('updated_at', { ascending: false })
 
@@ -285,7 +285,7 @@ export default function AuthorDashboard() {
           <div className="grid gap-4">
             {stories.map((story) => (
               <AuthorStoryCard key={story.id} story={story} />
-            ))}
+            )}
           </div>
         )}
       </div>
