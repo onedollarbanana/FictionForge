@@ -1,8 +1,8 @@
 'use client'
 
-import { Settings2 } from 'lucide-react'
+import { Settings, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ReadingSettings } from '@/lib/hooks/useReadingSettings'
+import { Slider } from '@/components/ui/slider'
 import {
   Sheet,
   SheetContent,
@@ -10,73 +10,72 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
-import { Slider } from '@/components/ui/slider'
+import type { ReadingSettings } from '@/lib/hooks/useReadingSettings'
 
 interface ReadingSettingsPanelProps {
   settings: ReadingSettings
   onUpdateSettings: (updates: Partial<ReadingSettings>) => void
   onResetSettings: () => void
-  isMobileSheet?: boolean
+  embedded?: boolean // When true, renders without Sheet wrapper (for mobile bottom sheet)
 }
 
-export function ReadingSettingsPanel({
-  settings,
-  onUpdateSettings,
-  onResetSettings,
-  isMobileSheet = false,
-}: ReadingSettingsPanelProps) {
-  const fontOptions = [
-    { value: 'default', label: 'Default' },
-    { value: 'serif', label: 'Serif' },
-    { value: 'sans', label: 'Sans' },
-    { value: 'mono', label: 'Mono' },
-  ] as const
+const fontOptions: { value: ReadingSettings['fontFamily']; label: string }[] = [
+  { value: 'default', label: 'Default' },
+  { value: 'serif', label: 'Serif' },
+  { value: 'sans', label: 'Sans' },
+  { value: 'mono', label: 'Mono' },
+]
 
-  const lineHeightOptions = [
-    { value: 'tight', label: 'Tight' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'relaxed', label: 'Relaxed' },
-  ] as const
+const lineHeightOptions: { value: ReadingSettings['lineHeight']; label: string }[] = [
+  { value: 'tight', label: 'Tight' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'relaxed', label: 'Relaxed' },
+]
 
-  const themeOptions = [
-    { value: 'auto', label: 'Auto', preview: 'bg-gradient-to-r from-white to-zinc-900' },
-    { value: 'light', label: 'Light', preview: 'bg-white border-zinc-300' },
-    { value: 'dark', label: 'Dark', preview: 'bg-zinc-900 border-zinc-700' },
-    { value: 'sepia', label: 'Sepia', preview: 'bg-amber-50 border-amber-300' },
-    { value: 'night', label: 'Night', preview: 'bg-black border-zinc-700' },
-  ] as const
+const themeOptions: { value: ReadingSettings['theme']; label: string; desc: string }[] = [
+  { value: 'auto', label: 'Auto', desc: 'Follows site theme' },
+  { value: 'light', label: 'Light', desc: 'Always light' },
+  { value: 'dark', label: 'Dark', desc: 'Always dark' },
+  { value: 'sepia', label: 'Sepia', desc: 'Warm tones' },
+  { value: 'night', label: 'Night', desc: 'OLED black' },
+]
 
-  const widthOptions = [
-    { value: 'narrow', label: 'Narrow' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'wide', label: 'Wide' },
-  ] as const
+const widthOptions: { value: ReadingSettings['width']; label: string }[] = [
+  { value: 'narrow', label: 'Narrow' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'wide', label: 'Wide' },
+]
 
-  const SettingsContent = () => (
+function SettingsContent({ 
+  settings, 
+  onUpdateSettings, 
+  onResetSettings 
+}: Omit<ReadingSettingsPanelProps, 'embedded'>) {
+  return (
     <div className="space-y-6">
       {/* Font Family */}
       <div>
-        <label className="text-sm font-medium mb-2 block">Font</label>
-        <div className="flex gap-2">
+        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2 block">
+          Font
+        </label>
+        <div className="flex gap-2 flex-wrap">
           {fontOptions.map((option) => (
-            <button
+            <Button
               key={option.value}
+              variant={settings.fontFamily === option.value ? 'default' : 'outline'}
+              size="sm"
               onClick={() => onUpdateSettings({ fontFamily: option.value })}
-              className={`flex-1 px-3 py-2 rounded-md text-sm border transition-colors
-                ${settings.fontFamily === option.value 
-                  ? 'border-primary bg-primary/10 font-medium' 
-                  : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600'
-                }`}
+              className="min-w-[60px]"
             >
               {option.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
 
       {/* Font Size */}
       <div>
-        <label className="text-sm font-medium mb-2 block">
+        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2 block">
           Size: {settings.fontSize}px
         </label>
         <Slider
@@ -91,96 +90,118 @@ export function ReadingSettingsPanel({
 
       {/* Line Height */}
       <div>
-        <label className="text-sm font-medium mb-2 block">Line Spacing</label>
+        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2 block">
+          Line Spacing
+        </label>
         <div className="flex gap-2">
           {lineHeightOptions.map((option) => (
-            <button
+            <Button
               key={option.value}
+              variant={settings.lineHeight === option.value ? 'default' : 'outline'}
+              size="sm"
               onClick={() => onUpdateSettings({ lineHeight: option.value })}
-              className={`flex-1 px-3 py-2 rounded-md text-sm border transition-colors
-                ${settings.lineHeight === option.value 
-                  ? 'border-primary bg-primary/10 font-medium' 
-                  : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600'
-                }`}
+              className="flex-1"
             >
               {option.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
 
       {/* Theme */}
       <div>
-        <label className="text-sm font-medium mb-2 block">Theme</label>
-        <div className="flex gap-2">
+        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2 block">
+          Theme
+        </label>
+        <div className="flex gap-2 flex-wrap">
           {themeOptions.map((option) => (
-            <button
+            <Button
               key={option.value}
+              variant={settings.theme === option.value ? 'default' : 'outline'}
+              size="sm"
               onClick={() => onUpdateSettings({ theme: option.value })}
-              className={`flex-1 flex flex-col items-center gap-1.5 p-2 rounded-md border transition-colors
-                ${settings.theme === option.value 
-                  ? 'border-primary ring-2 ring-primary/20' 
-                  : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600'
-                }`}
-            >
-              <div className={`w-6 h-6 rounded-full border ${option.preview}`} />
-              <span className="text-xs">{option.label}</span>
-            </button>
-          ))}  
-        </div>
-      </div>
-
-      {/* Width */}
-      <div>
-        <label className="text-sm font-medium mb-2 block">Content Width</label>
-        <div className="flex gap-2">
-          {widthOptions.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => onUpdateSettings({ width: option.value })}
-              className={`flex-1 px-3 py-2 rounded-md text-sm border transition-colors
-                ${settings.width === option.value 
-                  ? 'border-primary bg-primary/10 font-medium' 
-                  : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600'
-                }`}
+              className="min-w-[60px]"
+              title={option.desc}
             >
               {option.label}
-            </button>
+            </Button>
+          ))}
+        </div>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+          {themeOptions.find(t => t.value === settings.theme)?.desc}
+        </p>
+      </div>
+
+      {/* Content Width */}
+      <div>
+        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2 block">
+          Content Width
+        </label>
+        <div className="flex gap-2">
+          {widthOptions.map((option) => (
+            <Button
+              key={option.value}
+              variant={settings.width === option.value ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => onUpdateSettings({ width: option.value })}
+              className="flex-1"
+            >
+              {option.label}
+            </Button>
           ))}
         </div>
       </div>
 
       {/* Reset Button */}
       <Button
-        variant="outline"
+        variant="ghost"
+        size="sm"
         onClick={onResetSettings}
-        className="w-full"
+        className="w-full text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
       >
+        <RotateCcw className="h-4 w-4 mr-2" />
         Reset to Defaults
       </Button>
     </div>
   )
+}
 
-  // If embedded in mobile sheet, just render content
-  if (isMobileSheet) {
-    return <SettingsContent />
+export function ReadingSettingsPanel({ 
+  settings, 
+  onUpdateSettings, 
+  onResetSettings,
+  embedded = false,
+}: ReadingSettingsPanelProps) {
+  // When embedded (in mobile bottom sheet), just render the content
+  if (embedded) {
+    return (
+      <SettingsContent
+        settings={settings}
+        onUpdateSettings={onUpdateSettings}
+        onResetSettings={onResetSettings}
+      />
+    )
   }
 
-  // Desktop: Slide-out sheet
+  // Desktop: render with Sheet wrapper
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="shrink-0">
-          <Settings2 className="h-4 w-4" />
-          <span className="sr-only">Reading settings</span>
+        <Button variant="ghost" size="sm" className="gap-2">
+          <Settings className="h-4 w-4" />
+          <span className="hidden sm:inline">Settings</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-80">
+      <SheetContent className="w-[320px] bg-white dark:bg-zinc-900">
         <SheetHeader>
-          <SheetTitle>Reading Settings</SheetTitle>
+          <SheetTitle className="text-zinc-900 dark:text-zinc-100">Reading Settings</SheetTitle>
         </SheetHeader>
         <div className="mt-6">
-          <SettingsContent />
+          <SettingsContent
+            settings={settings}
+            onUpdateSettings={onUpdateSettings}
+            onResetSettings={onResetSettings}
+          />
         </div>
       </SheetContent>
     </Sheet>

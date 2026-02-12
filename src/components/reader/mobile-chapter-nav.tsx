@@ -1,138 +1,159 @@
 'use client'
 
-import Link from 'next/link'
-import { ChevronLeft, ChevronRight, List, Settings2 } from 'lucide-react'
 import { useState } from 'react'
+import Link from 'next/link'
+import { ChevronLeft, ChevronRight, Settings, List } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { ReadingSettingsPanel } from './reading-settings-panel'
-import { useReadingSettings, themeStyles, widthClasses } from '@/lib/hooks/useReadingSettings'
+import { useReadingSettings, widthClasses } from '@/lib/hooks/useReadingSettings'
 
 interface MobileChapterNavProps {
   storyId: string
-  currentChapter: number
+  storyTitle: string
+  prevChapter: { id: string; title: string } | null
+  nextChapter: { id: string; title: string } | null
+  currentChapterNumber: number
   totalChapters: number
-  prevChapterId?: string
-  nextChapterId?: string
+}
+
+// Theme-specific inline styles (for non-auto themes)
+const themeInlineStyles: Record<'light' | 'dark' | 'sepia' | 'night', { bg: string; text: string; borderColor: string }> = {
+  light: { bg: '#ffffff', text: '#18181b', borderColor: '#e4e4e7' },
+  dark: { bg: '#18181b', text: '#f4f4f5', borderColor: '#3f3f46' },
+  sepia: { bg: '#fffbeb', text: '#451a03', borderColor: '#fde68a' },
+  night: { bg: '#000000', text: '#d4d4d8', borderColor: '#27272a' },
 }
 
 export function MobileChapterNav({
   storyId,
-  currentChapter,
+  storyTitle,
+  prevChapter,
+  nextChapter,
+  currentChapterNumber,
   totalChapters,
-  prevChapterId,
-  nextChapterId,
 }: MobileChapterNavProps) {
-  const { settings, resolvedTheme, updateSettings, resetSettings, isLoaded } = useReadingSettings()
-  const [showSettings, setShowSettings] = useState(false)
-
-  if (!isLoaded) return null
-
-  const theme = themeStyles[resolvedTheme]
-  const widthClass = widthClasses[settings.width]
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const { settings, updateSettings, resetSettings } = useReadingSettings()
   
-  // Colors based on reading theme
-  const textColor = resolvedTheme === 'light' || resolvedTheme === 'sepia' 
-    ? 'text-zinc-600' 
-    : 'text-zinc-400'
-  const disabledColor = resolvedTheme === 'light' || resolvedTheme === 'sepia'
-    ? 'text-zinc-300'
-    : 'text-zinc-700'
-  const activeColor = resolvedTheme === 'light' || resolvedTheme === 'sepia'
-    ? 'active:bg-zinc-100'
-    : 'active:bg-zinc-800'
+  const isAutoTheme = settings.theme === 'auto'
+  const explicitTheme = !isAutoTheme ? themeInlineStyles[settings.theme] : null
+  const widthClass = widthClasses[settings.width]
 
   return (
     <>
-      {/* Mobile Bottom Navigation Bar - only shows on small screens */}
-      {/* Full-width background layer */}
-      <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-50 ${theme.bg} ${theme.border} border-t safe-area-bottom`}>
-        {/* Constrained width container matching reading content */}
-        <div className={`container mx-auto px-4 ${widthClass}`}>
-          <div className="flex items-center justify-around h-14">
+      {/* Fixed bottom navigation bar - mobile only */}
+      <nav 
+        className={`md:hidden fixed bottom-0 left-0 right-0 z-50 border-t safe-area-bottom ${
+          isAutoTheme 
+            ? 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700' 
+            : ''
+        }`}
+        style={explicitTheme ? { 
+          backgroundColor: explicitTheme.bg,
+          borderColor: explicitTheme.borderColor 
+        } : undefined}
+      >
+        {/* Inner container matches content width */}
+        <div className={`container mx-auto px-2 ${widthClass}`}>
+          <div className="flex items-center justify-between py-2">
             {/* Previous Chapter */}
-            {prevChapterId ? (
-              <Link
-                href={`/story/${storyId}/chapter/${prevChapterId}`}
-                className={`flex flex-col items-center justify-center flex-1 h-full ${textColor} ${activeColor} rounded-lg`}
-              >
-                <ChevronLeft className="h-5 w-5" />
-                <span className="text-[10px] mt-0.5">Previous</span>
+            {prevChapter ? (
+              <Link href={`/story/${storyId}/chapter/${prevChapter.id}`}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className={`flex items-center gap-1 ${
+                    isAutoTheme 
+                      ? 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800' 
+                      : ''
+                  }`}
+                  style={explicitTheme ? { color: explicitTheme.text } : undefined}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="sr-only sm:not-sr-only">Prev</span>
+                </Button>
               </Link>
             ) : (
-              <div className={`flex flex-col items-center justify-center flex-1 h-full ${disabledColor}`}>
-                <ChevronLeft className="h-5 w-5" />
-                <span className="text-[10px] mt-0.5">Previous</span>
-              </div>
+              <Button variant="ghost" size="sm" disabled className="opacity-30">
+                <ChevronLeft className="h-4 w-4" />
+                <span className="sr-only sm:not-sr-only">Prev</span>
+              </Button>
             )}
 
-            {/* Chapter List / Story Page */}
-            <Link
+            {/* Chapter indicator & TOC link */}
+            <Link 
               href={`/story/${storyId}`}
-              className={`flex flex-col items-center justify-center flex-1 h-full ${textColor} ${activeColor} rounded-lg`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-colors ${
+                isAutoTheme 
+                  ? 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400' 
+                  : ''
+              }`}
+              style={explicitTheme ? { color: explicitTheme.text } : undefined}
             >
-              <List className="h-5 w-5" />
-              <span className="text-[10px] mt-0.5">{currentChapter}/{totalChapters}</span>
+              <List className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                {currentChapterNumber} / {totalChapters}
+              </span>
             </Link>
 
-            {/* Settings Button */}
-            <button
-              onClick={() => setShowSettings(true)}
-              className={`flex flex-col items-center justify-center flex-1 h-full ${textColor} ${activeColor} rounded-lg`}
-            >
-              <Settings2 className="h-5 w-5" />
-              <span className="text-[10px] mt-0.5">Settings</span>
-            </button>
+            {/* Settings button - opens sheet */}
+            <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+              <SheetTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className={isAutoTheme 
+                    ? 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800' 
+                    : ''
+                  }
+                  style={explicitTheme ? { color: explicitTheme.text } : undefined}
+                >
+                  <Settings className="h-4 w-4" />
+                  <span className="sr-only">Settings</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="h-auto max-h-[80vh] overflow-y-auto bg-white dark:bg-zinc-900">
+                <SheetHeader>
+                  <SheetTitle className="text-zinc-900 dark:text-zinc-100">Reading Settings</SheetTitle>
+                </SheetHeader>
+                <div className="py-4">
+                  <ReadingSettingsPanel
+                    settings={settings}
+                    onUpdateSettings={updateSettings}
+                    onResetSettings={resetSettings}
+                    embedded
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
 
             {/* Next Chapter */}
-            {nextChapterId ? (
-              <Link
-                href={`/story/${storyId}/chapter/${nextChapterId}`}
-                className={`flex flex-col items-center justify-center flex-1 h-full ${textColor} ${activeColor} rounded-lg`}
-              >
-                <ChevronRight className="h-5 w-5" />
-                <span className="text-[10px] mt-0.5">Next</span>
+            {nextChapter ? (
+              <Link href={`/story/${storyId}/chapter/${nextChapter.id}`}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className={`flex items-center gap-1 ${
+                    isAutoTheme 
+                      ? 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800' 
+                      : ''
+                  }`}
+                  style={explicitTheme ? { color: explicitTheme.text } : undefined}
+                >
+                  <span className="sr-only sm:not-sr-only">Next</span>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </Link>
             ) : (
-              <div className={`flex flex-col items-center justify-center flex-1 h-full ${disabledColor}`}>
-                <ChevronRight className="h-5 w-5" />
-                <span className="text-[10px] mt-0.5">Next</span>
-              </div>
+              <Button variant="ghost" size="sm" disabled className="opacity-30">
+                <span className="sr-only sm:not-sr-only">Next</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             )}
           </div>
         </div>
       </nav>
-
-      {/* Mobile Settings Sheet */}
-      {showSettings && (
-        <div className="md:hidden fixed inset-0 z-[60]">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setShowSettings(false)}
-          />
-          
-          {/* Settings Panel - uses reading theme */}
-          <div className={`absolute bottom-0 left-0 right-0 ${theme.bg} ${theme.text} rounded-t-2xl max-h-[80vh] overflow-y-auto safe-area-bottom`}>
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-lg">Reading Settings</h3>
-                <button
-                  onClick={() => setShowSettings(false)}
-                  className="opacity-70 hover:opacity-100 p-2 -mr-2"
-                >
-                  Done
-                </button>
-              </div>
-              
-              <ReadingSettingsPanel
-                settings={settings}
-                onUpdateSettings={updateSettings}
-                onResetSettings={resetSettings}
-                isMobileSheet={true}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </>
   )
 }

@@ -8,7 +8,6 @@ import {
   fontFamilyClasses,
   lineHeightClasses,
   widthClasses,
-  themeStyles,
 } from '@/lib/hooks/useReadingSettings'
 
 interface ChapterContentWrapperProps {
@@ -16,41 +15,68 @@ interface ChapterContentWrapperProps {
   headerContent: ReactNode
 }
 
+// Theme-specific inline styles (for non-auto themes)
+const themeInlineStyles: Record<'light' | 'dark' | 'sepia' | 'night', { bg: string; text: string; borderColor: string }> = {
+  light: { bg: '#ffffff', text: '#18181b', borderColor: '#e4e4e7' },
+  dark: { bg: '#18181b', text: '#f4f4f5', borderColor: '#3f3f46' },
+  sepia: { bg: '#fffbeb', text: '#451a03', borderColor: '#fde68a' },
+  night: { bg: '#000000', text: '#d4d4d8', borderColor: '#27272a' },
+}
+
 export function ChapterContentWrapper({ children, headerContent }: ChapterContentWrapperProps) {
-  const { settings, resolvedTheme, updateSettings, resetSettings, isLoaded } = useReadingSettings()
+  const { settings, updateSettings, resetSettings, isLoaded } = useReadingSettings()
 
   // Don't render until settings are loaded from localStorage
   if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-white dark:bg-zinc-900">
         <div className="animate-pulse p-8 max-w-3xl mx-auto">
-          <div className="h-8 bg-muted rounded w-3/4 mb-4" />
-          <div className="h-4 bg-muted rounded w-1/2 mb-8" />
+          <div className="h-8 bg-zinc-200 dark:bg-zinc-700 rounded w-3/4 mb-4" />
+          <div className="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-1/2 mb-8" />
           <div className="space-y-3">
-            <div className="h-4 bg-muted rounded" />
-            <div className="h-4 bg-muted rounded" />
-            <div className="h-4 bg-muted rounded w-5/6" />
+            <div className="h-4 bg-zinc-200 dark:bg-zinc-700 rounded" />
+            <div className="h-4 bg-zinc-200 dark:bg-zinc-700 rounded" />
+            <div className="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-5/6" />
           </div>
         </div>
       </div>
     )
   }
 
-  const theme = themeStyles[resolvedTheme]
   const fontClass = fontFamilyClasses[settings.fontFamily]
   const lineHeightClass = lineHeightClasses[settings.lineHeight]
   const widthClass = widthClasses[settings.width]
+  
+  // For 'auto', use Tailwind dark mode classes (follows site theme)
+  // For explicit themes, use inline styles to override
+  const isAutoTheme = settings.theme === 'auto'
+  const explicitTheme = !isAutoTheme ? themeInlineStyles[settings.theme] : null
 
   return (
     <div 
-      className={`min-h-screen transition-colors duration-300 ${theme.bg} ${theme.text}`}
-      data-reading-theme={resolvedTheme}
+      className={`min-h-screen transition-colors duration-300 ${
+        isAutoTheme 
+          ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100' 
+          : ''
+      }`}
+      style={explicitTheme ? { backgroundColor: explicitTheme.bg, color: explicitTheme.text } : undefined}
+      data-reading-theme={settings.theme}
     >
       {/* Scroll Progress Bar */}
       <ScrollProgressBar />
       
       {/* Compact Header with Settings Button */}
-      <div className={`border-b sticky top-0 z-10 backdrop-blur ${theme.bg}/95 ${theme.border}`}>
+      <div 
+        className={`border-b sticky top-0 z-10 backdrop-blur-sm ${
+          isAutoTheme 
+            ? 'bg-white/95 dark:bg-zinc-900/95 border-zinc-200 dark:border-zinc-700' 
+            : ''
+        }`}
+        style={explicitTheme ? { 
+          backgroundColor: `${explicitTheme.bg}f2`, // 95% opacity
+          borderColor: explicitTheme.borderColor 
+        } : undefined}
+      >
         <div className={`container mx-auto px-4 py-3 ${widthClass}`}>
           <div className="flex items-center justify-between">
             {headerContent}
