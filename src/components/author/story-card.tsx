@@ -10,7 +10,7 @@ interface Story {
   title: string;
   tagline: string | null;
   description: string;
-  cover_image_url: string | null;
+  cover_url: string | null;
   status: string;
   created_at: string;
   updated_at?: string;
@@ -39,10 +39,10 @@ export function AuthorStoryCard({ story }: StoryCardProps) {
     <div className="flex gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:shadow-md transition-shadow">
       {/* Cover */}
       <Link href={`/story/${story.id}`} className="shrink-0">
-        {story.cover_image_url ? (
+        {story.cover_url ? (
           <div className="relative w-20 h-28 rounded-lg overflow-hidden">
             <Image
-              src={story.cover_image_url}
+              src={story.cover_url}
               alt={story.title}
               fill
               sizes="80px"
