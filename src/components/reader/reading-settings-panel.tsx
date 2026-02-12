@@ -2,6 +2,7 @@
 
 import { Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ReadingSettings } from '@/lib/hooks/useReadingSettings'
 import {
   Sheet,
   SheetContent,
@@ -10,13 +11,6 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { Slider } from '@/components/ui/slider'
-import {
-  ReadingSettings,
-  fontFamilyClasses,
-  lineHeightClasses,
-  widthClasses,
-  themeStyles,
-} from '@/lib/hooks/useReadingSettings'
 
 interface ReadingSettingsPanelProps {
   settings: ReadingSettings
@@ -25,29 +19,56 @@ interface ReadingSettingsPanelProps {
   isMobileSheet?: boolean
 }
 
-// Settings content - reusable between desktop Sheet and mobile embedded
-function SettingsContent({
+export function ReadingSettingsPanel({
   settings,
   onUpdateSettings,
   onResetSettings,
-}: Omit<ReadingSettingsPanelProps, 'isMobileSheet'>) {
-  return (
+  isMobileSheet = false,
+}: ReadingSettingsPanelProps) {
+  const fontOptions = [
+    { value: 'default', label: 'Default' },
+    { value: 'serif', label: 'Serif' },
+    { value: 'sans', label: 'Sans' },
+    { value: 'mono', label: 'Mono' },
+  ] as const
+
+  const lineHeightOptions = [
+    { value: 'tight', label: 'Tight' },
+    { value: 'normal', label: 'Normal' },
+    { value: 'relaxed', label: 'Relaxed' },
+  ] as const
+
+  const themeOptions = [
+    { value: 'auto', label: 'Auto', preview: 'bg-gradient-to-r from-white to-zinc-900' },
+    { value: 'light', label: 'Light', preview: 'bg-white border-zinc-300' },
+    { value: 'dark', label: 'Dark', preview: 'bg-zinc-900 border-zinc-700' },
+    { value: 'sepia', label: 'Sepia', preview: 'bg-amber-50 border-amber-300' },
+    { value: 'night', label: 'Night', preview: 'bg-black border-zinc-700' },
+  ] as const
+
+  const widthOptions = [
+    { value: 'narrow', label: 'Narrow' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'wide', label: 'Wide' },
+  ] as const
+
+  const SettingsContent = () => (
     <div className="space-y-6">
       {/* Font Family */}
       <div>
         <label className="text-sm font-medium mb-2 block">Font</label>
-        <div className="grid grid-cols-4 gap-2">
-          {(Object.keys(fontFamilyClasses) as Array<keyof typeof fontFamilyClasses>).map((font) => (
+        <div className="flex gap-2">
+          {fontOptions.map((option) => (
             <button
-              key={font}
-              onClick={() => onUpdateSettings({ fontFamily: font })}
-              className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                settings.fontFamily === font
-                  ? 'border-primary bg-primary/10 text-primary'
+              key={option.value}
+              onClick={() => onUpdateSettings({ fontFamily: option.value })}
+              className={`flex-1 px-3 py-2 rounded-md text-sm border transition-colors
+                ${settings.fontFamily === option.value 
+                  ? 'border-primary bg-primary/10 font-medium' 
                   : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600'
-              }`}
+                }`}
             >
-              {font.charAt(0).toUpperCase() + font.slice(1)}
+              {option.label}
             </button>
           ))}
         </div>
@@ -55,10 +76,9 @@ function SettingsContent({
 
       {/* Font Size */}
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-medium">Font Size</label>
-          <span className="text-sm text-zinc-500">{settings.fontSize}px</span>
-        </div>
+        <label className="text-sm font-medium mb-2 block">
+          Size: {settings.fontSize}px
+        </label>
         <Slider
           value={[settings.fontSize]}
           onValueChange={([value]) => onUpdateSettings({ fontSize: value })}
@@ -67,27 +87,23 @@ function SettingsContent({
           step={1}
           className="w-full"
         />
-        <div className="flex justify-between mt-1 text-xs text-zinc-500">
-          <span>Small</span>
-          <span>Large</span>
-        </div>
       </div>
 
-      {/* Line Spacing */}
+      {/* Line Height */}
       <div>
         <label className="text-sm font-medium mb-2 block">Line Spacing</label>
-        <div className="grid grid-cols-3 gap-2">
-          {(Object.keys(lineHeightClasses) as Array<keyof typeof lineHeightClasses>).map((height) => (
+        <div className="flex gap-2">
+          {lineHeightOptions.map((option) => (
             <button
-              key={height}
-              onClick={() => onUpdateSettings({ lineHeight: height })}
-              className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                settings.lineHeight === height
-                  ? 'border-primary bg-primary/10 text-primary'
+              key={option.value}
+              onClick={() => onUpdateSettings({ lineHeight: option.value })}
+              className={`flex-1 px-3 py-2 rounded-md text-sm border transition-colors
+                ${settings.lineHeight === option.value 
+                  ? 'border-primary bg-primary/10 font-medium' 
                   : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600'
-              }`}
+                }`}
             >
-              {height.charAt(0).toUpperCase() + height.slice(1)}
+              {option.label}
             </button>
           ))}
         </div>
@@ -96,41 +112,39 @@ function SettingsContent({
       {/* Theme */}
       <div>
         <label className="text-sm font-medium mb-2 block">Theme</label>
-        <div className="grid grid-cols-4 gap-2">
-          {(Object.keys(themeStyles) as Array<keyof typeof themeStyles>).map((theme) => {
-            const style = themeStyles[theme]
-            return (
-              <button
-                key={theme}
-                onClick={() => onUpdateSettings({ theme })}
-                className={`px-3 py-2 text-sm rounded-lg border transition-colors ${style.bg} ${style.text} ${
-                  settings.theme === theme
-                    ? 'ring-2 ring-primary ring-offset-2'
-                    : ''
+        <div className="flex gap-2">
+          {themeOptions.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => onUpdateSettings({ theme: option.value })}
+              className={`flex-1 flex flex-col items-center gap-1.5 p-2 rounded-md border transition-colors
+                ${settings.theme === option.value 
+                  ? 'border-primary ring-2 ring-primary/20' 
+                  : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600'
                 }`}
-              >
-                {theme.charAt(0).toUpperCase() + theme.slice(1)}
-              </button>
-            )
-          })}
+            >
+              <div className={`w-6 h-6 rounded-full border ${option.preview}`} />
+              <span className="text-xs">{option.label}</span>
+            </button>
+          ))}  
         </div>
       </div>
 
-      {/* Content Width */}
+      {/* Width */}
       <div>
         <label className="text-sm font-medium mb-2 block">Content Width</label>
-        <div className="grid grid-cols-3 gap-2">
-          {(Object.keys(widthClasses) as Array<keyof typeof widthClasses>).map((width) => (
+        <div className="flex gap-2">
+          {widthOptions.map((option) => (
             <button
-              key={width}
-              onClick={() => onUpdateSettings({ width })}
-              className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                settings.width === width
-                  ? 'border-primary bg-primary/10 text-primary'
+              key={option.value}
+              onClick={() => onUpdateSettings({ width: option.value })}
+              className={`flex-1 px-3 py-2 rounded-md text-sm border transition-colors
+                ${settings.width === option.value 
+                  ? 'border-primary bg-primary/10 font-medium' 
                   : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600'
-              }`}
+                }`}
             >
-              {width.charAt(0).toUpperCase() + width.slice(1)}
+              {option.label}
             </button>
           ))}
         </div>
@@ -139,7 +153,6 @@ function SettingsContent({
       {/* Reset Button */}
       <Button
         variant="outline"
-        size="sm"
         onClick={onResetSettings}
         className="w-full"
       >
@@ -147,44 +160,27 @@ function SettingsContent({
       </Button>
     </div>
   )
-}
 
-export function ReadingSettingsPanel({
-  settings,
-  onUpdateSettings,
-  onResetSettings,
-  isMobileSheet = false,
-}: ReadingSettingsPanelProps) {
-  // When embedded in mobile sheet, just render the content
+  // If embedded in mobile sheet, just render content
   if (isMobileSheet) {
-    return (
-      <SettingsContent
-        settings={settings}
-        onUpdateSettings={onUpdateSettings}
-        onResetSettings={onResetSettings}
-      />
-    )
+    return <SettingsContent />
   }
 
-  // Desktop: render in a Sheet/drawer
+  // Desktop: Slide-out sheet
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
+        <Button variant="ghost" size="icon" className="shrink-0">
           <Settings2 className="h-4 w-4" />
           <span className="sr-only">Reading settings</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-[320px] sm:w-[400px] overflow-y-auto">
+      <SheetContent side="right" className="w-80">
         <SheetHeader>
           <SheetTitle>Reading Settings</SheetTitle>
         </SheetHeader>
         <div className="mt-6">
-          <SettingsContent
-            settings={settings}
-            onUpdateSettings={onUpdateSettings}
-            onResetSettings={onResetSettings}
-          />
+          <SettingsContent />
         </div>
       </SheetContent>
     </Sheet>

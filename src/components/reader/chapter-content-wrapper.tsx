@@ -17,7 +17,7 @@ interface ChapterContentWrapperProps {
 }
 
 export function ChapterContentWrapper({ children, headerContent }: ChapterContentWrapperProps) {
-  const { settings, updateSettings, resetSettings, isLoaded } = useReadingSettings()
+  const { settings, resolvedTheme, updateSettings, resetSettings, isLoaded } = useReadingSettings()
 
   // Don't render until settings are loaded from localStorage
   if (!isLoaded) {
@@ -36,13 +36,16 @@ export function ChapterContentWrapper({ children, headerContent }: ChapterConten
     )
   }
 
-  const theme = themeStyles[settings.theme]
+  const theme = themeStyles[resolvedTheme]
   const fontClass = fontFamilyClasses[settings.fontFamily]
   const lineHeightClass = lineHeightClasses[settings.lineHeight]
   const widthClass = widthClasses[settings.width]
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${theme.bg} ${theme.text}`}>
+    <div 
+      className={`min-h-screen transition-colors duration-300 ${theme.bg} ${theme.text}`}
+      data-reading-theme={resolvedTheme}
+    >
       {/* Scroll Progress Bar */}
       <ScrollProgressBar />
       
@@ -62,7 +65,7 @@ export function ChapterContentWrapper({ children, headerContent }: ChapterConten
 
       {/* Chapter Content with Applied Settings */}
       <article 
-        className={`container mx-auto px-4 py-8 ${widthClass} ${fontClass} ${lineHeightClass}`}
+        className={`container mx-auto px-4 py-8 pb-24 md:pb-8 ${widthClass} ${fontClass} ${lineHeightClass}`}
         style={{ fontSize: `${settings.fontSize}px` }}
       >
         {children}

@@ -6,7 +6,7 @@ export interface ReadingSettings {
   fontFamily: 'default' | 'serif' | 'sans' | 'mono'
   fontSize: number // 14-24
   lineHeight: 'tight' | 'normal' | 'relaxed'
-  theme: 'light' | 'dark' | 'sepia' | 'night'
+  theme: 'auto' | 'light' | 'dark' | 'sepia' | 'night'
   width: 'narrow' | 'medium' | 'wide'
 }
 
@@ -14,7 +14,7 @@ const DEFAULT_SETTINGS: ReadingSettings = {
   fontFamily: 'default',
   fontSize: 18,
   lineHeight: 'normal',
-  theme: 'light',
+  theme: 'auto', // Now defaults to following site theme
   width: 'medium',
 }
 
@@ -23,6 +23,7 @@ const STORAGE_KEY = 'fictionforge-reading-settings'
 export function useReadingSettings() {
   const [settings, setSettings] = useState<ReadingSettings>(DEFAULT_SETTINGS)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark' | 'sepia' | 'night'>('light')
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -37,6 +38,30 @@ export function useReadingSettings() {
     }
     setIsLoaded(true)
   }, [])
+
+  // Resolve 'auto' theme based on site dark mode
+  useEffect(() => {
+    if (settings.theme === 'auto') {
+      // Check if site is in dark mode (next-themes adds 'dark' class to <html>)
+      const checkDarkMode = () => {
+        const isDark = document.documentElement.classList.contains('dark')
+        setResolvedTheme(isDark ? 'dark' : 'light')
+      }
+      
+      checkDarkMode()
+      
+      // Watch for class changes on <html> (next-themes toggles)
+      const observer = new MutationObserver(checkDarkMode)
+      observer.observe(document.documentElement, { 
+        attributes: true, 
+        attributeFilter: ['class'] 
+      })
+      
+      return () => observer.disconnect()
+    } else {
+      setResolvedTheme(settings.theme)
+    }
+  }, [settings.theme])
 
   // Save to localStorage whenever settings change
   useEffect(() => {
@@ -59,6 +84,7 @@ export function useReadingSettings() {
 
   return {
     settings,
+    resolvedTheme, // The actual theme to use (never 'auto')
     updateSettings,
     resetSettings,
     isLoaded,
@@ -86,7 +112,7 @@ export const widthClasses: Record<ReadingSettings['width'], string> = {
 }
 
 // Theme styles (applied to container)
-export const themeStyles: Record<ReadingSettings['theme'], { bg: string; text: string; border: string }> = {
+export const themeStyles: Record<'light' | 'dark' | 'sepia' | 'night', { bg: string; text: string; border: string }> = {
   light: { bg: 'bg-white', text: 'text-zinc-900', border: 'border-zinc-200' },
   dark: { bg: 'bg-zinc-900', text: 'text-zinc-100', border: 'border-zinc-700' },
   sepia: { bg: 'bg-amber-50', text: 'text-amber-950', border: 'border-amber-200' },
