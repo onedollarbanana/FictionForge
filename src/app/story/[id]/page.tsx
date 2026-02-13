@@ -294,7 +294,6 @@ export default async function StoryPage({ params }: PageProps) {
       <RelatedStories 
         storyId={id}
         genres={story.genres || []}
-        tags={story.tags || []}
         authorId={story.author_id}
       />
     </div>
