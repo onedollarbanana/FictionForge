@@ -2,30 +2,44 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { ChevronDown, Loader2, Check, BookOpen, Clock, Archive, X, Bookmark, Pause, CheckCircle } from 'lucide-react'
+import { ChevronDown, Loader2, Check, BookOpen, Clock, Archive, X, Bookmark, Pause, CheckCircle, Bell, BellOff } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { showToast } from '@/components/ui/toast'
 
 interface StatusDropdownProps {
   storyId: string
   currentStatus: string | null
+  notifyNewChapters?: boolean
   onStatusChange: (newStatus: string | null) => void
+  onNotifyChange?: (notify: boolean) => void
 }
 
 type FollowStatus = 'reading' | 'plan_to_read' | 'on_hold' | 'finished' | 'dropped' | null
 
-const statusConfig: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  reading: { label: 'Reading', icon: <BookOpen className="h-4 w-4" />, color: 'text-green-500' },
-  plan_to_read: { label: 'Plan to Read', icon: <Clock className="h-4 w-4" />, color: 'text-blue-500' },
-  on_hold: { label: 'On Hold', icon: <Pause className="h-4 w-4" />, color: 'text-amber-500' },
-  finished: { label: 'Finished', icon: <CheckCircle className="h-4 w-4" />, color: 'text-purple-500' },
-  dropped: { label: 'Dropped', icon: <Archive className="h-4 w-4" />, color: 'text-gray-500' },
+const statusConfig: Record<string, { label: string; icon: React.ReactNode; color: string; defaultNotify: boolean }> = {
+  reading: { label: 'Reading', icon: <BookOpen className="h-4 w-4" />, color: 'text-green-500', defaultNotify: true },
+  plan_to_read: { label: 'Plan to Read', icon: <Clock className="h-4 w-4" />, color: 'text-blue-500', defaultNotify: false },
+  on_hold: { label: 'On Hold', icon: <Pause className="h-4 w-4" />, color: 'text-amber-500', defaultNotify: true },
+  finished: { label: 'Finished', icon: <CheckCircle className="h-4 w-4" />, color: 'text-purple-500', defaultNotify: false },
+  dropped: { label: 'Dropped', icon: <Archive className="h-4 w-4" />, color: 'text-gray-500', defaultNotify: false },
 }
 
-export function StatusDropdown({ storyId, currentStatus, onStatusChange }: StatusDropdownProps) {
+export function StatusDropdown({ 
+  storyId, 
+  currentStatus, 
+  notifyNewChapters = true,
+  onStatusChange,
+  onNotifyChange 
+}: StatusDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [notify, setNotify] = useState(notifyNewChapters)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Sync notify state with prop
+  useEffect(() => {
+    setNotify(notifyNewChapters)
+  }, [notifyNewChapters])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -50,7 +64,7 @@ export function StatusDropdown({ storyId, currentStatus, onStatusChange }: Statu
       }
 
       if (status === null) {
-        // Remove from library (unfollow)
+        // Remove from library (delete follow)
         const { error } = await supabase
           .from('follows')
           .delete()
@@ -60,6 +74,9 @@ export function StatusDropdown({ storyId, currentStatus, onStatusChange }: Statu
         if (error) throw error
         showToast('Removed from library', 'success')
       } else {
+        // Get smart default for notifications
+        const newNotify = statusConfig[status].defaultNotify
+
         // Check if follow exists
         const { data: existing } = await supabase
           .from('follows')
@@ -69,11 +86,12 @@ export function StatusDropdown({ storyId, currentStatus, onStatusChange }: Statu
           .maybeSingle()
 
         if (existing) {
-          // Update existing follow
+          // Update existing follow with smart notification default
           const { error } = await supabase
             .from('follows')
             .update({ 
               status, 
+              notify_new_chapters: newNotify,
               updated_at: new Date().toISOString() 
             })
             .eq('user_id', user.id)
@@ -81,17 +99,21 @@ export function StatusDropdown({ storyId, currentStatus, onStatusChange }: Statu
           
           if (error) throw error
         } else {
-          // Create new follow
+          // Create new follow with smart notification default
           const { error } = await supabase
             .from('follows')
             .insert({
               user_id: user.id,
               story_id: storyId,
               status,
+              notify_new_chapters: newNotify,
             })
           
           if (error) throw error
         }
+        
+        setNotify(newNotify)
+        onNotifyChange?.(newNotify)
         showToast(`Status updated to ${statusConfig[status].label}`, 'success')
       }
       
@@ -102,6 +124,35 @@ export function StatusDropdown({ storyId, currentStatus, onStatusChange }: Statu
     } finally {
       setLoading(false)
       setIsOpen(false)
+    }
+  }
+
+  const handleToggleNotifications = async () => {
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        showToast('Please sign in', 'error')
+        return
+      }
+
+      const newNotify = !notify
+      
+      const { error } = await supabase
+        .from('follows')
+        .update({ notify_new_chapters: newNotify })
+        .eq('user_id', user.id)
+        .eq('story_id', storyId)
+      
+      if (error) throw error
+      
+      setNotify(newNotify)
+      onNotifyChange?.(newNotify)
+      showToast(newNotify ? 'Notifications enabled' : 'Notifications disabled', 'success')
+    } catch (error) {
+      console.error('Error toggling notifications:', error)
+      showToast('Failed to update notifications', 'error')
     }
   }
 
@@ -122,6 +173,13 @@ export function StatusDropdown({ storyId, currentStatus, onStatusChange }: Statu
           <span className={`flex items-center gap-2 ${currentConfig.color}`}>
             {currentConfig.icon}
             {currentConfig.label}
+            {currentStatus && (
+              notify ? (
+                <Bell className="h-3 w-3 text-primary ml-1" />
+              ) : (
+                <BellOff className="h-3 w-3 text-muted-foreground ml-1" />
+              )
+            )}
           </span>
         ) : (
           <span className="flex items-center gap-2 text-muted-foreground">
@@ -133,7 +191,7 @@ export function StatusDropdown({ storyId, currentStatus, onStatusChange }: Statu
       </Button>
 
       {isOpen && (
-        <div className="absolute top-full mt-1 right-0 z-50 min-w-[160px] bg-white dark:bg-zinc-900 border border-border rounded-md shadow-lg py-1">
+        <div className="absolute top-full mt-1 right-0 z-50 min-w-[180px] bg-white dark:bg-zinc-900 border border-border rounded-md shadow-lg py-1">
           {Object.entries(statusConfig).map(([key, config]) => (
             <button
               key={key}
@@ -143,14 +201,31 @@ export function StatusDropdown({ storyId, currentStatus, onStatusChange }: Statu
               }`}
             >
               <span className={config.color}>{config.icon}</span>
-              <span>{config.label}</span>
-              {currentStatus === key && <Check className="h-4 w-4 ml-auto text-primary" />}
+              <span className="flex-1">{config.label}</span>
+              {currentStatus === key && <Check className="h-4 w-4 text-primary" />}
             </button>
           ))}
           
           {currentStatus && (
             <>
               <div className="border-t my-1" />
+              
+              {/* Notification toggle */}
+              <button
+                onClick={handleToggleNotifications}
+                className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-muted transition-colors"
+              >
+                {notify ? (
+                  <Bell className="h-4 w-4 text-primary" />
+                ) : (
+                  <BellOff className="h-4 w-4 text-muted-foreground" />
+                )}
+                <span className="flex-1">Chapter updates</span>
+                {notify && <Check className="h-4 w-4 text-primary" />}
+              </button>
+              
+              <div className="border-t my-1" />
+              
               <button
                 onClick={() => handleStatusSelect(null)}
                 className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-muted transition-colors text-destructive"

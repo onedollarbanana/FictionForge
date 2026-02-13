@@ -1,3 +1,3 @@
-export { FollowButton } from "./FollowButton";
+export { LibraryButton, FollowButton } from "./LibraryButton";
 export { StatusDropdown } from "./StatusDropdown";
 export { LibraryStoryCard } from "./LibraryStoryCard";

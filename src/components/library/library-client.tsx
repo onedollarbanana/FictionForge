@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { BookOpen, Clock, Pause, CheckCircle, Archive, Library, ArrowUpDown, Star } from 'lucide-react'
+import { BookOpen, Clock, Pause, CheckCircle, Archive, Library, ArrowUpDown, Star, Bell, BellOff } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
@@ -11,6 +11,7 @@ import { StatusDropdown } from '@/components/story/StatusDropdown'
 interface LibraryItem {
   followId: string
   status: string
+  notifyNewChapters: boolean
   createdAt: string
   updatedAt: string
   story: {
@@ -119,6 +120,15 @@ export function LibraryClient({ items: initialItems }: LibraryClientProps) {
           : item
       ))
     }
+  }
+
+  // Handle notification toggle
+  const handleNotifyChange = (storyId: string, notify: boolean) => {
+    setItems(prev => prev.map(item => 
+      item.story.id === storyId 
+        ? { ...item, notifyNewChapters: notify }
+        : item
+    ))
   }
 
   if (items.length === 0) {
@@ -243,9 +253,17 @@ export function LibraryClient({ items: initialItems }: LibraryClientProps) {
                       {item.story.title}
                     </h3>
                   </Link>
-                  <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full ${statusBadgeColors[item.status] || statusBadgeColors.reading}`}>
-                    {statusTabs.find(t => t.key === item.status)?.label || item.status}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {/* Notification indicator */}
+                    {item.notifyNewChapters ? (
+                      <Bell className="h-3.5 w-3.5 text-primary" />
+                    ) : (
+                      <BellOff className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${statusBadgeColors[item.status] || statusBadgeColors.reading}`}>
+                      {statusTabs.find(t => t.key === item.status)?.label || item.status}
+                    </span>
+                  </div>
                 </div>
 
                 <p className="text-sm text-muted-foreground mb-1">
@@ -297,7 +315,9 @@ export function LibraryClient({ items: initialItems }: LibraryClientProps) {
                   <StatusDropdown
                     storyId={item.story.id}
                     currentStatus={item.status}
+                    notifyNewChapters={item.notifyNewChapters}
                     onStatusChange={(newStatus) => handleStatusChange(item.story.id, newStatus)}
+                    onNotifyChange={(notify) => handleNotifyChange(item.story.id, notify)}
                   />
                 </div>
               </div>

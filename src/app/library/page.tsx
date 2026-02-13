@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic'
 interface FollowWithStory {
   id: string
   status: string
+  notify_new_chapters: boolean
   created_at: string
   updated_at: string
   story: {
@@ -44,6 +45,7 @@ export default async function LibraryPage() {
     .select(`
       id,
       status,
+      notify_new_chapters,
       created_at,
       updated_at,
       story:stories (
@@ -129,6 +131,7 @@ export default async function LibraryPage() {
     return {
       followId: f.id,
       status: f.status,
+      notifyNewChapters: f.notify_new_chapters,
       createdAt: f.created_at,
       updatedAt: f.updated_at,
       story: {
