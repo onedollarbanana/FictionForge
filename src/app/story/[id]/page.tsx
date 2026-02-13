@@ -9,6 +9,9 @@ import { formatDistanceToNow } from "date-fns";
 import { FollowButton } from "@/components/story/FollowButton";
 import { AnnouncementBanner } from "@/components/announcements";
 import { StoryRatingSection } from "@/components/story/story-rating-section";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { RelatedStories } from "@/components/story/related-stories";
+import { MoreFromAuthor } from "@/components/story/more-from-author";
 
 export const dynamic = "force-dynamic";
 
@@ -94,6 +97,12 @@ export default async function StoryPage({ params }: PageProps) {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
+      {/* Breadcrumb */}
+      <Breadcrumb items={[
+        { label: 'Browse', href: '/browse' },
+        { label: story.title }
+      ]} />
+
       {/* Story Header */}
       <div className="flex flex-col md:flex-row gap-6 mb-8">
         {/* Cover Image - 2:3 aspect ratio */}
@@ -147,25 +156,29 @@ export default async function StoryPage({ params }: PageProps) {
             {story.status?.charAt(0).toUpperCase() + story.status?.slice(1) || "Ongoing"}
           </Badge>
 
-          {/* Genres */}
+          {/* Genres - now clickable */}
           {story.genres && story.genres.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 mb-3">
               {(story.genres || []).map((genre: string) => (
-                <Badge key={genre} variant="default">
-                  {genre}
-                </Badge>
+                <Link key={genre} href={`/browse/genre/${encodeURIComponent(genre)}`}>
+                  <Badge variant="default" className="cursor-pointer hover:bg-primary/80">
+                    {genre}
+                  </Badge>
+                </Link>
               ))}
             </div>
           )}
           
-          {/* Tags */}
+          {/* Tags - now clickable */}
           {story.tags && story.tags.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <span className="text-sm text-muted-foreground">Tags:</span>
               {(story.tags || []).map((tag: string) => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                </Badge>
+                <Link key={tag} href={`/browse/tag/${encodeURIComponent(tag)}`}>
+                  <Badge variant="secondary" className="cursor-pointer hover:bg-muted">
+                    {tag}
+                  </Badge>
+                </Link>
               ))}
             </div>
           )}
@@ -214,7 +227,7 @@ export default async function StoryPage({ params }: PageProps) {
       </div>
 
       {/* Chapter List */}
-      <div>
+      <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">
           Chapters ({publishedChapters.length})
         </h2>
@@ -269,6 +282,21 @@ export default async function StoryPage({ params }: PageProps) {
           </div>
         )}
       </div>
+
+      {/* More from this Author */}
+      <MoreFromAuthor 
+        storyId={id}
+        authorId={story.author_id}
+        authorUsername={story.profiles?.username || 'Unknown'}
+      />
+
+      {/* Related Stories */}
+      <RelatedStories 
+        storyId={id}
+        genres={story.genres || []}
+        tags={story.tags || []}
+        authorId={story.author_id}
+      />
     </div>
   );
 }
