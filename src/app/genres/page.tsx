@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { GENRES } from '@/lib/constants';
 import Link from 'next/link';
 
@@ -52,18 +52,11 @@ export default async function GenresPage() {
   
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Breadcrumbs */}
-      <Breadcrumb className="mb-6">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/">Home</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>All Genres</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      <Breadcrumb 
+        items={[
+          { label: 'All Genres' }
+        ]} 
+      />
       
       <h1 className="text-3xl font-bold mb-2">Browse by Genre</h1>
       <p className="text-muted-foreground mb-8">
