@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, ChevronRight, Clock, Megaphone, Star } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { LibraryFilters } from "@/components/library/library-filters";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ type FollowWithStory = {
   id: string
   status: string
   created_at: string
+  updated_at: string
   story: {
     id: string
     title: string
@@ -36,12 +38,28 @@ type ReadingProgress = {
   chapter_number: number
 }
 
-type AnnouncementCount = {
-  story_id: string
-  unread: number
+interface PageProps {
+  searchParams: Promise<{ status?: string; sort?: string }>
 }
 
-export default async function LibraryPage() {
+const statusLabels: Record<string, string> = {
+  reading: 'Reading',
+  plan_to_read: 'Plan to Read',
+  on_hold: 'On Hold',
+  finished: 'Finished',
+  dropped: 'Dropped',
+}
+
+const statusColors: Record<string, string> = {
+  reading: 'bg-green-500/10 text-green-600 dark:text-green-400',
+  plan_to_read: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  on_hold: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  finished: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+  dropped: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
+}
+
+export default async function LibraryPage({ searchParams }: PageProps) {
+  const { status: filterStatus = 'all', sort: sortBy = 'updated' } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -56,6 +74,7 @@ export default async function LibraryPage() {
       id,
       status,
       created_at,
+      updated_at,
       story:stories (
         id,
         title,
@@ -74,7 +93,6 @@ export default async function LibraryPage() {
       )
     `)
     .eq('user_id', user.id)
-    .order('updated_at', { ascending: false })
 
   // Fetch reading progress for all stories
   const { data: progressData } = await supabase
@@ -88,13 +106,27 @@ export default async function LibraryPage() {
     progressMap.set(p.story_id, p.chapter_number)
   })
 
-  const stories = (follows || []) as unknown as FollowWithStory[]
-  const storyIds = stories.map(f => f.story?.id).filter(Boolean) as string[]
+  const allStories = (follows || []) as unknown as FollowWithStory[]
+  const storyIds = allStories.map(f => f.story?.id).filter(Boolean) as string[]
+
+  // Calculate status counts for tabs
+  const statusCounts: Record<string, number> = {
+    total: allStories.length,
+    reading: 0,
+    plan_to_read: 0,
+    on_hold: 0,
+    finished: 0,
+    dropped: 0,
+  }
+  allStories.forEach(f => {
+    if (f.status && statusCounts[f.status] !== undefined) {
+      statusCounts[f.status]++
+    }
+  })
 
   // Fetch unread announcement counts
-  let unreadAnnouncementsMap = new Map<string, number>()
+  const unreadAnnouncementsMap = new Map<string, number>()
   if (storyIds.length > 0) {
-    // Get all announcements for followed stories from last 30 days
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
     
@@ -105,7 +137,6 @@ export default async function LibraryPage() {
       .gte('created_at', thirtyDaysAgo.toISOString())
 
     if (announcements && announcements.length > 0) {
-      // Get which ones the user has read
       const announcementIds = announcements.map(a => a.id)
       const { data: reads } = await supabase
         .from('announcement_reads')
@@ -115,7 +146,6 @@ export default async function LibraryPage() {
 
       const readIds = new Set((reads || []).map(r => r.announcement_id))
       
-      // Count unread per story
       announcements.forEach(a => {
         if (!readIds.has(a.id)) {
           const current = unreadAnnouncementsMap.get(a.story_id) || 0
@@ -126,7 +156,7 @@ export default async function LibraryPage() {
   }
 
   // Fetch chapter reads to calculate progress
-  let chapterReadsMap = new Map<string, number>()
+  const chapterReadsMap = new Map<string, number>()
   if (storyIds.length > 0) {
     const { data: chapterReads } = await supabase
       .from('chapter_reads')
@@ -134,7 +164,6 @@ export default async function LibraryPage() {
       .eq('user_id', user.id)
       .in('story_id', storyIds)
 
-    // Count chapters read per story
     ;(chapterReads || []).forEach((cr: { story_id: string }) => {
       const current = chapterReadsMap.get(cr.story_id) || 0
       chapterReadsMap.set(cr.story_id, current + 1)
@@ -142,9 +171,8 @@ export default async function LibraryPage() {
   }
 
   // Fetch next unread chapter for each story
-  let nextChapterMap = new Map<string, string | null>()
+  const nextChapterMap = new Map<string, string | null>()
   for (const storyId of storyIds) {
-    // Get chapters the user has read
     const { data: readChapters } = await supabase
       .from('chapter_reads')
       .select('chapter_id')
@@ -153,7 +181,6 @@ export default async function LibraryPage() {
 
     const readChapterIds = new Set((readChapters || []).map(rc => rc.chapter_id))
 
-    // Get all published chapters ordered by chapter_number
     const { data: chapters } = await supabase
       .from('chapters')
       .select('id')
@@ -161,18 +188,40 @@ export default async function LibraryPage() {
       .eq('is_published', true)
       .order('chapter_number', { ascending: true })
 
-    // Find first unread chapter
     const nextChapter = (chapters || []).find(ch => !readChapterIds.has(ch.id))
     nextChapterMap.set(storyId, nextChapter?.id || null)
   }
 
   // Enhance follow data with computed values
-  const enhancedFollows = stories.map(follow => ({
+  let enhancedFollows = allStories.map(follow => ({
     ...follow,
     chaptersRead: chapterReadsMap.get(follow.story?.id) || 0,
     nextChapterId: nextChapterMap.get(follow.story?.id) || null,
     unreadAnnouncements: unreadAnnouncementsMap.get(follow.story?.id) || 0
   }))
+
+  // Filter by status
+  if (filterStatus !== 'all') {
+    enhancedFollows = enhancedFollows.filter(f => f.status === filterStatus)
+  }
+
+  // Sort
+  enhancedFollows.sort((a, b) => {
+    switch (sortBy) {
+      case 'title':
+        return (a.story?.title || '').localeCompare(b.story?.title || '')
+      case 'added':
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      case 'progress':
+        const aProgress = a.story?.chapter_count ? (a.chaptersRead / a.story.chapter_count) : 0
+        const bProgress = b.story?.chapter_count ? (b.chaptersRead / b.story.chapter_count) : 0
+        return bProgress - aProgress
+      case 'updated':
+      default:
+        return new Date(b.story?.last_chapter_at || b.updated_at).getTime() - 
+               new Date(a.story?.last_chapter_at || a.updated_at).getTime()
+    }
+  })
 
   const renderStoryCard = (follow: typeof enhancedFollows[number]) => {
     const story = follow.story
@@ -184,7 +233,6 @@ export default async function LibraryPage() {
     const progressPercent = totalChapters > 0 ? Math.round((chaptersRead / totalChapters) * 100) : 0
     const unreadAnnouncements = follow.unreadAnnouncements
 
-    // Use updated_at for cache busting
     const imageTimestamp = story.updated_at 
       ? new Date(story.updated_at).getTime() 
       : 'v1'
@@ -208,7 +256,6 @@ export default async function LibraryPage() {
               <BookOpen className="h-6 w-6 text-muted-foreground" />
             </div>
           )}
-          {/* Announcement badge on cover */}
           {unreadAnnouncements > 0 && (
             <div className="absolute -top-1 -right-1 h-5 w-5 bg-amber-500 rounded-full flex items-center justify-center">
               <Megaphone className="h-3 w-3 text-white" />
@@ -254,8 +301,8 @@ export default async function LibraryPage() {
 
           <div className="flex items-center justify-between mt-3">
             <div className="flex items-center gap-2">
-              <Badge variant={follow.status === 'reading' ? 'default' : 'secondary'}>
-                {follow.status}
+              <Badge className={statusColors[follow.status] || ''}>
+                {statusLabels[follow.status] || follow.status}
               </Badge>
               {story.last_chapter_at && (
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -279,57 +326,37 @@ export default async function LibraryPage() {
     )
   }
 
-  const readingStories = enhancedFollows.filter(f => f.status === 'reading')
-  const finishedStories = enhancedFollows.filter(f => f.status === 'finished')
-  const droppedStories = enhancedFollows.filter(f => f.status === 'dropped')
-
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <h1 className="text-3xl font-bold mb-6">My Library</h1>
 
-      {enhancedFollows.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground mb-4">Your library is empty</p>
-            <Link href="/browse" className="text-primary hover:underline">
-              Browse stories to get started
-            </Link>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-8">
-          {readingStories.length > 0 && (
-            <section>
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                Currently Reading ({readingStories.length})
-              </h2>
-              <div className="space-y-4">
-                {readingStories.map(renderStoryCard)}
-              </div>
-            </section>
-          )}
+      <LibraryFilters 
+        currentStatus={filterStatus} 
+        currentSort={sortBy}
+        counts={statusCounts}
+      />
 
-          {finishedStories.length > 0 && (
-            <section>
-              <h2 className="text-xl font-semibold mb-4">Finished ({finishedStories.length})</h2>
-              <div className="space-y-4">
-                {finishedStories.map(renderStoryCard)}
-              </div>
-            </section>
-          )}
-
-          {droppedStories.length > 0 && (
-            <section>
-              <h2 className="text-xl font-semibold mb-4">Dropped ({droppedStories.length})</h2>
-              <div className="space-y-4">
-                {droppedStories.map(renderStoryCard)}
-              </div>
-            </section>
-          )}
-        </div>
-      )}
+      <div className="mt-6">
+        {enhancedFollows.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground mb-4">
+                {filterStatus === 'all' 
+                  ? 'Your library is empty' 
+                  : `No stories in "${statusLabels[filterStatus] || filterStatus}"`}
+              </p>
+              <Link href="/browse" className="text-primary hover:underline">
+                Browse stories to get started
+              </Link>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {enhancedFollows.map(renderStoryCard)}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

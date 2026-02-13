@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -15,11 +15,25 @@ export function MobileNav({ onLogout }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { user, profile } = useUser()
   const pathname = usePathname()
+  const menuRef = useRef<HTMLDivElement>(null)
 
   // Close nav when route changes
   useEffect(() => {
     setIsOpen(false)
   }, [pathname])
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isOpen])
 
   // Prevent body scroll when nav is open
   useEffect(() => {
@@ -34,133 +48,122 @@ export function MobileNav({ onLogout }: MobileNavProps) {
   }, [isOpen])
 
   return (
-    <>
+    <div className="relative md:hidden" ref={menuRef}>
       {/* Hamburger button */}
       <Button
         variant="ghost"
         size="icon"
-        className="md:hidden"
-        onClick={() => setIsOpen(true)}
-        aria-label="Open menu"
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label={isOpen ? "Close menu" : "Open menu"}
       >
-        <Menu className="h-5 w-5" />
+        {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </Button>
 
-      {/* Overlay */}
+      {/* Dropdown menu */}
       {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-
-      {/* Slide-out nav */}
-      <div
-        className={`fixed top-0 right-0 h-full w-72 bg-background dark:bg-zinc-900 border-l border-border shadow-xl z-50 transform transition-transform duration-200 ease-in-out md:hidden ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
-            <span className="font-semibold text-lg">Menu</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsOpen(false)}
-              aria-label="Close menu"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-
-          {/* Nav links */}
-          <nav className="flex-1 p-4">
-            <div className="space-y-1">
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/20 z-40" 
+            onClick={() => setIsOpen(false)}
+          />
+          
+          {/* Menu */}
+          <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-zinc-900 border border-border rounded-lg shadow-xl z-50 overflow-hidden">
+            {/* Nav links */}
+            <nav className="p-2">
               <Link
                 href="/"
-                className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-muted transition-colors"
+                onClick={() => setIsOpen(false)}
               >
-                <Home className="h-5 w-5" />
+                <Home className="h-5 w-5 text-muted-foreground" />
                 <span>Home</span>
               </Link>
               <Link
                 href="/browse"
-                className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-muted transition-colors"
+                onClick={() => setIsOpen(false)}
               >
-                <BookOpen className="h-5 w-5" />
+                <BookOpen className="h-5 w-5 text-muted-foreground" />
                 <span>Browse Stories</span>
               </Link>
               
               {user && (
                 <>
-                  <div className="my-4 border-t" />
+                  <div className="my-2 border-t" />
                   <Link
                     href="/library"
-                    className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-muted transition-colors"
+                    onClick={() => setIsOpen(false)}
                   >
-                    <Library className="h-5 w-5" />
+                    <Library className="h-5 w-5 text-muted-foreground" />
                     <span>My Library</span>
                   </Link>
                   <Link
                     href="/author/dashboard"
-                    className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-muted transition-colors"
+                    onClick={() => setIsOpen(false)}
                   >
-                    <Pen className="h-5 w-5" />
+                    <Pen className="h-5 w-5 text-muted-foreground" />
                     <span>Author Dashboard</span>
                   </Link>
                   <Link
                     href="/settings/profile"
-                    className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-muted transition-colors"
+                    onClick={() => setIsOpen(false)}
                   >
-                    <Settings className="h-5 w-5" />
+                    <Settings className="h-5 w-5 text-muted-foreground" />
                     <span>Settings</span>
                   </Link>
                 </>
               )}
-            </div>
-          </nav>
+            </nav>
 
-          {/* Footer with auth actions */}
-          <div className="p-4 border-t">
-            {user ? (
-              <div className="space-y-3">
-                {profile && (
-                  <p className="text-sm text-muted-foreground px-3">
-                    Signed in as <span className="font-medium text-foreground">{profile.username}</span>
-                  </p>
-                )}
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => {
-                    setIsOpen(false)
-                    onLogout()
-                  }}
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Link href="/login" className="block">
-                  <Button variant="outline" className="w-full">
-                    <LogIn className="h-4 w-4 mr-2" />
-                    Sign In
-                  </Button>
-                </Link>
-                <Link href="/signup" className="block">
-                  <Button className="w-full">
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Sign Up
-                  </Button>
-                </Link>
-              </div>
-            )}
+            {/* Footer with auth actions */}
+            <div className="p-2 border-t bg-muted/30">
+              {user ? (
+                <div className="space-y-2">
+                  {profile && (
+                    <p className="text-sm text-muted-foreground px-3 py-1">
+                      Signed in as <span className="font-medium text-foreground">{profile.username}</span>
+                    </p>
+                  )}
+                  <button
+                    onClick={() => {
+                      setIsOpen(false)
+                      onLogout()
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-muted transition-colors text-left"
+                  >
+                    <LogOut className="h-5 w-5 text-muted-foreground" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <Link 
+                    href="/login" 
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-muted transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <LogIn className="h-5 w-5 text-muted-foreground" />
+                    <span>Sign In</span>
+                  </Link>
+                  <Link 
+                    href="/signup" 
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-muted transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <UserPlus className="h-5 w-5 text-muted-foreground" />
+                    <span>Sign Up</span>
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </div>
-    </>
+        </>
+      )}
+    </div>
   )
 }

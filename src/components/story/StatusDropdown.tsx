@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { ChevronDown, Loader2, Check, BookOpen, Clock, Archive, X, Bookmark } from 'lucide-react'
+import { ChevronDown, Loader2, Check, BookOpen, Clock, Archive, X, Bookmark, Pause, CheckCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { showToast } from '@/components/ui/toast'
 
@@ -12,12 +12,13 @@ interface StatusDropdownProps {
   onStatusChange: (newStatus: string | null) => void
 }
 
-type ReadingStatus = 'reading' | 'plan_to_read' | 'finished' | 'dropped' | null
+type FollowStatus = 'reading' | 'plan_to_read' | 'on_hold' | 'finished' | 'dropped' | null
 
 const statusConfig: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   reading: { label: 'Reading', icon: <BookOpen className="h-4 w-4" />, color: 'text-green-500' },
   plan_to_read: { label: 'Plan to Read', icon: <Clock className="h-4 w-4" />, color: 'text-blue-500' },
-  finished: { label: 'Finished', icon: <Check className="h-4 w-4" />, color: 'text-purple-500' },
+  on_hold: { label: 'On Hold', icon: <Pause className="h-4 w-4" />, color: 'text-amber-500' },
+  finished: { label: 'Finished', icon: <CheckCircle className="h-4 w-4" />, color: 'text-purple-500' },
   dropped: { label: 'Dropped', icon: <Archive className="h-4 w-4" />, color: 'text-gray-500' },
 }
 
@@ -37,7 +38,7 @@ export function StatusDropdown({ storyId, currentStatus, onStatusChange }: Statu
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleStatusSelect = async (status: ReadingStatus) => {
+  const handleStatusSelect = async (status: FollowStatus) => {
     setLoading(true)
     try {
       const supabase = createClient()
@@ -49,9 +50,9 @@ export function StatusDropdown({ storyId, currentStatus, onStatusChange }: Statu
       }
 
       if (status === null) {
-        // Remove from library
+        // Remove from library (unfollow)
         const { error } = await supabase
-          .from('library')
+          .from('follows')
           .delete()
           .eq('user_id', user.id)
           .eq('story_id', storyId)
@@ -59,19 +60,38 @@ export function StatusDropdown({ storyId, currentStatus, onStatusChange }: Statu
         if (error) throw error
         showToast('Removed from library', 'success')
       } else {
-        // Upsert library entry
-        const { error } = await supabase
-          .from('library')
-          .upsert({
-            user_id: user.id,
-            story_id: storyId,
-            status,
-            updated_at: new Date().toISOString(),
-          }, {
-            onConflict: 'user_id,story_id'
-          })
-        
-        if (error) throw error
+        // Check if follow exists
+        const { data: existing } = await supabase
+          .from('follows')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('story_id', storyId)
+          .maybeSingle()
+
+        if (existing) {
+          // Update existing follow
+          const { error } = await supabase
+            .from('follows')
+            .update({ 
+              status, 
+              updated_at: new Date().toISOString() 
+            })
+            .eq('user_id', user.id)
+            .eq('story_id', storyId)
+          
+          if (error) throw error
+        } else {
+          // Create new follow
+          const { error } = await supabase
+            .from('follows')
+            .insert({
+              user_id: user.id,
+              story_id: storyId,
+              status,
+            })
+          
+          if (error) throw error
+        }
         showToast(`Status updated to ${statusConfig[status].label}`, 'success')
       }
       
@@ -117,7 +137,7 @@ export function StatusDropdown({ storyId, currentStatus, onStatusChange }: Statu
           {Object.entries(statusConfig).map(([key, config]) => (
             <button
               key={key}
-              onClick={() => handleStatusSelect(key as ReadingStatus)}
+              onClick={() => handleStatusSelect(key as FollowStatus)}
               className={`w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-muted transition-colors ${
                 currentStatus === key ? 'bg-muted' : ''
               }`}

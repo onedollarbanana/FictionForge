@@ -11,6 +11,7 @@ import { ChapterContentWrapper } from "@/components/reader/chapter-content-wrapp
 import { KeyboardNavigation } from "@/components/reader/keyboard-navigation";
 import { SwipeNavigation } from "@/components/reader/swipe-navigation";
 import { MobileChapterNav } from "@/components/reader/mobile-chapter-nav";
+import { ScrollToTop } from "@/components/reader/scroll-to-top";
 import { ChevronLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -84,6 +85,9 @@ export default async function ChapterReadingPage({ params }: PageProps) {
 
   return (
     <>
+      {/* Scroll to top on navigation */}
+      <ScrollToTop />
+
       {/* Track reading progress */}
       <ReadingProgressTracker
         storyId={storyId}
