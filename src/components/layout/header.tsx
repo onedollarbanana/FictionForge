@@ -6,10 +6,10 @@ import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { MobileNav } from '@/components/layout/mobile-nav'
-import { LayoutDashboard, Settings, LogOut, Loader2 } from 'lucide-react'
+import { LayoutDashboard, Settings, LogOut, Loader2, User } from 'lucide-react'
 
 export function Header() {
-  const { user, loading } = useUser()
+  const { user, profile, loading } = useUser()
   const router = useRouter()
 
   const handleLogout = async () => {
@@ -46,6 +46,15 @@ export function Header() {
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             ) : user ? (
               <>
+                {profile && (
+                  <Link
+                    href={`/profile/${profile.username}`}
+                    className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                    title="My Profile"
+                  >
+                    <User className="h-5 w-5" />
+                  </Link>
+                )}
                 <Link
                   href="/author/dashboard"
                   className="p-2 text-muted-foreground hover:text-foreground transition-colors"
