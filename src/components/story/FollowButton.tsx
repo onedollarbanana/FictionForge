@@ -4,19 +4,21 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Heart, ChevronDown, Check, BookOpen, CheckCircle, XCircle } from "lucide-react";
+import { Heart, ChevronDown, Check, BookOpen, CheckCircle, XCircle, Clock, Pause } from "lucide-react";
 
-type FollowStatus = "reading" | "finished" | "dropped";
+type FollowStatus = "reading" | "plan_to_read" | "on_hold" | "finished" | "dropped";
 
 interface FollowButtonProps {
   storyId: string;
   initialFollowerCount?: number;
 }
 
-const STATUS_OPTIONS: { value: FollowStatus; label: string; icon: React.ReactNode }[] = [
-  { value: "reading", label: "Reading", icon: <BookOpen className="h-4 w-4" /> },
-  { value: "finished", label: "Finished", icon: <CheckCircle className="h-4 w-4" /> },
-  { value: "dropped", label: "Dropped", icon: <XCircle className="h-4 w-4" /> },
+const STATUS_OPTIONS: { value: FollowStatus; label: string; icon: React.ReactNode; color: string }[] = [
+  { value: "reading", label: "Reading", icon: <BookOpen className="h-4 w-4" />, color: "text-green-500" },
+  { value: "plan_to_read", label: "Plan to Read", icon: <Clock className="h-4 w-4" />, color: "text-blue-500" },
+  { value: "on_hold", label: "On Hold", icon: <Pause className="h-4 w-4" />, color: "text-amber-500" },
+  { value: "finished", label: "Finished", icon: <CheckCircle className="h-4 w-4" />, color: "text-purple-500" },
+  { value: "dropped", label: "Dropped", icon: <XCircle className="h-4 w-4" />, color: "text-gray-500" },
 ];
 
 export function FollowButton({ storyId, initialFollowerCount = 0 }: FollowButtonProps) {
@@ -59,7 +61,7 @@ export function FollowButton({ storyId, initialFollowerCount = 0 }: FollowButton
           .select("id, status")
           .eq("user_id", user.id)
           .eq("story_id", storyId)
-          .maybeSingle(); // Use maybeSingle() instead of single() to avoid error when no row
+          .maybeSingle();
 
         if (followError) {
           console.error("Follow query error:", followError);
@@ -104,7 +106,6 @@ export function FollowButton({ storyId, initialFollowerCount = 0 }: FollowButton
 
   async function handleFollow() {
     if (!userId) {
-      // Redirect to login
       router.push(`/login?redirect=/story/${storyId}`);
       return;
     }
@@ -222,14 +223,14 @@ export function FollowButton({ storyId, initialFollowerCount = 0 }: FollowButton
       </Button>
 
       {showDropdown && (
-        <div className="absolute top-full mt-1 right-0 z-50 min-w-[180px] bg-popover border rounded-md shadow-lg py-1">
+        <div className="absolute top-full mt-1 right-0 z-50 min-w-[180px] bg-white dark:bg-zinc-900 border border-border rounded-md shadow-lg py-1">
           {STATUS_OPTIONS.map((option) => (
             <button
               key={option.value}
               onClick={() => handleStatusChange(option.value)}
               className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-muted transition-colors"
             >
-              {option.icon}
+              <span className={option.color}>{option.icon}</span>
               <span className="flex-1">{option.label}</span>
               {status === option.value && (
                 <Check className="h-4 w-4 text-primary" />
