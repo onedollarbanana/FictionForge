@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen, Check, Clock, Eye, Heart, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { FollowButton } from "@/components/story/FollowButton";
+import { LibraryButton } from "@/components/story/LibraryButton";
 import { AnnouncementBanner } from "@/components/announcements";
 import { StoryRatingSection } from "@/components/story/story-rating-section";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -194,7 +194,7 @@ export default async function StoryPage({ params }: PageProps) {
             ) : (
               <Button disabled>No Chapters Yet</Button>
             )}
-            <FollowButton 
+            <LibraryButton 
               storyId={id} 
               initialFollowerCount={story.follower_count ?? 0} 
             />
