@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Heart, MessageSquare, Pin, Pencil, Trash2, MoreVertical, X, Check } from "lucide-react";
@@ -121,14 +122,14 @@ export function Comment({
           if (j % 2 === 1) {
             // This is a username
             return (
-              <a
+              <Link
                 key={`${i}-${j}`}
-                href={`/author/${mp}`}
+                href={`/profile/${mp}`}
                 className="text-primary hover:underline font-medium"
                 onClick={(e) => e.stopPropagation()}
               >
                 @{mp}
-              </a>
+              </Link>
             );
           }
           return <span key={`${i}-${j}`}>{mp}</span>;
@@ -263,12 +264,20 @@ export function Comment({
   return (
     <div className={`${isReply ? "ml-8 border-l-2 pl-4" : ""}`}>
       <div className="flex gap-3 py-3">
-        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium shrink-0">
+        <Link 
+          href={`/profile/${comment.profiles?.username}`}
+          className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium shrink-0 hover:ring-2 hover:ring-primary/50 transition-all"
+        >
           {comment.profiles?.username?.[0]?.toUpperCase() || "?"}
-        </div>
+        </Link>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 text-sm flex-wrap">
-            <span className="font-medium">{comment.profiles?.username || "Anonymous"}</span>
+            <Link 
+              href={`/profile/${comment.profiles?.username}`}
+              className="font-medium hover:text-primary hover:underline transition-colors"
+            >
+              {comment.profiles?.username || "Anonymous"}
+            </Link>
             {isAuthor && (
               <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-primary/20 text-primary">
                 Author
