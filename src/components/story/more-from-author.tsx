@@ -22,12 +22,12 @@ interface Story {
 }
 
 interface MoreFromAuthorProps {
+  storyId: string
   authorId: string
-  authorName: string
-  currentStoryId: string
+  authorUsername: string
 }
 
-export function MoreFromAuthor({ authorId, authorName, currentStoryId }: MoreFromAuthorProps) {
+export function MoreFromAuthor({ storyId, authorId, authorUsername }: MoreFromAuthorProps) {
   const [stories, setStories] = useState<Story[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -52,7 +52,7 @@ export function MoreFromAuthor({ authorId, authorName, currentStoryId }: MoreFro
         `)
         .eq('author_id', authorId)
         .eq('status', 'published')
-        .neq('id', currentStoryId)
+        .neq('id', storyId)
         .order('total_views', { ascending: false })
         .limit(4)
 
@@ -63,13 +63,13 @@ export function MoreFromAuthor({ authorId, authorName, currentStoryId }: MoreFro
     }
 
     fetchAuthorStories()
-  }, [authorId, currentStoryId])
+  }, [authorId, storyId])
 
   if (loading || stories.length === 0) return null
 
   return (
     <section className="mt-12">
-      <h2 className="text-xl font-semibold mb-4">More from {authorName}</h2>
+      <h2 className="text-xl font-semibold mb-4">More from {authorUsername}</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stories.map((story) => (
           <StoryCard key={story.id} story={story} />
