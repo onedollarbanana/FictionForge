@@ -45,7 +45,7 @@ export default async function GenrePage({ params, searchParams }: PageProps) {
       author:profiles!stories_author_id_fkey(id, username, display_name)
     `)
     .contains('genres', [decodedGenre])
-    .eq('status', 'published');
+    .neq('status', 'dropped');
   
   // Apply sorting
   switch (sort) {

@@ -51,7 +51,7 @@ export function MoreFromAuthor({ storyId, authorId, authorUsername }: MoreFromAu
           author:profiles!stories_author_id_fkey(id, username)
         `)
         .eq('author_id', authorId)
-        .eq('status', 'published')
+        .neq('status', 'dropped')
         .neq('id', storyId)
         .order('total_views', { ascending: false })
         .limit(4)

@@ -51,7 +51,7 @@ export function RelatedStories({ storyId, genres, authorId }: RelatedStoriesProp
           chapter_count,
           author:profiles!stories_author_id_fkey(id, username)
         `)
-        .eq('status', 'published')
+        .neq('status', 'dropped')
         .neq('id', storyId)
         .neq('author_id', authorId)
         .overlaps('genres', genres)
