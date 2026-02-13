@@ -171,15 +171,15 @@ export function ChapterEngagementTable({ authorId }: ChapterEngagementTableProps
     )
   }
 
-  // Calculate totals and averages
+  // Calculate totals and averages for filtered chapters
   const totalViews = filteredChapters.reduce((sum, c) => sum + c.views, 0)
-  const totalLikes = filteredChapters.reduce((sum, c) => sum + c.likes, 0)
-  const totalComments = filteredChapters.reduce((sum, c) => sum + c.comment_count, 0)
   const avgViews = filteredChapters.length > 0 ? Math.round(totalViews / filteredChapters.length) : 0
-  const avgLikes = filteredChapters.length > 0 ? Math.round(totalLikes / filteredChapters.length) : 0
+  const bestChapter = filteredChapters.length > 0 
+    ? filteredChapters.reduce((best, c) => c.views > best.views ? c : best, filteredChapters[0])
+    : null
 
-  // Find best performing chapter
-  const bestChapter = filteredChapters.reduce((best, c) => c.views > best.views ? c : best, filteredChapters[0])
+  // Get selected story name for empty state
+  const selectedStoryName = stories.find(s => s.id === selectedStory)?.title
 
   return (
     <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
@@ -187,11 +187,17 @@ export function ChapterEngagementTable({ authorId }: ChapterEngagementTableProps
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Chapter Performance</h3>
-            <p className="text-sm text-zinc-500 mt-1">
-              {filteredChapters.length} chapter{filteredChapters.length !== 1 ? 's' : ''} • 
-              Avg {avgViews.toLocaleString()} views • 
-              Best: Ch. {bestChapter.chapter_number} ({bestChapter.views.toLocaleString()} views)
-            </p>
+            {filteredChapters.length > 0 && bestChapter ? (
+              <p className="text-sm text-zinc-500 mt-1">
+                {filteredChapters.length} chapter{filteredChapters.length !== 1 ? 's' : ''} • 
+                Avg {avgViews.toLocaleString()} views • 
+                Best: Ch. {bestChapter.chapter_number} ({bestChapter.views.toLocaleString()} views)
+              </p>
+            ) : (
+              <p className="text-sm text-zinc-500 mt-1">
+                {chapters.length} total chapter{chapters.length !== 1 ? 's' : ''} across all stories
+              </p>
+            )}
           </div>
           
           {stories.length > 1 && (
@@ -209,95 +215,110 @@ export function ChapterEngagementTable({ authorId }: ChapterEngagementTableProps
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-zinc-50 dark:bg-zinc-800/50">
-            <tr>
-              <th className="px-4 py-3 text-left">
-                <SortHeader field="chapter_number" label="Chapter" />
-              </th>
-              <th className="px-4 py-3 text-right">
-                <SortHeader field="views" label="Views" icon={Eye} />
-              </th>
-              <th className="px-4 py-3 text-right">
-                <SortHeader field="likes" label="Likes" icon={Heart} />
-              </th>
-              <th className="px-4 py-3 text-right">
-                <SortHeader field="comment_count" label="Comments" icon={MessageSquare} />
-              </th>
-              <th className="px-4 py-3 text-right">
-                <SortHeader field="word_count" label="Words" icon={FileText} />
-              </th>
-              <th className="px-4 py-3 text-right">
-                <SortHeader field="published_at" label="Published" />
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-            {sortedChapters.slice(0, 20).map((chapter) => {
-              const isTopPerformer = chapter.views >= avgViews * 1.5
-              const isUnderperforming = chapter.views < avgViews * 0.5 && avgViews > 0
-              
-              return (
-                <tr 
-                  key={chapter.id} 
-                  className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
-                >
-                  <td className="px-4 py-3">
-                    <Link 
-                      href={`/author/stories/${chapter.story_id}/chapters/${chapter.id}/edit`}
-                      className="block"
-                    >
-                      <div className="flex items-center gap-2">
-                        {isTopPerformer && (
-                          <span className="w-2 h-2 rounded-full bg-green-500" title="Top performer" />
-                        )}
-                        {isUnderperforming && (
-                          <span className="w-2 h-2 rounded-full bg-amber-500" title="Below average" />
-                        )}
-                        <div>
-                          <p className="font-medium text-zinc-900 dark:text-zinc-100 hover:text-amber-600 dark:hover:text-amber-400">
-                            Ch. {chapter.chapter_number}: {chapter.title}
-                          </p>
-                          {selectedStory === 'all' && stories.length > 1 && (
-                            <p className="text-xs text-zinc-500 truncate max-w-[200px]">{chapter.story_title}</p>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <span className={`font-medium ${
-                      isTopPerformer ? 'text-green-600 dark:text-green-400' : 
-                      isUnderperforming ? 'text-amber-600 dark:text-amber-400' : 
-                      'text-zinc-900 dark:text-zinc-100'
-                    }`}>
-                      {chapter.views.toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right text-zinc-700 dark:text-zinc-300">
-                    {chapter.likes.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 text-right text-zinc-700 dark:text-zinc-300">
-                    {chapter.comment_count.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 text-right text-zinc-500">
-                    {chapter.word_count.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 text-right text-zinc-500 text-sm">
-                    {chapter.published_at ? new Date(chapter.published_at).toLocaleDateString() : '-'}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-      
-      {sortedChapters.length > 20 && (
-        <div className="px-4 py-3 text-center text-sm text-zinc-500 border-t border-zinc-100 dark:border-zinc-800">
-          Showing top 20 of {sortedChapters.length} chapters
+      {/* Empty state when filtered story has no chapters */}
+      {filteredChapters.length === 0 ? (
+        <div className="p-8 text-center">
+          <FileText className="w-12 h-12 mx-auto text-zinc-300 dark:text-zinc-600 mb-3" />
+          <p className="text-zinc-500">
+            No published chapters in "{selectedStoryName}"
+          </p>
+          <p className="text-sm text-zinc-400 mt-1">
+            Publish chapters to see engagement data here.
+          </p>
         </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-zinc-50 dark:bg-zinc-800/50">
+                <tr>
+                  <th className="px-4 py-3 text-left">
+                    <SortHeader field="chapter_number" label="Chapter" />
+                  </th>
+                  <th className="px-4 py-3 text-right">
+                    <SortHeader field="views" label="Views" icon={Eye} />
+                  </th>
+                  <th className="px-4 py-3 text-right">
+                    <SortHeader field="likes" label="Likes" icon={Heart} />
+                  </th>
+                  <th className="px-4 py-3 text-right">
+                    <SortHeader field="comment_count" label="Comments" icon={MessageSquare} />
+                  </th>
+                  <th className="px-4 py-3 text-right">
+                    <SortHeader field="word_count" label="Words" icon={FileText} />
+                  </th>
+                  <th className="px-4 py-3 text-right">
+                    <SortHeader field="published_at" label="Published" />
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                {sortedChapters.slice(0, 20).map((chapter) => {
+                  const isTopPerformer = chapter.views >= avgViews * 1.5
+                  const isUnderperforming = chapter.views < avgViews * 0.5 && avgViews > 0
+                  
+                  return (
+                    <tr 
+                      key={chapter.id} 
+                      className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        <Link 
+                          href={`/author/stories/${chapter.story_id}/chapters/${chapter.id}/edit`}
+                          className="block"
+                        >
+                          <div className="flex items-center gap-2">
+                            {isTopPerformer && (
+                              <span className="w-2 h-2 rounded-full bg-green-500" title="Top performer" />
+                            )}
+                            {isUnderperforming && (
+                              <span className="w-2 h-2 rounded-full bg-amber-500" title="Below average" />
+                            )}
+                            <div>
+                              <p className="font-medium text-zinc-900 dark:text-zinc-100 hover:text-amber-600 dark:hover:text-amber-400">
+                                Ch. {chapter.chapter_number}: {chapter.title}
+                              </p>
+                              {selectedStory === 'all' && stories.length > 1 && (
+                                <p className="text-xs text-zinc-500 truncate max-w-[200px]">{chapter.story_title}</p>
+                              )}
+                            </div>
+                          </div>
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <span className={`font-medium ${
+                          isTopPerformer ? 'text-green-600 dark:text-green-400' : 
+                          isUnderperforming ? 'text-amber-600 dark:text-amber-400' : 
+                          'text-zinc-900 dark:text-zinc-100'
+                        }`}>
+                          {chapter.views.toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right text-zinc-700 dark:text-zinc-300">
+                        {chapter.likes.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-right text-zinc-700 dark:text-zinc-300">
+                        {chapter.comment_count.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-right text-zinc-500">
+                        {chapter.word_count.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-right text-zinc-500 text-sm">
+                        {chapter.published_at ? new Date(chapter.published_at).toLocaleDateString() : '-'}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          
+          {sortedChapters.length > 20 && (
+            <div className="px-4 py-3 text-center text-sm text-zinc-500 border-t border-zinc-100 dark:border-zinc-800">
+              Showing top 20 of {sortedChapters.length} chapters
+            </div>
+          )}
+        </>
       )}
     </div>
   )

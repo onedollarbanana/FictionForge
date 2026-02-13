@@ -10,7 +10,7 @@ import { ViewsChart } from '@/components/author/views-chart'
 import { ChapterEngagementTable } from '@/components/author/chapter-engagement-table'
 import { ActivityFeed } from '@/components/author/activity-feed'
 import { Button } from '@/components/ui/button'
-import { Plus, BookOpen, Eye, Users, Heart, FileText, BarChart3 } from 'lucide-react'
+import { Plus, BookOpen, Eye, Users, Heart, FileText, BarChart3, Library } from 'lucide-react'
 
 interface Story {
   id: string
@@ -44,6 +44,8 @@ interface AuthorStats {
   total_words: number
   total_stories: number
 }
+
+type Tab = 'analytics' | 'stories'
 
 function StatCard({ 
   icon: Icon, 
@@ -111,6 +113,7 @@ export default function AuthorDashboard() {
   const [stories, setStories] = useState<Story[]>([])
   const [stats, setStats] = useState<AuthorStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<Tab>('analytics')
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -200,94 +203,131 @@ export default function AuthorDashboard() {
         </Link>
       </div>
 
-      {/* Primary Stats - Week over Week */}
-      {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <StatCard
-            icon={Eye}
-            label="Total Views"
-            value={stats.total_views}
-            thisWeek={stats.views_this_week}
-            lastWeek={stats.views_last_week}
-            color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-          />
-          <StatCard
-            icon={Users}
-            label="Total Followers"
-            value={stats.total_followers}
-            thisWeek={stats.followers_this_week}
-            lastWeek={stats.followers_last_week}
-            color="bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
-          />
-          <StatCard
-            icon={Heart}
-            label="Total Likes"
-            value={stats.total_likes}
-            thisWeek={stats.likes_this_week}
-            lastWeek={stats.likes_last_week}
-            color="bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400"
-          />
+      {/* Tab Navigation */}
+      <div className="flex gap-1 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg w-fit">
+        <button
+          onClick={() => setActiveTab('analytics')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'analytics'
+              ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          Analytics
+        </button>
+        <button
+          onClick={() => setActiveTab('stories')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'stories'
+              ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+          }`}
+        >
+          <Library className="w-4 h-4" />
+          My Stories
+          {stories.length > 0 && (
+            <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300">
+              {stories.length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Analytics Tab Content */}
+      {activeTab === 'analytics' && (
+        <div className="space-y-8">
+          {/* Primary Stats - Week over Week */}
+          {stats && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <StatCard
+                icon={Eye}
+                label="Total Views"
+                value={stats.total_views}
+                thisWeek={stats.views_this_week}
+                lastWeek={stats.views_last_week}
+                color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+              />
+              <StatCard
+                icon={Users}
+                label="Total Followers"
+                value={stats.total_followers}
+                thisWeek={stats.followers_this_week}
+                lastWeek={stats.followers_last_week}
+                color="bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+              />
+              <StatCard
+                icon={Heart}
+                label="Total Likes"
+                value={stats.total_likes}
+                thisWeek={stats.likes_this_week}
+                lastWeek={stats.likes_last_week}
+                color="bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400"
+              />
+            </div>
+          )}
+
+          {/* Secondary Stats */}
+          {stats && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <SecondaryStatCard
+                icon={BookOpen}
+                label="Stories"
+                value={stats.total_stories.toString()}
+              />
+              <SecondaryStatCard
+                icon={FileText}
+                label="Chapters"
+                value={stats.total_chapters.toLocaleString()}
+              />
+              <SecondaryStatCard
+                icon={BarChart3}
+                label="Words Written"
+                value={stats.total_words >= 1000 ? `${(stats.total_words / 1000).toFixed(1)}k` : stats.total_words.toString()}
+              />
+              <SecondaryStatCard
+                icon={Eye}
+                label="Avg Views/Chapter"
+                value={stats.total_chapters > 0 ? Math.round(stats.total_views / stats.total_chapters).toLocaleString() : '0'}
+              />
+            </div>
+          )}
+
+          {/* Views Chart and Activity Feed - Side by Side on Desktop */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ViewsChart authorId={user.id} />
+            <ActivityFeed authorId={user.id} />
+          </div>
+
+          {/* Chapter Engagement Table */}
+          <ChapterEngagementTable authorId={user.id} />
         </div>
       )}
 
-      {/* Secondary Stats */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <SecondaryStatCard
-            icon={BookOpen}
-            label="Stories"
-            value={stats.total_stories.toString()}
-          />
-          <SecondaryStatCard
-            icon={FileText}
-            label="Chapters"
-            value={stats.total_chapters.toLocaleString()}
-          />
-          <SecondaryStatCard
-            icon={BarChart3}
-            label="Words Written"
-            value={stats.total_words >= 1000 ? `${(stats.total_words / 1000).toFixed(1)}k` : stats.total_words.toString()}
-          />
-          <SecondaryStatCard
-            icon={Eye}
-            label="Avg Views/Chapter"
-            value={stats.total_chapters > 0 ? Math.round(stats.total_views / stats.total_chapters).toLocaleString() : '0'}
-          />
+      {/* Stories Tab Content */}
+      {activeTab === 'stories' && (
+        <div>
+          {stories.length === 0 ? (
+            <div className="text-center py-12 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+              <BookOpen className="w-12 h-12 mx-auto text-zinc-400 mb-4" />
+              <h3 className="text-lg font-medium text-zinc-900 dark:text-zinc-100 mb-2">No stories yet</h3>
+              <p className="text-zinc-500 mb-4">Start your writing journey today!</p>
+              <Link href="/author/stories/new">
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Your First Story
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {stories.map((story) => (
+                <AuthorStoryCard key={story.id} story={story} />
+              ))}
+            </div>
+          )}
         </div>
       )}
-
-      {/* Views Chart and Activity Feed - Side by Side on Desktop */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ViewsChart authorId={user.id} />
-        <ActivityFeed authorId={user.id} />
-      </div>
-
-      {/* Chapter Engagement Table */}
-      <ChapterEngagementTable authorId={user.id} />
-
-      {/* Stories List */}
-      <div>
-        <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Your Stories</h2>
-        {stories.length === 0 ? (
-          <div className="text-center py-12 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-            <BookOpen className="w-12 h-12 mx-auto text-zinc-400 mb-4" />
-            <h3 className="text-lg font-medium text-zinc-900 dark:text-zinc-100 mb-2">No stories yet</h3>
-            <p className="text-zinc-500 mb-4">Start your writing journey today!</p>
-            <Link href="/author/stories/new">
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Your First Story
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {stories.map((story) => (
-              <AuthorStoryCard key={story.id} story={story} />
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   )
 }
