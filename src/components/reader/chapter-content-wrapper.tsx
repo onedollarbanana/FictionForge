@@ -3,6 +3,8 @@
 import { ReactNode } from 'react'
 import { ReadingSettingsPanel } from './reading-settings-panel'
 import { ScrollProgressBar } from './scroll-progress-bar'
+import { ScrollToTopButton } from './scroll-to-top-button'
+import { ShareableQuote } from './shareable-quote'
 import {
   useReadingSettings,
   fontFamilyClasses,
@@ -13,6 +15,8 @@ import {
 interface ChapterContentWrapperProps {
   children: ReactNode
   headerContent: ReactNode
+  storyTitle?: string
+  storyUrl?: string
 }
 
 // Theme-specific inline styles (for non-auto themes)
@@ -23,7 +27,7 @@ const themeInlineStyles: Record<'light' | 'dark' | 'sepia' | 'night', { bg: stri
   night: { bg: '#000000', text: '#d4d4d8', borderColor: '#27272a' },
 }
 
-export function ChapterContentWrapper({ children, headerContent }: ChapterContentWrapperProps) {
+export function ChapterContentWrapper({ children, headerContent, storyTitle, storyUrl }: ChapterContentWrapperProps) {
   const { settings, updateSettings, resetSettings, isLoaded } = useReadingSettings()
 
   // Don't render until settings are loaded from localStorage
@@ -65,6 +69,11 @@ export function ChapterContentWrapper({ children, headerContent }: ChapterConten
       {/* Scroll Progress Bar */}
       <ScrollProgressBar />
       
+      {/* Shareable Quote Popup */}
+      {storyTitle && storyUrl && (
+        <ShareableQuote storyTitle={storyTitle} storyUrl={storyUrl} />
+      )}
+      
       {/* Compact Header with Settings Button */}
       <div 
         className={`border-b sticky top-0 z-10 backdrop-blur-sm ${
@@ -96,6 +105,9 @@ export function ChapterContentWrapper({ children, headerContent }: ChapterConten
       >
         {children}
       </article>
+      
+      {/* Scroll to Top Button */}
+      <ScrollToTopButton />
     </div>
   )
 }
