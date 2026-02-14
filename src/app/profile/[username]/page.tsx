@@ -16,7 +16,8 @@ import {
   User,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { ReputationBadge, ReputationCard, ReputationTier } from "@/components/reputation";
+import { ReputationBadge, ReputationCard } from "@/components/reputation";
+import type { ReputationTier } from "@/components/reputation";
 
 export const dynamic = "force-dynamic";
 
@@ -71,15 +72,8 @@ export default async function ProfilePage({ params }: PageProps) {
 
   const isOwnProfile = currentUser?.id === profile.id;
 
-  const { data: statsData } = await supabase.rpc("get_user_reading_stats", {
-    target_user_id: profile.id,
-  });
-
-  const { data: reputationData } = await supabase.rpc("get_user_reputation", {
-    target_user_id: profile.id,
-  });
-
-  const stats: ReadingStats = statsData || {
+  // Fetch reading stats with error handling
+  let stats: ReadingStats = {
     chapters_read: 0,
     stories_in_library: 0,
     stories_completed: 0,
@@ -88,8 +82,31 @@ export default async function ProfilePage({ params }: PageProps) {
     recent_activity: [],
     member_since: profile.created_at,
   };
+  
+  try {
+    const { data: statsData, error: statsError } = await supabase.rpc("get_user_reading_stats", {
+      target_user_id: profile.id,
+    });
+    if (!statsError && statsData) {
+      stats = statsData;
+    }
+  } catch (e) {
+    console.error("Error fetching reading stats:", e);
+  }
 
-  const reputation: ReputationData | null = reputationData || null;
+  // Fetch reputation with error handling
+  let reputation: ReputationData | null = null;
+  
+  try {
+    const { data: reputationData, error: repError } = await supabase.rpc("get_user_reputation", {
+      target_user_id: profile.id,
+    });
+    if (!repError && reputationData) {
+      reputation = reputationData;
+    }
+  } catch (e) {
+    console.error("Error fetching reputation:", e);
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
