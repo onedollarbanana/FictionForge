@@ -190,7 +190,7 @@ export function ContinueReading({ items }: ContinueReadingProps) {
                   <Link
                     href={
                       item.next_chapter_id
-                        ? `/chapter/${item.next_chapter_id}`
+                        ? `/story/${item.story_id}/chapter/${item.next_chapter_id}`
                         : `/story/${item.story_id}`
                     }
                     className="mt-2"
