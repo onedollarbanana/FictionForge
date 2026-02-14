@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { LibraryClient } from '@/components/library/library-client'
+import { LibraryTabs } from '@/components/library/library-tabs'
 
 export const dynamic = 'force-dynamic'
 
@@ -74,6 +75,7 @@ export default async function LibraryPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6">My Library</h1>
+        <LibraryTabs />
         <p className="text-muted-foreground">Failed to load library. Please try again.</p>
       </div>
     )
@@ -156,6 +158,7 @@ export default async function LibraryPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">My Library</h1>
+      <LibraryTabs />
       <LibraryClient items={libraryItems} />
     </div>
   )
