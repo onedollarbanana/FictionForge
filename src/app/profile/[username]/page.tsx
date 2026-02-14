@@ -16,6 +16,7 @@ import {
   User,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { ReputationBadge, ReputationCard, ReputationTier } from "@/components/reputation";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,16 @@ interface ReadingStats {
   member_since: string;
 }
 
+interface ReputationData {
+  repScore: number;
+  tier: ReputationTier;
+  totalEarned: number;
+  totalLost: number;
+  tierMinScore: number;
+  tierMaxScore: number;
+  progressInTier: number;
+}
+
 interface PageProps {
   params: Promise<{ username: string }>;
 }
@@ -44,12 +55,10 @@ export default async function ProfilePage({ params }: PageProps) {
   const { username } = await params;
   const supabase = await createClient();
 
-  // Get current user to check if viewing own profile
   const {
     data: { user: currentUser },
   } = await supabase.auth.getUser();
 
-  // Fetch profile
   const { data: profile, error } = await supabase
     .from("profiles")
     .select("*")
@@ -62,8 +71,11 @@ export default async function ProfilePage({ params }: PageProps) {
 
   const isOwnProfile = currentUser?.id === profile.id;
 
-  // Fetch reading stats using RPC function
   const { data: statsData } = await supabase.rpc("get_user_reading_stats", {
+    target_user_id: profile.id,
+  });
+
+  const { data: reputationData } = await supabase.rpc("get_user_reputation", {
     target_user_id: profile.id,
   });
 
@@ -77,9 +89,10 @@ export default async function ProfilePage({ params }: PageProps) {
     member_since: profile.created_at,
   };
 
+  const reputation: ReputationData | null = reputationData || null;
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      {/* Profile Header */}
       <Card className="mb-6">
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
@@ -100,6 +113,9 @@ export default async function ProfilePage({ params }: PageProps) {
                 <h1 className="text-2xl font-bold">
                   {profile.display_name || profile.username}
                 </h1>
+                {reputation && (
+                  <ReputationBadge tier={reputation.tier} size="sm" />
+                )}
                 {isOwnProfile && (
                   <Link href="/settings/profile">
                     <Button variant="outline" size="sm" className="gap-1.5">
@@ -142,7 +158,6 @@ export default async function ProfilePage({ params }: PageProps) {
         </CardContent>
       </Card>
 
-      {/* Reading Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardContent className="pt-6 text-center">
@@ -178,7 +193,8 @@ export default async function ProfilePage({ params }: PageProps) {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Favorite Genres */}
+        <ReputationCard reputation={reputation} />
+
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Favorite Genres</CardTitle>
@@ -203,8 +219,7 @@ export default async function ProfilePage({ params }: PageProps) {
           </CardContent>
         </Card>
 
-        {/* Recent Activity */}
-        <Card>
+        <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle className="text-lg">Recent Activity</CardTitle>
           </CardHeader>
@@ -214,12 +229,12 @@ export default async function ProfilePage({ params }: PageProps) {
                 No reading activity yet
               </p>
             ) : (
-              <div className="space-y-3">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {stats.recent_activity.map((activity) => (
                   <Link
                     key={activity.story_id}
                     href={`/story/${activity.story_slug}`}
-                    className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-muted transition-colors"
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors"
                   >
                     <div className="relative w-10 h-14 flex-shrink-0 rounded overflow-hidden bg-muted">
                       {activity.cover_url ? (
