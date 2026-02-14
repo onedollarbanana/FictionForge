@@ -14,6 +14,7 @@ import { MobileChapterNav } from "@/components/reader/mobile-chapter-nav";
 import { ScrollToTop } from "@/components/reader/scroll-to-top";
 import { AutoLibraryAdd } from "@/components/reader/auto-library-add";
 import { ChevronLeft } from "lucide-react";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +71,12 @@ export default async function ChapterReadingPage({ params }: PageProps) {
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter = currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
 
+  // Get the current URL for sharing
+  const headersList = await headers();
+  const host = headersList.get('host') || 'fiction-forge-mu.vercel.app';
+  const protocol = host.includes('localhost') ? 'http' : 'https';
+  const storyUrl = `${protocol}://${host}/story/${storyId}`;
+
   // Header content for the wrapper
   const headerContent = (
     <>
@@ -120,7 +127,11 @@ export default async function ChapterReadingPage({ params }: PageProps) {
         nextChapterId={nextChapter?.id}
       />
 
-      <ChapterContentWrapper headerContent={headerContent}>
+      <ChapterContentWrapper 
+        headerContent={headerContent}
+        storyTitle={chapter.stories?.title || 'FictionForge'}
+        storyUrl={storyUrl}
+      >
         <header className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold">{chapter.title}</h1>
           <p className="opacity-70 mt-2">
