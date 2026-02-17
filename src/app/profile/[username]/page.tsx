@@ -25,7 +25,7 @@ import { ExperienceCard } from '@/components/experience/experience-card'
 import type { ExperienceData } from '@/components/experience/types'
 import { AchievementBadge } from '@/components/achievements/achievement-badge'
 import type { FeaturedBadge } from '@/components/achievements/types'
-import { ProfileBorder, type ProfileBorderData } from '@/components/profile/profile-border'
+import { ProfileBorder } from '@/components/profile/profile-border'
 
 interface ProfilePageProps {
   params: { username: string }
@@ -76,15 +76,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     .from('profiles')
     .select(`
       *,
-      profile_borders (
+      equipped_border:profile_borders!profiles_equipped_border_id_fkey(
         id,
         name,
-        description,
         css_class,
-        unlock_type,
-        unlock_value,
-        rarity,
-        sort_order
+        rarity
       )
     `)
     .eq('username', username)
@@ -93,18 +89,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   if (profileError || !profile) {
     notFound()
   }
-
-  // Transform border data to match component interface
-  const equippedBorder: ProfileBorderData | null = profile.profile_borders ? {
-    id: profile.profile_borders.id,
-    name: profile.profile_borders.name,
-    description: profile.profile_borders.description,
-    cssClass: profile.profile_borders.css_class,
-    unlockType: profile.profile_borders.unlock_type,
-    unlockValue: profile.profile_borders.unlock_value,
-    rarity: profile.profile_borders.rarity,
-    sortOrder: profile.profile_borders.sort_order,
-  } : null;
 
   console.log("DEBUG - Profile loaded:", profile.id, profile.username)
   
@@ -228,16 +212,23 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const totalViews = stories?.reduce((sum, story) => sum + (story.total_views || 0), 0) || 0
   const totalChapters = stories?.reduce((sum, story) => sum + (story.chapter_count || 0), 0) || 0
 
+  // Extract equipped border data
+  const equippedBorder = profile.equipped_border as { id: string; name: string; css_class: string; rarity: string } | null
+
   return (
     <main className="container max-w-6xl py-8">
       {/* Profile Header */}
       <Card className="mb-8">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-6 items-start">
-            {/* Avatar with Border */}
+            {/* Avatar with Profile Border */}
             <div className="relative">
-              <ProfileBorder border={equippedBorder} size="lg">
-                <div className="w-full h-full rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden">
+              <ProfileBorder
+                cssClass={equippedBorder?.css_class}
+                rarity={equippedBorder?.rarity}
+                size="lg"
+              >
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden">
                   {profile.avatar_url ? (
                     <Image
                       src={profile.avatar_url}
