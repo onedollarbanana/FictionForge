@@ -7,10 +7,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import type { Achievement, UserAchievement } from './types'
+
+// Minimal achievement data needed for badge display
+interface BadgeAchievement {
+  name: string
+  description: string
+  icon: string
+}
 
 interface AchievementBadgeProps {
-  achievement: Achievement | UserAchievement['achievement']
+  achievement: BadgeAchievement
   unlocked?: boolean
   size?: 'sm' | 'md' | 'lg'
   showTooltip?: boolean
