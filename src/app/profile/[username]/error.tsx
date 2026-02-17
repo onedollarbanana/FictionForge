@@ -28,18 +28,20 @@ export default function ProfileError({
         <AlertTriangle className="h-24 w-24 mx-auto text-destructive mb-6" />
         <h1 className="text-4xl font-bold mb-2">Profile Error</h1>
         <p className="text-xl text-muted-foreground mb-4">
-          We couldn't load this profile.
+          We couldn&apos;t load this profile.
         </p>
-        {process.env.NODE_ENV === 'development' && (
-          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg mb-6 text-left text-sm">
-            <p className="font-mono text-red-600 dark:text-red-400 break-all">
-              {error.message || 'Unknown error'}
-            </p>
-            {error.digest && (
-              <p className="text-xs text-muted-foreground mt-2">Digest: {error.digest}</p>
-            )}
-          </div>
-        )}
+        {/* Temporarily show error in production for debugging */}
+        <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg mb-6 text-left text-sm">
+          <p className="font-mono text-red-600 dark:text-red-400 break-all">
+            {error.message || 'Unknown error'}
+          </p>
+          {error.digest && (
+            <p className="text-xs text-muted-foreground mt-2">Digest: {error.digest}</p>
+          )}
+          {error.name && (
+            <p className="text-xs text-muted-foreground mt-1">Type: {error.name}</p>
+          )}
+        </div>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button onClick={reset}>
             <RefreshCw className="h-4 w-4 mr-2" />
