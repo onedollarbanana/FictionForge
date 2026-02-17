@@ -44,6 +44,7 @@ export default async function BrowsePage({
         display_name
       )
     `)
+    .eq('visibility', 'published')
     .order("updated_at", { ascending: false });
 
   if (error) {

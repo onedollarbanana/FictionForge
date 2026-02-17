@@ -38,7 +38,7 @@ export default async function GenresPage() {
   const { data: stories } = await supabase
     .from('stories')
     .select('genres')
-    .eq('status', 'published');
+    .eq('visibility', 'published');
   
   // Count stories per genre
   const genreCounts: Record<string, number> = {};
