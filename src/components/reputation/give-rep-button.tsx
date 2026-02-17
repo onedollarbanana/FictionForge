@@ -41,10 +41,11 @@ export function GiveRepButton({
 
     const checkHasGiven = async () => {
       const supabase = createClient()
+      // has_given_peer_rep uses original param names (target_type, target_id)
       const { data } = await supabase.rpc('has_given_peer_rep', {
         giver_user_id: currentUserId,
-        p_target_type: targetType,
-        p_target_id: targetId
+        target_type: targetType,
+        target_id: targetId
       })
       setHasGiven(!!data)
       setIsChecking(false)
@@ -67,6 +68,7 @@ export function GiveRepButton({
     setError(null)
 
     const supabase = createClient()
+    // give_peer_rep uses prefixed param names (p_target_type, p_target_id)
     const { data, error: rpcError } = await supabase.rpc('give_peer_rep', {
       giver_user_id: currentUserId,
       receiver_user_id: receiverUserId,
