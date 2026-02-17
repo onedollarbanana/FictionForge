@@ -12,6 +12,7 @@ interface Story {
   blurb: string;
   cover_url: string | null;
   status: string;
+  visibility?: string;
   created_at: string;
   updated_at?: string;
   chapter_count: number;
@@ -32,6 +33,13 @@ const statusColors: Record<string, string> = {
   completed: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
   hiatus: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
   dropped: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+};
+
+const visibilityColors: Record<string, string> = {
+  published: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+  draft: "bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200",
+  unlisted: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+  removed: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
 };
 
 export function AuthorStoryCard({ story }: StoryCardProps) {
@@ -71,9 +79,16 @@ export function AuthorStoryCard({ story }: StoryCardProps) {
               </p>
             )}
           </div>
-          <span className={`shrink-0 text-xs font-medium px-2 py-1 rounded-full capitalize ${statusColors[story.status] || 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200'}`}>
-            {story.status}
-          </span>
+          <div className="flex gap-1.5 shrink-0">
+            {story.visibility && story.visibility !== 'published' && (
+              <span className={`text-xs font-medium px-2 py-1 rounded-full capitalize ${visibilityColors[story.visibility] || 'bg-zinc-100 text-zinc-800'}`}>
+                {story.visibility}
+              </span>
+            )}
+            <span className={`text-xs font-medium px-2 py-1 rounded-full capitalize ${statusColors[story.status] || 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200'}`}>
+              {story.status}
+            </span>
+          </div>
         </div>
 
         {/* Stats Row */}

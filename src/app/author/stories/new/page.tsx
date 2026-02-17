@@ -57,6 +57,7 @@ export default function NewStoryPage() {
           genres: selectedGenres,
           tags: selectedTags.length > 0 ? selectedTags : null,
           status: 'ongoing',
+          visibility: 'draft',
           word_count: 0,
         })
         .select()
