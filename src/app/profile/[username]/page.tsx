@@ -99,6 +99,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       updated_at
     `)
     .eq('author_id', profile.id)
+    .eq('visibility', 'published')
     .order('updated_at', { ascending: false })
 
   if (storiesError) {
