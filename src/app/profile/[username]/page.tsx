@@ -27,6 +27,9 @@ import { AchievementBadge } from '@/components/achievements/achievement-badge'
 import type { FeaturedBadge } from '@/components/achievements/types'
 import { ProfileBorder } from '@/components/profile/profile-border'
 
+// Force dynamic rendering - no static caching
+export const dynamic = 'force-dynamic'
+
 interface ProfilePageProps {
   params: Promise<{ username: string }>
 }
@@ -98,10 +101,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     .single()
   
   if (profileError || !profile) {
+    console.error('Profile not found:', decodedUsername, profileError)
     notFound()
   }
 
-  console.log("DEBUG - Profile loaded:", profile.id, profile.username)
+  console.log('PROFILE_DEBUG - Profile loaded:', { id: profile.id, username: profile.username })
   
   // Get user's published stories
   const { data: stories, error: storiesError } = await supabase
@@ -122,10 +126,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     .eq('visibility', 'published')
     .order('updated_at', { ascending: false })
 
-  if (storiesError) {
-    console.error("DEBUG - Stories query error:", storiesError)
-  }
-  console.log("DEBUG - Stories loaded:", stories?.length ?? 'null', "for author:", profile.id)
+  console.log('PROFILE_DEBUG - Stories query result:', { 
+    count: stories?.length ?? 'null', 
+    error: storiesError?.message ?? 'none',
+    authorId: profile.id 
+  })
   
   // Get user's library (followed stories)
   const { data: library } = await supabase
@@ -240,6 +245,13 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   // Calculate stats
   const totalViews = stories?.reduce((sum, story) => sum + (story.total_views || 0), 0) || 0
   const totalChapters = stories?.reduce((sum, story) => sum + (story.chapter_count || 0), 0) || 0
+
+  console.log('PROFILE_DEBUG - Calculated stats:', { 
+    storyCount: stories?.length || 0, 
+    totalViews, 
+    totalChapters,
+    reviewCount: reviews?.length || 0 
+  })
 
   return (
     <main className="container max-w-6xl py-8">
