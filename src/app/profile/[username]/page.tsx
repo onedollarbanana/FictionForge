@@ -20,10 +20,11 @@ import {
   MessageSquare,
   Trophy
 } from 'lucide-react'
-import { ExperienceCard } from '@/components/experience'
-import type { ExperienceTier, ExperienceData } from '@/components/experience/types'
-import { AchievementBadge, AchievementGrid } from '@/components/achievements'
-import type { Achievement, UserAchievement, FeaturedBadge } from '@/components/achievements/types'
+import { ExperienceBadge } from '@/components/experience/experience-badge'
+import { ExperienceCard } from '@/components/experience/experience-card'
+import { GiveRepButton } from '@/components/reputation/give-rep-button'
+import type { ExperienceData } from '@/components/experience/types'
+import { AchievementBadge } from '@/components/achievements/achievement-badge'
 
 interface ProfilePageProps {
   params: { username: string }
@@ -33,31 +34,32 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
   const username = decodeURIComponent(params.username)
   return {
     title: `${username}'s Profile | FictionForge`,
-    description: `View ${username}'s profile, stories, and reading activity on FictionForge`
+    description: `View ${username}'s stories, library, and activity on FictionForge`
   }
 }
 
-// Stat card component matching author dashboard style
 function StatCard({ 
   icon: Icon, 
   label, 
   value, 
-  color 
+  color = "text-primary"
 }: { 
-  icon: typeof BookOpen
+  icon: React.ElementType
   label: string
   value: string | number
-  color: string 
+  color?: string 
 }) {
   return (
-    <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-      <CardContent className="p-4 flex items-center gap-4">
-        <div className={`p-3 rounded-lg ${color}`}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <div>
-          <p className="text-2xl font-bold">{value}</p>
-          <p className="text-sm text-muted-foreground">{label}</p>
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg bg-muted ${color}`}>
+            <Icon className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold">{value}</p>
+            <p className="text-sm text-muted-foreground">{label}</p>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -78,9 +80,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   if (profileError || !profile) {
     notFound()
   }
+
+  console.log("DEBUG - Profile loaded:", profile.id, profile.username)
   
   // Get user's published stories
-  const { data: stories } = await supabase
+  const { data: stories, error: storiesError } = await supabase
     .from('stories')
     .select(`
       id,
@@ -96,6 +100,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     `)
     .eq('author_id', profile.id)
     .order('updated_at', { ascending: false })
+
+  if (storiesError) {
+    console.error("DEBUG - Stories query error:", storiesError)
+  }
+  console.log("DEBUG - Stories loaded:", stories?.length ?? 'null', "for author:", profile.id)
   
   // Get user's library (followed stories)
   const { data: library } = await supabase
@@ -119,8 +128,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     .from('story_ratings')
     .select(`
       id,
-      rating,
-      review,
+      overall_rating,
+      review_text,
       created_at,
       stories (
         id,
@@ -129,21 +138,21 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       )
     `)
     .eq('user_id', profile.id)
-    .not('review', 'is', null)
+    .not('review_text', 'is', null)
     .order('created_at', { ascending: false })
     .limit(10)
   
-  // Get reading progress
-  const { data: readingProgress } = await supabase
-    .from('reading_progress')
+  // Get user's activity (comments)
+  const { data: recentActivity } = await supabase
+    .from('comments')
     .select(`
       id,
-      updated_at,
-      chapters!inner (
+      content,
+      created_at,
+      chapters (
         id,
         title,
-        chapter_number,
-        stories!inner (
+        stories (
           id,
           title,
           slug
@@ -151,236 +160,323 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       )
     `)
     .eq('user_id', profile.id)
-    .order('updated_at', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(10)
-  
-  // Transform reading progress to handle nested structure
-  // Note: Supabase joins return arrays, so we need to access [0] for the related record
-  type RecentRead = {
-    id: string
-    updated_at: string
-    chapter_title: string
-    chapter_number: number
-    story_id: string
-    story_title: string
-    story_slug: string
-  }
-  
-  const recentReads: RecentRead[] = (readingProgress?.map(rp => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const chapters = rp.chapters as any
-    const chapter = Array.isArray(chapters) ? chapters[0] : chapters
-    if (!chapter) return null
-    
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const stories = chapter.stories as any
-    const story = Array.isArray(stories) ? stories[0] : stories
-    if (!story) return null
-    
-    return {
-      id: rp.id as string,
-      updated_at: rp.updated_at as string,
-      chapter_title: chapter.title as string,
-      chapter_number: chapter.chapter_number as number,
-      story_id: story.id as string,
-      story_title: story.title as string,
-      story_slug: story.slug as string
-    }
-  }).filter((item): item is RecentRead => item !== null) || [])
-  
-  // Get counts
-  const { count: libraryCount } = await supabase
-    .from('follows')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', profile.id)
-  
-  const { count: reviewCount } = await supabase
-    .from('story_ratings')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', profile.id)
-    .not('review', 'is', null)
 
-  // Get user experience data
-  const { data: experienceResult } = await supabase
+  // Get current user for "is own profile" check
+  const { data: { user: currentUser } } = await supabase.auth.getUser()
+  const isOwnProfile = currentUser?.id === profile.id
+
+  // Get user's experience data
+  const { data: experienceData } = await supabase
     .rpc('get_user_experience', { target_user_id: profile.id })
   
-  // Transform database result to ExperienceData type
-  // Note: get_user_experience returns a single JSON object, not an array
-  let experienceData: ExperienceData | null = null
-  if (experienceResult) {
-    const exp = experienceResult as Record<string, unknown>
-    experienceData = {
-      xpScore: (exp.xpScore as number) || 0,
-      tier: (exp.tier as ExperienceTier) || 'newcomer',
-      totalEarned: (exp.totalEarned as number) || 0,
-      totalLost: (exp.totalLost as number) || 0,
-      tierMinScore: (exp.tierMinScore as number) || 0,
-      tierMaxScore: (exp.tierMaxScore as number) || 0,
-      progressInTier: (exp.progressInTier as number) || 0
-    }
-  }
+  // get_user_experience returns a single object, not an array
+  const experience: ExperienceData | null = experienceData
 
-  // Get all achievements
-  const { data: allAchievementsResult } = await supabase.rpc('get_all_achievements')
-  const allAchievements: Achievement[] = (allAchievementsResult as Achievement[]) || []
-
-  // Get user's unlocked achievements
-  const { data: userAchievementsResult } = await supabase
-    .rpc('get_user_achievements', { target_user_id: profile.id })
-  const userAchievements: UserAchievement[] = (userAchievementsResult as UserAchievement[]) || []
+  // Get user's peer reputation
+  const { data: peerRepData } = await supabase
+    .rpc('get_user_peer_reputation', { target_user_id: profile.id })
+  
+  const peerRep = peerRepData
 
   // Get user's featured badges
-  const { data: featuredBadgesResult } = await supabase
-    .rpc('get_featured_badges', { target_user_id: profile.id })
-  const featuredBadges: FeaturedBadge[] = (featuredBadgesResult as FeaturedBadge[]) || []
-
-  // Get user stats for progress tracking
-  const { data: userStatsResult } = await supabase
-    .rpc('get_user_stats', { target_user_id: profile.id })
-  const userStats = userStatsResult as {
-    commentCount: number
-    reviewCount: number
-    totalWords: number
-    followerCount: number
-    totalViews: number
-    accountAgeDays: number
-  } | null
+  const { data: featuredBadgesData } = await supabase
+    .rpc('get_featured_badges', { target_user_id: profile.id, p_limit: 5 })
   
-  // Calculate total views and chapters across all stories
+  const featuredBadges = featuredBadgesData || []
+
+  // Get user's achievements
+  const { data: achievementsData } = await supabase
+    .rpc('get_user_achievements', { target_user_id: profile.id })
+  
+  const achievements = achievementsData || []
+  const unlockedCount = achievements.filter((a: { unlockedAt: string | null }) => a.unlockedAt).length
+
+  // Calculate stats
+  interface StoryStats {
+    total_views: number | null
+    chapter_count: number | null
+  }
+  
   const totalViews = stories?.reduce((sum, story) => sum + (story.total_views || 0), 0) || 0
   const totalChapters = stories?.reduce((sum, story) => sum + (story.chapter_count || 0), 0) || 0
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Profile Header */}
-        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 md:p-8 mb-8">
-          <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
+    <main className="container max-w-6xl py-8">
+      {/* Profile Header */}
+      <Card className="mb-8">
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-6 items-start">
             {/* Avatar */}
-            <div className="relative h-24 w-24 md:h-32 md:w-32 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-blue-500 flex-shrink-0">
-              {profile.avatar_url ? (
-                <Image
-                  src={profile.avatar_url}
-                  alt={profile.display_name || profile.username}
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-4xl md:text-5xl font-bold text-white">
-                    {(profile.display_name || profile.username).charAt(0).toUpperCase()}
-                  </span>
+            <div className="relative">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden">
+                {profile.avatar_url ? (
+                  <Image
+                    src={profile.avatar_url}
+                    alt={profile.username}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <User className="h-12 w-12 text-muted-foreground" />
+                )}
+              </div>
+              {experience && (
+                <div className="absolute -bottom-1 -right-1">
+                  <ExperienceBadge tier={experience.tier} size="sm" />
                 </div>
               )}
             </div>
             
-            {/* User Info */}
-            <div className="flex-1 space-y-2">
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl md:text-3xl font-bold">
-                  {profile.display_name || profile.username}
-                </h1>
+            {/* Profile Info */}
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-2xl font-bold">{profile.display_name || profile.username}</h1>
+                {experience && (
+                  <ExperienceBadge tier={experience.tier} showLabel size="sm" />
+                )}
               </div>
-              <p className="text-muted-foreground">@{profile.username}</p>
+              <p className="text-muted-foreground mb-2">@{profile.username}</p>
               
               {/* Featured Badges */}
               {featuredBadges.length > 0 && (
-                <div className="flex items-center gap-1 pt-1">
-                  {featuredBadges.map((badge) => (
+                <div className="flex items-center gap-2 mb-3">
+                  {featuredBadges.map((badge: { id: string; name: string; icon: string; category: string; tier: number }) => (
                     <AchievementBadge
-                      key={badge.achievementId}
-                      achievement={badge.achievement}
-                      size="md"
+                      key={badge.id}
+                      achievement={badge}
+                      size="sm"
                     />
                   ))}
                 </div>
               )}
               
               {profile.bio && (
-                <p className="text-sm md:text-base mt-2 max-w-2xl">{profile.bio}</p>
+                <p className="text-sm mb-3">{profile.bio}</p>
               )}
-              <div className="flex items-center gap-4 text-sm text-muted-foreground pt-2">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <CalendarDays className="h-4 w-4" />
                   Joined {formatDistanceToNow(new Date(profile.created_at), { addSuffix: true })}
                 </span>
-                <span className="flex items-center gap-1">
-                  <Trophy className="h-4 w-4" />
-                  {userAchievements.length} / {allAchievements.length} Achievements
-                </span>
               </div>
             </div>
+
+            {/* Edit Profile / Give Rep Button */}
+            <div className="flex gap-2">
+              {isOwnProfile ? (
+                <Link
+                  href="/settings/profile"
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                >
+                  Edit Profile
+                </Link>
+              ) : currentUser && (
+                <GiveRepButton
+                  targetType="profile"
+                  targetId={profile.id}
+                  receiverId={profile.id}
+                />
+              )}
+            </div>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <StatCard 
-            icon={BookOpen} 
-            label="Stories Published" 
-            value={stories?.length || 0} 
-            color="bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
-          />
-          <StatCard 
-            icon={Eye} 
-            label="Total Views" 
-            value={totalViews.toLocaleString()} 
-            color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-          />
-          <StatCard 
-            icon={FileText} 
-            label="Chapters Written" 
-            value={totalChapters} 
-            color="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
-          />
-          <StatCard 
-            icon={Library} 
-            label="In Library" 
-            value={libraryCount || 0} 
-            color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
-          />
-        </div>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <StatCard 
+          icon={BookOpen} 
+          label="Stories Published" 
+          value={stories?.length || 0} 
+          color="text-blue-500"
+        />
+        <StatCard 
+          icon={Eye} 
+          label="Total Views" 
+          value={totalViews.toLocaleString()} 
+          color="text-green-500"
+        />
+        <StatCard 
+          icon={FileText} 
+          label="Chapters Written" 
+          value={totalChapters} 
+          color="text-purple-500"
+        />
+        <StatCard 
+          icon={Star} 
+          label="Reviews Given" 
+          value={reviews?.length || 0} 
+          color="text-yellow-500"
+        />
+      </div>
 
-        {/* Experience Card */}
-        <div className="mb-8">
-          <ExperienceCard experience={experienceData} />
-        </div>
+      {/* Tabbed Content */}
+      <Tabs defaultValue="activity" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="activity" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            <span className="hidden sm:inline">Activity</span>
+          </TabsTrigger>
+          <TabsTrigger value="stories" className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4" />
+            <span className="hidden sm:inline">Stories ({stories?.length || 0})</span>
+          </TabsTrigger>
+          <TabsTrigger value="library" className="flex items-center gap-2">
+            <Library className="h-4 w-4" />
+            <span className="hidden sm:inline">Library</span>
+          </TabsTrigger>
+          <TabsTrigger value="reviews" className="flex items-center gap-2">
+            <Star className="h-4 w-4" />
+            <span className="hidden sm:inline">Reviews</span>
+          </TabsTrigger>
+          <TabsTrigger value="achievements" className="flex items-center gap-2">
+            <Trophy className="h-4 w-4" />
+            <span className="hidden sm:inline">Achievements</span>
+          </TabsTrigger>
+        </TabsList>
 
-        {/* Content Tabs */}
-        <Tabs defaultValue="stories" className="space-y-6">
-          <TabsList className="bg-zinc-100 dark:bg-zinc-800 p-1">
-            <TabsTrigger value="stories" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900">
-              <BookOpen className="h-4 w-4 mr-2" />
-              Stories ({stories?.length || 0})
-            </TabsTrigger>
-            <TabsTrigger value="achievements" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900">
-              <Trophy className="h-4 w-4 mr-2" />
-              Achievements ({userAchievements.length})
-            </TabsTrigger>
-            <TabsTrigger value="reviews" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900">
-              <Star className="h-4 w-4 mr-2" />
-              Reviews ({reviewCount || 0})
-            </TabsTrigger>
-            <TabsTrigger value="library" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900">
-              <BookMarked className="h-4 w-4 mr-2" />
-              Library
-            </TabsTrigger>
-            <TabsTrigger value="reading" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900">
-              <Clock className="h-4 w-4 mr-2" />
-              Reading History
-            </TabsTrigger>
-          </TabsList>
+        {/* Activity Tab */}
+        <TabsContent value="activity">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Recent Comments
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {recentActivity && recentActivity.length > 0 ? (
+                <div className="space-y-4">
+                  {recentActivity.map((comment) => {
+                    const chapter = comment.chapters as unknown as { 
+                      id: string
+                      title: string
+                      stories: { id: string; title: string; slug: string } | { id: string; title: string; slug: string }[]
+                    } | null
+                    const story = chapter?.stories
+                    const storyData = Array.isArray(story) ? story[0] : story
+                    
+                    return (
+                      <div key={comment.id} className="border-b last:border-0 pb-4 last:pb-0">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            {storyData && (
+                              <Link 
+                                href={`/story/${storyData.slug}`}
+                                className="text-sm font-medium hover:text-primary transition-colors"
+                              >
+                                {storyData.title}
+                              </Link>
+                            )}
+                            {chapter && (
+                              <span className="text-sm text-muted-foreground"> · {chapter.title}</span>
+                            )}
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {comment.content}
+                        </p>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  No recent activity
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          {/* Stories Tab */}
-          <TabsContent value="stories" className="space-y-4">
+        {/* Stories Tab */}
+        <TabsContent value="stories">
+          <div className="grid gap-4">
             {stories && stories.length > 0 ? (
-              <div className="grid gap-4">
-                {stories.map((story) => (
-                  <Link key={story.id} href={`/story/${story.id}`}>
-                    <Card className="hover:shadow-md transition-shadow bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                      <CardContent className="p-4 flex gap-4">
+              stories.map((story) => (
+                <Card key={story.id}>
+                  <CardContent className="pt-6">
+                    <div className="flex gap-4">
+                      {story.cover_url && (
+                        <div className="relative w-20 h-28 flex-shrink-0">
+                          <Image
+                            src={story.cover_url}
+                            alt={story.title}
+                            fill
+                            className="object-cover rounded"
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <Link 
+                          href={`/story/${story.slug}`}
+                          className="font-semibold hover:text-primary transition-colors line-clamp-1"
+                        >
+                          {story.title}
+                        </Link>
+                        <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                          <Badge variant="outline" className="capitalize">
+                            {story.status}
+                          </Badge>
+                          <span className="flex items-center gap-1">
+                            <Eye className="h-3 w-3" />
+                            {(story.total_views || 0).toLocaleString()}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <FileText className="h-3 w-3" />
+                            {story.chapter_count || 0} chapters
+                          </span>
+                        </div>
+                        {story.description && (
+                          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                            {story.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No stories published yet</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Library Tab */}
+        <TabsContent value="library">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookMarked className="h-5 w-5" />
+                Reading List
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {library && library.length > 0 ? (
+                <div className="grid gap-3">
+                  {library.map((item) => {
+                    const story = item.stories as unknown as { id: string; title: string; slug: string; cover_url: string | null } | null
+                    if (!story) return null
+                    
+                    return (
+                      <Link 
+                        key={item.id}
+                        href={`/story/${story.slug}`}
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors"
+                      >
                         {story.cover_url && (
-                          <div className="relative h-24 w-16 flex-shrink-0">
+                          <div className="relative w-10 h-14 flex-shrink-0">
                             <Image
                               src={story.cover_url}
                               alt={story.title}
@@ -389,170 +485,145 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                             />
                           </div>
                         )}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold truncate">{story.title}</h3>
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {story.description}
-                          </p>
-                          <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Eye className="h-3 w-3" /> {story.total_views?.toLocaleString() || 0}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <FileText className="h-3 w-3" /> {story.chapter_count || 0} chapters
-                            </span>
-                            <Badge variant="outline" className="capitalize text-xs">
-                              {story.status}
-                            </Badge>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                <CardContent className="p-8 text-center text-muted-foreground">
-                  <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No stories published yet.</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
+                        <span className="font-medium line-clamp-1">{story.title}</span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  No stories in library
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          {/* Achievements Tab */}
-          <TabsContent value="achievements" className="space-y-4">
-            <AchievementGrid
-              achievements={allAchievements}
-              userAchievements={userAchievements}
-              userStats={userStats || undefined}
-              showLocked={true}
-            />
-          </TabsContent>
-
-          {/* Reviews Tab */}
-          <TabsContent value="reviews" className="space-y-4">
-            {reviews && reviews.length > 0 ? (
-              <div className="grid gap-4">
-                {reviews.map((review) => {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const stories = review.stories as any
-                  const story = Array.isArray(stories) ? stories[0] : stories
-                  return (
-                    <Card key={review.id} className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                      <CardContent className="p-4">
+        {/* Reviews Tab */}
+        <TabsContent value="reviews">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Star className="h-5 w-5" />
+                Reviews Written
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {reviews && reviews.length > 0 ? (
+                <div className="space-y-4">
+                  {reviews.map((review) => {
+                    const story = review.stories as unknown as { id: string; title: string; slug: string } | { id: string; title: string; slug: string }[] | null
+                    const storyData = Array.isArray(story) ? story[0] : story
+                    
+                    return (
+                      <div key={review.id} className="border-b last:border-0 pb-4 last:pb-0">
                         <div className="flex items-start justify-between mb-2">
-                          <Link 
-                            href={story ? `/story/${story.id}` : '#'}
-                            className="font-semibold hover:underline"
-                          >
-                            {story?.title || 'Unknown Story'}
-                          </Link>
-                          <div className="flex items-center gap-1 text-yellow-500">
-                            <Star className="h-4 w-4 fill-current" />
-                            <span className="font-medium">{review.rating}</span>
+                          <div>
+                            {storyData && (
+                              <Link 
+                                href={`/story/${storyData.slug}`}
+                                className="font-medium hover:text-primary transition-colors"
+                              >
+                                {storyData.title}
+                              </Link>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                              <span className="font-medium">{review.overall_rating.toFixed(1)}</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}
+                            </span>
                           </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">{review.review}</p>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}
+                        <p className="text-sm text-muted-foreground line-clamp-3">
+                          {review.review_text}
                         </p>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-            ) : (
-              <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                <CardContent className="p-8 text-center text-muted-foreground">
-                  <Star className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No reviews written yet.</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  No reviews written yet
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          {/* Library Tab */}
-          <TabsContent value="library" className="space-y-4">
-            {library && library.length > 0 ? (
-              <div className="grid gap-4">
-                {library.map((item) => {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const storiesData = item.stories as any
-                  const story = Array.isArray(storiesData) ? storiesData[0] : storiesData
-                  if (!story) return null
-                  return (
-                    <Link key={item.id} href={`/story/${story.id}`}>
-                      <Card className="hover:shadow-md transition-shadow bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                        <CardContent className="p-4 flex gap-4 items-center">
-                          {story.cover_url && (
-                            <div className="relative h-16 w-12 flex-shrink-0">
-                              <Image
-                                src={story.cover_url}
-                                alt={story.title}
-                                fill
-                                className="object-cover rounded"
-                              />
-                            </div>
-                          )}
-                          <div>
-                            <h3 className="font-semibold">{story.title}</h3>
-                            <p className="text-xs text-muted-foreground">
-                              Added {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  )
-                })}
-              </div>
-            ) : (
-              <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                <CardContent className="p-8 text-center text-muted-foreground">
-                  <Library className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Library is empty.</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
+        {/* Achievements Tab */}
+        <TabsContent value="achievements">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5" />
+                Achievements ({unlockedCount} / {achievements.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Experience Card */}
+              {experience && (
+                <div className="mb-6">
+                  <ExperienceCard experience={experience} />
+                </div>
+              )}
 
-          {/* Reading History Tab */}
-          <TabsContent value="reading" className="space-y-4">
-            {recentReads && recentReads.length > 0 ? (
-              <div className="grid gap-4">
-                {recentReads.map((read) => (
-                  <Link 
-                    key={read.id} 
-                    href={`/story/${read.story_id}`}
-                  >
-                    <Card className="hover:shadow-md transition-shadow bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                      <CardContent className="p-4">
-                        <h3 className="font-semibold">{read.story_title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Chapter {read.chapter_number}: {read.chapter_title}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          <Clock className="h-3 w-3 inline mr-1" />
-                          {formatDistanceToNow(new Date(read.updated_at), { addSuffix: true })}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
+              {/* Peer Reputation */}
+              {peerRep && peerRep.repScore > 0 && (
+                <div className="mb-6 p-4 rounded-lg bg-muted/50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Peer Reputation</p>
+                      <p className="text-2xl font-bold">{peerRep.repScore}</p>
+                    </div>
+                    <Badge variant="outline" className="capitalize">
+                      {peerRep.tier}
+                    </Badge>
+                  </div>
+                </div>
+              )}
+
+              {/* Achievement Badges */}
+              {achievements.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {achievements
+                    .filter((a: { unlockedAt: string | null }) => a.unlockedAt)
+                    .map((achievement: { id: string; name: string; description: string; icon: string; category: string; tier: number; xpReward: number; unlockedAt: string }) => (
+                      <div 
+                        key={achievement.id} 
+                        className="flex items-center gap-2 p-3 rounded-lg bg-muted/50"
+                      >
+                        <AchievementBadge achievement={achievement} size="sm" />
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm truncate">{achievement.name}</p>
+                          <p className="text-xs text-muted-foreground">+{achievement.xpReward} XP</p>
+                        </div>
+                      </div>
+                    ))
+                  }
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  No achievements yet
+                </p>
+              )}
+
+              {/* Link to full achievements page */}
+              <div className="mt-6 text-center">
+                <Link 
+                  href="/achievements"
+                  className="text-sm text-primary hover:underline"
+                >
+                  View all achievements →
+                </Link>
               </div>
-            ) : (
-              <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                <CardContent className="p-8 text-center text-muted-foreground">
-                  <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No reading history yet.</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </main>
   )
 }
