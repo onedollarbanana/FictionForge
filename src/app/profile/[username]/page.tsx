@@ -17,10 +17,13 @@ import {
   User,
   CalendarDays,
   BookMarked,
-  MessageSquare
+  MessageSquare,
+  Trophy
 } from 'lucide-react'
 import { ExperienceCard } from '@/components/experience'
 import type { ExperienceTier, ExperienceData } from '@/components/experience/types'
+import { AchievementBadge, AchievementGrid } from '@/components/achievements'
+import type { Achievement, UserAchievement, FeaturedBadge } from '@/components/achievements/types'
 
 interface ProfilePageProps {
   params: { username: string }
@@ -216,6 +219,32 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       progressInTier: (exp.progressInTier as number) || 0
     }
   }
+
+  // Get all achievements
+  const { data: allAchievementsResult } = await supabase.rpc('get_all_achievements')
+  const allAchievements: Achievement[] = (allAchievementsResult as Achievement[]) || []
+
+  // Get user's unlocked achievements
+  const { data: userAchievementsResult } = await supabase
+    .rpc('get_user_achievements', { target_user_id: profile.id })
+  const userAchievements: UserAchievement[] = (userAchievementsResult as UserAchievement[]) || []
+
+  // Get user's featured badges
+  const { data: featuredBadgesResult } = await supabase
+    .rpc('get_featured_badges', { target_user_id: profile.id })
+  const featuredBadges: FeaturedBadge[] = (featuredBadgesResult as FeaturedBadge[]) || []
+
+  // Get user stats for progress tracking
+  const { data: userStatsResult } = await supabase
+    .rpc('get_user_stats', { target_user_id: profile.id })
+  const userStats = userStatsResult as {
+    commentCount: number
+    reviewCount: number
+    totalWords: number
+    followerCount: number
+    totalViews: number
+    accountAgeDays: number
+  } | null
   
   // Calculate total views and chapters across all stories
   const totalViews = stories?.reduce((sum, story) => sum + (story.total_views || 0), 0) || 0
@@ -253,6 +282,20 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 </h1>
               </div>
               <p className="text-muted-foreground">@{profile.username}</p>
+              
+              {/* Featured Badges */}
+              {featuredBadges.length > 0 && (
+                <div className="flex items-center gap-1 pt-1">
+                  {featuredBadges.map((badge) => (
+                    <AchievementBadge
+                      key={badge.achievementId}
+                      achievement={badge.achievement}
+                      size="md"
+                    />
+                  ))}
+                </div>
+              )}
+              
               {profile.bio && (
                 <p className="text-sm md:text-base mt-2 max-w-2xl">{profile.bio}</p>
               )}
@@ -260,6 +303,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 <span className="flex items-center gap-1">
                   <CalendarDays className="h-4 w-4" />
                   Joined {formatDistanceToNow(new Date(profile.created_at), { addSuffix: true })}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Trophy className="h-4 w-4" />
+                  {userAchievements.length} / {allAchievements.length} Achievements
                 </span>
               </div>
             </div>
@@ -305,6 +352,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             <TabsTrigger value="stories" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900">
               <BookOpen className="h-4 w-4 mr-2" />
               Stories ({stories?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="achievements" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900">
+              <Trophy className="h-4 w-4 mr-2" />
+              Achievements ({userAchievements.length})
             </TabsTrigger>
             <TabsTrigger value="reviews" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900">
               <Star className="h-4 w-4 mr-2" />
@@ -368,6 +419,16 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          {/* Achievements Tab */}
+          <TabsContent value="achievements" className="space-y-4">
+            <AchievementGrid
+              achievements={allAchievements}
+              userAchievements={userAchievements}
+              userStats={userStats || undefined}
+              showLocked={true}
+            />
           </TabsContent>
 
           {/* Reviews Tab */}
