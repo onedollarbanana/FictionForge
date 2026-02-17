@@ -16,6 +16,7 @@ import {
   User,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { ExperienceCard } from "@/components/experience";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,16 @@ interface ReadingStats {
     read_at: string;
   }[];
   member_since: string;
+}
+
+interface ExperienceData {
+  xpScore: number;
+  tier: 'newcomer' | 'reader' | 'contributor' | 'veteran' | 'champion';
+  totalEarned: number;
+  totalLost: number;
+  tierMinScore: number;
+  tierMaxScore: number;
+  progressInTier: number;
 }
 
 interface PageProps {
@@ -76,6 +87,13 @@ export default async function ProfilePage({ params }: PageProps) {
     recent_activity: [],
     member_since: profile.created_at,
   };
+
+  // Fetch experience data using RPC function
+  const { data: experienceData } = await supabase.rpc("get_user_experience", {
+    target_user_id: profile.id,
+  });
+
+  const experience: ExperienceData | null = experienceData;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -178,6 +196,9 @@ export default async function ProfilePage({ params }: PageProps) {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
+        {/* Experience Card */}
+        <ExperienceCard experience={experience} />
+
         {/* Favorite Genres */}
         <Card>
           <CardHeader>
@@ -204,7 +225,7 @@ export default async function ProfilePage({ params }: PageProps) {
         </Card>
 
         {/* Recent Activity */}
-        <Card>
+        <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle className="text-lg">Recent Activity</CardTitle>
           </CardHeader>
@@ -214,12 +235,12 @@ export default async function ProfilePage({ params }: PageProps) {
                 No reading activity yet
               </p>
             ) : (
-              <div className="space-y-3">
+              <div className="grid sm:grid-cols-2 gap-3">
                 {stats.recent_activity.map((activity) => (
                   <Link
                     key={activity.story_id}
                     href={`/story/${activity.story_slug}`}
-                    className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-muted transition-colors"
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors"
                   >
                     <div className="relative w-10 h-14 flex-shrink-0 rounded overflow-hidden bg-muted">
                       {activity.cover_url ? (
