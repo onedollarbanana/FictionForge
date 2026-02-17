@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BookOpen, Calendar, Eye, Star, Users, Library, MessageSquare, Award, History, Clock, PenLine } from 'lucide-react'
@@ -101,9 +100,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     .select('*', { count: 'exact', head: true })
     .eq('follower_id', profile.id)
 
-  // Get reading stats (library items count)
+  // Get library count from follows table (stories this user follows)
   const { count: libraryCount } = await supabase
-    .from('user_library')
+    .from('follows')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', profile.id)
 
@@ -185,8 +184,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   }, 0) || 0
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <div className="container max-w-6xl py-8 px-4">
+    <div className="min-h-screen bg-background">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Profile Header */}
         <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 md:p-8 mb-8">
           <div className="flex flex-col md:flex-row gap-6 items-start">

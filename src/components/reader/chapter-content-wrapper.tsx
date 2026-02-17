@@ -22,7 +22,7 @@ interface ChapterContentWrapperProps {
 // Theme-specific inline styles (for non-auto themes)
 const themeInlineStyles: Record<'light' | 'dark' | 'sepia' | 'night', { bg: string; text: string; borderColor: string }> = {
   light: { bg: '#ffffff', text: '#18181b', borderColor: '#e4e4e7' },
-  dark: { bg: '#18181b', text: '#f4f4f5', borderColor: '#3f3f46' },
+  dark: { bg: 'hsl(222.2, 84%, 4.9%)', text: '#f4f4f5', borderColor: '#3f3f46' },
   sepia: { bg: '#fffbeb', text: '#451a03', borderColor: '#fde68a' },
   night: { bg: '#000000', text: '#d4d4d8', borderColor: '#27272a' },
 }
@@ -33,7 +33,7 @@ export function ChapterContentWrapper({ children, headerContent, storyTitle, sto
   // Don't render until settings are loaded from localStorage
   if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-white dark:bg-zinc-900">
+      <div className="min-h-screen bg-white dark:bg-background">
         <div className="animate-pulse p-8 max-w-3xl mx-auto">
           <div className="h-8 bg-zinc-200 dark:bg-zinc-700 rounded w-3/4 mb-4" />
           <div className="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-1/2 mb-8" />
@@ -60,7 +60,7 @@ export function ChapterContentWrapper({ children, headerContent, storyTitle, sto
     <div 
       className={`min-h-screen transition-colors duration-300 ${
         isAutoTheme 
-          ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100' 
+          ? 'bg-white dark:bg-background text-zinc-900 dark:text-zinc-100' 
           : ''
       }`}
       style={explicitTheme ? { backgroundColor: explicitTheme.bg, color: explicitTheme.text } : undefined}
@@ -78,7 +78,7 @@ export function ChapterContentWrapper({ children, headerContent, storyTitle, sto
       <div 
         className={`border-b sticky top-0 z-10 backdrop-blur-sm ${
           isAutoTheme 
-            ? 'bg-white/95 dark:bg-zinc-900/95 border-zinc-200 dark:border-zinc-700' 
+            ? 'bg-white/95 dark:bg-background/95 border-zinc-200 dark:border-zinc-700' 
             : ''
         }`}
         style={explicitTheme ? { 
