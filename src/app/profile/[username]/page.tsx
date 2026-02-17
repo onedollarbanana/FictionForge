@@ -148,6 +148,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const chapterMap = new Map(commentChapters?.map(c => [c.id, { ...c, story: chapterStoryMap.get(c.story_id) }]) || [])
 
   // Get reading history (only for own profile)
+  // Uses reading_progress table with updated_at column (not last_read_at)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let readingHistory: any[] | null = null
   
@@ -157,10 +158,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       .select(`
         story_id,
         chapter_id,
-        last_read_at
+        updated_at
       `)
       .eq('user_id', profile.id)
-      .order('last_read_at', { ascending: false })
+      .order('updated_at', { ascending: false })
       .limit(10)
     
     if (history && history.length > 0) {
@@ -488,7 +489,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                                   </div>
                                   <div className="flex items-center gap-1 text-sm text-zinc-400">
                                     <Clock className="h-4 w-4" />
-                                    {formatDistanceToNow(new Date(item.last_read_at), { addSuffix: true })}
+                                    {formatDistanceToNow(new Date(item.updated_at), { addSuffix: true })}
                                   </div>
                                 </div>
                               </div>
