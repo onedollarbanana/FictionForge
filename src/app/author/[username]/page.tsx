@@ -46,6 +46,7 @@ export default async function AuthorPage({ params }: PageProps) {
       created_at
     `)
     .eq("author_id", author.id)
+    .eq("visibility", "published")
     .order("updated_at", { ascending: false });
 
   const publishedStories = stories || [];
