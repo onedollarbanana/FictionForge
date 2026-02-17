@@ -51,6 +51,16 @@ interface PageProps {
   params: Promise<{ username: string }>;
 }
 
+const defaultStats: ReadingStats = {
+  chapters_read: 0,
+  stories_in_library: 0,
+  stories_completed: 0,
+  stories_reading: 0,
+  favorite_genres: [],
+  recent_activity: [],
+  member_since: new Date().toISOString(),
+};
+
 export default async function ProfilePage({ params }: PageProps) {
   const { username } = await params;
   const supabase = await createClient();
@@ -73,27 +83,43 @@ export default async function ProfilePage({ params }: PageProps) {
 
   const isOwnProfile = currentUser?.id === profile.id;
 
-  // Fetch reading stats using RPC function
-  const { data: statsData } = await supabase.rpc("get_user_reading_stats", {
-    target_user_id: profile.id,
-  });
+  // Fetch reading stats with error handling
+  let stats: ReadingStats = { ...defaultStats, member_since: profile.created_at };
+  try {
+    const { data: statsData, error: statsError } = await supabase.rpc("get_user_reading_stats", {
+      target_user_id: profile.id,
+    });
+    if (statsError) {
+      console.error('Error fetching reading stats:', statsError);
+    } else if (statsData) {
+      stats = {
+        chapters_read: statsData.chapters_read ?? 0,
+        stories_in_library: statsData.stories_in_library ?? 0,
+        stories_completed: statsData.stories_completed ?? 0,
+        stories_reading: statsData.stories_reading ?? 0,
+        favorite_genres: Array.isArray(statsData.favorite_genres) ? statsData.favorite_genres : [],
+        recent_activity: Array.isArray(statsData.recent_activity) ? statsData.recent_activity : [],
+        member_since: profile.created_at,
+      };
+    }
+  } catch (e) {
+    console.error('Exception fetching reading stats:', e);
+  }
 
-  const stats: ReadingStats = statsData || {
-    chapters_read: 0,
-    stories_in_library: 0,
-    stories_completed: 0,
-    stories_reading: 0,
-    favorite_genres: [],
-    recent_activity: [],
-    member_since: profile.created_at,
-  };
-
-  // Fetch experience data using RPC function
-  const { data: experienceData } = await supabase.rpc("get_user_experience", {
-    target_user_id: profile.id,
-  });
-
-  const experience: ExperienceData | null = experienceData;
+  // Fetch experience data with error handling
+  let experience: ExperienceData | null = null;
+  try {
+    const { data: experienceData, error: expError } = await supabase.rpc("get_user_experience", {
+      target_user_id: profile.id,
+    });
+    if (expError) {
+      console.error('Error fetching experience:', expError);
+    } else if (experienceData) {
+      experience = experienceData as ExperienceData;
+    }
+  } catch (e) {
+    console.error('Exception fetching experience:', e);
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -101,32 +127,33 @@ export default async function ProfilePage({ params }: PageProps) {
       <Card className="mb-6">
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            {/* Avatar */}
             <Avatar className="h-24 w-24">
-              <AvatarImage
-                src={profile.avatar_url || undefined}
-                alt={profile.display_name || profile.username}
-              />
-              <AvatarFallback className="text-2xl">
-                {(profile.display_name || profile.username || "?")
-                  .charAt(0)
-                  .toUpperCase()}
+              <AvatarImage src={profile.avatar_url || undefined} />
+              <AvatarFallback className="text-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
+                {profile.display_name?.[0]?.toUpperCase() ||
+                  profile.username[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
 
+            {/* Info */}
             <div className="flex-1 text-center sm:text-left">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                <h1 className="text-2xl font-bold">
-                  {profile.display_name || profile.username}
-                </h1>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <h1 className="text-2xl font-bold">
+                    {profile.display_name || profile.username}
+                  </h1>
+                </div>
                 {isOwnProfile && (
-                  <Link href="/settings/profile">
-                    <Button variant="outline" size="sm" className="gap-1.5">
-                      <Pencil className="h-3.5 w-3.5" />
+                  <Button asChild variant="outline" size="sm">
+                    <Link href="/settings/profile">
+                      <Pencil className="h-4 w-4 mr-2" />
                       Edit Profile
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 )}
               </div>
+
               <p className="text-muted-foreground">@{profile.username}</p>
 
               {profile.bio && (
@@ -205,7 +232,7 @@ export default async function ProfilePage({ params }: PageProps) {
             <CardTitle className="text-lg">Favorite Genres</CardTitle>
           </CardHeader>
           <CardContent>
-            {stats.favorite_genres.length === 0 ? (
+            {!stats.favorite_genres || stats.favorite_genres.length === 0 ? (
               <p className="text-muted-foreground text-sm">
                 No reading history yet
               </p>
@@ -230,7 +257,7 @@ export default async function ProfilePage({ params }: PageProps) {
             <CardTitle className="text-lg">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
-            {stats.recent_activity.length === 0 ? (
+            {!stats.recent_activity || stats.recent_activity.length === 0 ? (
               <p className="text-muted-foreground text-sm">
                 No reading activity yet
               </p>
