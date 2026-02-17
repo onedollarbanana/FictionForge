@@ -47,8 +47,9 @@ interface ExperienceData {
   progressInTier: number;
 }
 
+// Next.js 14 syntax - params passed directly, not as Promise
 interface PageProps {
-  params: Promise<{ username: string }>;
+  params: { username: string };
 }
 
 const defaultStats: ReadingStats = {
@@ -62,7 +63,8 @@ const defaultStats: ReadingStats = {
 };
 
 export default async function ProfilePage({ params }: PageProps) {
-  const { username } = await params;
+  // Next.js 14 - params is direct object, not Promise
+  const { username } = params;
   const supabase = await createClient();
 
   // Get current user to check if viewing own profile
