@@ -4,7 +4,7 @@ import { Metadata } from 'next'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { BookOpen, Calendar, Eye, Star, Users, Library, MessageSquare, Award, History, Clock, PenLine } from 'lucide-react'
+import { BookOpen, Calendar, Eye, Star, Library, MessageSquare, Award, History, Clock, PenLine } from 'lucide-react'
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { ExperienceCard } from '@/components/experience'
@@ -71,34 +71,22 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   
   const isOwnProfile = currentUser?.id === profile.id
   
-  // Get user's published stories
+  // Get user's stories (no 'published' status filter - story_status enum has: ongoing, completed, hiatus, dropped)
   const { data: stories } = await supabase
     .from('stories')
     .select(`
       id,
       title,
       slug,
-      cover_image_url,
+      cover_url,
       status,
-      view_count,
-      created_at,
-      story_genres(genres(name, slug)),
-      chapters(count)
+      total_views,
+      chapter_count,
+      created_at
     `)
     .eq('author_id', profile.id)
-    .eq('status', 'published')
+    .in('status', ['ongoing', 'completed']) // Show active stories only
     .order('created_at', { ascending: false })
-  
-  // Get follower/following counts
-  const { count: followerCount } = await supabase
-    .from('user_follows')
-    .select('*', { count: 'exact', head: true })
-    .eq('following_id', profile.id)
-  
-  const { count: followingCount } = await supabase
-    .from('user_follows')
-    .select('*', { count: 'exact', head: true })
-    .eq('follower_id', profile.id)
 
   // Get library count from follows table (stories this user follows)
   const { count: libraryCount } = await supabase
@@ -106,19 +94,28 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     .select('*', { count: 'exact', head: true })
     .eq('user_id', profile.id)
 
-  // Get user's reviews
+  // Get user's reviews from story_ratings table
   const { data: reviews } = await supabase
-    .from('reviews')
+    .from('story_ratings')
     .select(`
       id,
       overall_rating,
       review_text,
       created_at,
-      story:stories(id, title, slug)
+      story_id
     `)
     .eq('user_id', profile.id)
     .order('created_at', { ascending: false })
     .limit(5)
+
+  // Get story details for reviews
+  const reviewStoryIds = reviews?.map(r => r.story_id).filter(Boolean) || []
+  const { data: reviewStories } = reviewStoryIds.length > 0 ? await supabase
+    .from('stories')
+    .select('id, title, slug')
+    .in('id', reviewStoryIds) : { data: [] }
+  
+  const storyMap = new Map(reviewStories?.map(s => [s.id, s]) || [])
 
   // Get user's recent comments
   const { data: comments } = await supabase
@@ -127,16 +124,28 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       id,
       content,
       created_at,
-      chapter:chapters(
-        id,
-        title,
-        chapter_number,
-        story:stories(id, title, slug)
-      )
+      chapter_id
     `)
     .eq('user_id', profile.id)
     .order('created_at', { ascending: false })
     .limit(5)
+
+  // Get chapter details for comments
+  const commentChapterIds = comments?.map(c => c.chapter_id).filter(Boolean) || []
+  const { data: commentChapters } = commentChapterIds.length > 0 ? await supabase
+    .from('chapters')
+    .select('id, title, chapter_number, story_id')
+    .in('id', commentChapterIds) : { data: [] }
+  
+  // Get stories for those chapters
+  const chapterStoryIds = commentChapters?.map(c => c.story_id).filter(Boolean) || []
+  const { data: chapterStories } = chapterStoryIds.length > 0 ? await supabase
+    .from('stories')
+    .select('id, title, slug')
+    .in('id', chapterStoryIds) : { data: [] }
+  
+  const chapterStoryMap = new Map(chapterStories?.map(s => [s.id, s]) || [])
+  const chapterMap = new Map(commentChapters?.map(c => [c.id, { ...c, story: chapterStoryMap.get(c.story_id) }]) || [])
 
   // Get reading history (only for own profile)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -147,14 +156,37 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       .from('reading_progress')
       .select(`
         story_id,
-        last_read_at,
-        story:stories(id, title, slug),
-        chapter:chapters(id, title, chapter_number)
+        chapter_id,
+        last_read_at
       `)
       .eq('user_id', profile.id)
       .order('last_read_at', { ascending: false })
       .limit(10)
-    readingHistory = history
+    
+    if (history && history.length > 0) {
+      // Get story and chapter details
+      const historyStoryIds = history.map(h => h.story_id).filter(Boolean)
+      const historyChapterIds = history.map(h => h.chapter_id).filter(Boolean)
+      
+      const { data: historyStories } = await supabase
+        .from('stories')
+        .select('id, title, slug')
+        .in('id', historyStoryIds)
+      
+      const { data: historyChapters } = historyChapterIds.length > 0 ? await supabase
+        .from('chapters')
+        .select('id, title, chapter_number')
+        .in('id', historyChapterIds) : { data: [] }
+      
+      const historyStoryMap = new Map(historyStories?.map(s => [s.id, s]) || [])
+      const historyChapterMap = new Map(historyChapters?.map(c => [c.id, c]) || [])
+      
+      readingHistory = history.map(h => ({
+        ...h,
+        story: historyStoryMap.get(h.story_id),
+        chapter: historyChapterMap.get(h.chapter_id)
+      }))
+    }
   }
   
   // Get user experience data
@@ -176,12 +208,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     }
   }
   
-  // Calculate total views across all stories
-  const totalViews = stories?.reduce((sum, story) => sum + (story.view_count || 0), 0) || 0
-  const totalChapters = stories?.reduce((sum, story) => {
-    const chapterData = story.chapters as unknown as { count: number }[] | null
-    return sum + (chapterData?.[0]?.count || 0)
-  }, 0) || 0
+  // Calculate total views and chapters across all stories
+  const totalViews = stories?.reduce((sum, story) => sum + (story.total_views || 0), 0) || 0
+  const totalChapters = stories?.reduce((sum, story) => sum + (story.chapter_count || 0), 0) || 0
 
   return (
     <div className="min-h-screen bg-background">
@@ -201,7 +230,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-zinc-100">
                   {profile.display_name || profile.username}
                 </h1>
-                {profile.role === 'author' && (
+                {(stories?.length || 0) > 0 && (
                   <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
                     <PenLine className="h-3 w-3 mr-1" />
                     Author
@@ -220,12 +249,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 <span className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   Joined {formatDistanceToNow(new Date(profile.created_at), { addSuffix: true })}
-                </span>
-                <span className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100">{followerCount || 0}</span> followers
-                  <span className="mx-1">·</span>
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100">{followingCount || 0}</span> following
                 </span>
               </div>
             </div>
@@ -310,54 +333,45 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   <TabsContent value="stories" className="mt-0">
                     {stories && stories.length > 0 ? (
                       <div className="space-y-4">
-                        {stories.map((story) => {
-                          const genres = story.story_genres as unknown as Array<{genres: {name: string, slug: string}}>
-                          const chapterData = story.chapters as unknown as { count: number }[] | null
-                          return (
-                            <div 
-                              key={story.id}
-                              className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 hover:shadow-md transition-shadow bg-zinc-50 dark:bg-zinc-800/50"
-                            >
-                              <div className="flex gap-4">
-                                {story.cover_image_url && (
-                                  <img 
-                                    src={story.cover_image_url} 
-                                    alt={story.title}
-                                    className="w-16 h-24 object-cover rounded-lg shadow-sm"
-                                  />
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <Link href={`/story/${story.slug}`} className="hover:text-amber-600 transition-colors">
-                                    <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                                      {story.title}
-                                    </h3>
-                                  </Link>
-                                  <div className="flex flex-wrap gap-1 my-2">
-                                    {genres?.slice(0, 3).map((g) => (
-                                      <Badge 
-                                        key={g.genres.slug} 
-                                        variant="outline" 
-                                        className="text-xs bg-white dark:bg-zinc-900"
-                                      >
-                                        {g.genres.name}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                  <div className="flex gap-4 text-sm text-zinc-500">
-                                    <span className="flex items-center gap-1">
-                                      <BookOpen className="h-3 w-3" />
-                                      {chapterData?.[0]?.count || 0} chapters
-                                    </span>
-                                    <span className="flex items-center gap-1">
-                                      <Eye className="h-3 w-3" />
-                                      {(story.view_count || 0).toLocaleString()} views
-                                    </span>
-                                  </div>
+                        {stories.map((story) => (
+                          <div 
+                            key={story.id}
+                            className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 hover:shadow-md transition-shadow bg-zinc-50 dark:bg-zinc-800/50"
+                          >
+                            <div className="flex gap-4">
+                              {story.cover_url && (
+                                <img 
+                                  src={story.cover_url} 
+                                  alt={story.title}
+                                  className="w-16 h-24 object-cover rounded-lg shadow-sm"
+                                />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <Link href={`/story/${story.slug}`} className="hover:text-amber-600 transition-colors">
+                                  <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                                    {story.title}
+                                  </h3>
+                                </Link>
+                                <Badge 
+                                  variant="outline" 
+                                  className="text-xs bg-white dark:bg-zinc-900 mt-2 capitalize"
+                                >
+                                  {story.status}
+                                </Badge>
+                                <div className="flex gap-4 text-sm text-zinc-500 mt-2">
+                                  <span className="flex items-center gap-1">
+                                    <BookOpen className="h-3 w-3" />
+                                    {story.chapter_count || 0} chapters
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Eye className="h-3 w-3" />
+                                    {(story.total_views || 0).toLocaleString()} views
+                                  </span>
                                 </div>
                               </div>
                             </div>
-                          )
-                        })}
+                          </div>
+                        ))}
                       </div>
                     ) : (
                       <div className="py-12 text-center text-zinc-500">
@@ -371,7 +385,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                     {reviews && reviews.length > 0 ? (
                       <div className="space-y-4">
                         {reviews.map((review) => {
-                          const storyData = review.story as unknown as { id: string; title: string; slug: string } | null
+                          const story = storyMap.get(review.story_id)
                           return (
                             <div 
                               key={review.id}
@@ -379,10 +393,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                             >
                               <div className="flex items-start justify-between mb-2">
                                 <Link 
-                                  href={`/story/${storyData?.slug || ''}`}
+                                  href={`/story/${story?.slug || ''}`}
                                   className="font-medium text-zinc-900 dark:text-zinc-100 hover:text-amber-600 transition-colors"
                                 >
-                                  {storyData?.title || 'Unknown Story'}
+                                  {story?.title || 'Unknown Story'}
                                 </Link>
                                 <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900/30">
                                   <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
@@ -415,18 +429,13 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                     {comments && comments.length > 0 ? (
                       <div className="space-y-4">
                         {comments.map((comment) => {
-                          const chapter = comment.chapter as unknown as {
-                            id: string
-                            title: string
-                            chapter_number: number
-                            story: { id: string; title: string; slug: string }
-                          } | null
+                          const chapter = chapterMap.get(comment.chapter_id)
                           return (
                             <div 
                               key={comment.id}
                               className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 hover:shadow-md transition-shadow bg-zinc-50 dark:bg-zinc-800/50"
                             >
-                              {chapter && (
+                              {chapter && chapter.story && (
                                 <Link 
                                   href={`/story/${chapter.story.slug}/chapter/${chapter.chapter_number}`}
                                   className="text-sm font-medium text-zinc-900 dark:text-zinc-100 hover:text-amber-600 transition-colors block mb-2"
@@ -456,26 +465,24 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                     <TabsContent value="history" className="mt-0">
                       {readingHistory && readingHistory.length > 0 ? (
                         <div className="space-y-4">
-                          {readingHistory.map((item) => {
-                            const story = item.story as { id: string; title: string; slug: string } | null
-                            const chapter = item.chapter as { id: string; title: string; chapter_number: number } | null
-                            if (!story) return null
+                          {readingHistory.map((item, index) => {
+                            if (!item.story) return null
                             return (
                               <div 
-                                key={item.story_id}
+                                key={`${item.story_id}-${index}`}
                                 className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 hover:shadow-md transition-shadow bg-zinc-50 dark:bg-zinc-800/50"
                               >
                                 <div className="flex items-center justify-between">
                                   <div>
                                     <Link 
-                                      href={`/story/${story.slug}`}
+                                      href={`/story/${item.story.slug}`}
                                       className="font-medium text-zinc-900 dark:text-zinc-100 hover:text-amber-600 transition-colors"
                                     >
-                                      {story.title}
+                                      {item.story.title}
                                     </Link>
-                                    {chapter && (
+                                    {item.chapter && (
                                       <p className="text-sm text-zinc-500">
-                                        Chapter {chapter.chapter_number}: {chapter.title}
+                                        Chapter {item.chapter.chapter_number}: {item.chapter.title}
                                       </p>
                                     )}
                                   </div>
