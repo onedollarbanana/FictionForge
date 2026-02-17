@@ -11,3 +11,13 @@ export type ExperienceTier =
   | 'legend'
   | 'elite'
   | 'mythic'
+
+export interface ExperienceData {
+  xpScore: number
+  tier: ExperienceTier
+  totalEarned: number
+  totalLost: number
+  tierMinScore: number
+  tierMaxScore: number
+  progressInTier: number
+}

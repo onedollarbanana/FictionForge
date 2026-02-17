@@ -1,20 +1,14 @@
+'use client'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { ExperienceBadge, ExperienceTier, tierConfig } from './experience-badge'
+import { ExperienceBadge, tierConfig } from './experience-badge'
+import { ExperienceTier, ExperienceData } from './types'
 import { TrendingUp, Sparkles } from 'lucide-react'
-
-interface ExperienceData {
-  xpScore: number
-  tier: ExperienceTier
-  totalEarned: number
-  totalLost: number
-  tierMinScore: number
-  tierMaxScore: number
-  progressInTier: number
-}
 
 interface ExperienceCardProps {
   experience: ExperienceData | null
+  showDetails?: boolean
 }
 
 // Maps current tier to next tier with its minimum score threshold
@@ -30,31 +24,30 @@ const nextTierMap: Record<ExperienceTier, { tier: ExperienceTier; minScore: numb
   mythic: null
 }
 
-export function ExperienceCard({ experience }: ExperienceCardProps) {
+export function ExperienceCard({ experience, showDetails = true }: ExperienceCardProps) {
   if (!experience) {
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
             <Sparkles className="h-5 w-5" />
             Experience
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground text-sm">
-            No experience data available
-          </p>
+          <p className="text-muted-foreground text-sm">Start participating to earn XP!</p>
         </CardContent>
       </Card>
     )
   }
 
-  const nextTier = nextTierMap[experience.tier]
-  const pointsToNext = nextTier ? nextTier.minScore - experience.xpScore : 0
+  const { xpScore, tier, progressInTier } = experience
+  const config = tierConfig[tier]
+  const nextTier = nextTierMap[tier]
 
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center gap-2">
           <Sparkles className="h-5 w-5" />
           Experience
@@ -62,49 +55,39 @@ export function ExperienceCard({ experience }: ExperienceCardProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
-          <ExperienceBadge tier={experience.tier} size="lg" />
-          <div className="text-right">
-            <p className="text-2xl font-bold">{experience.xpScore.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">XP</p>
-          </div>
-        </div>
-
-        {nextTier && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Progress to {tierConfig[nextTier.tier].label}</span>
-              <span className="font-medium">{experience.progressInTier}%</span>
+          <div className="flex items-center gap-3">
+            <ExperienceBadge tier={tier} size="lg" />
+            <div>
+              <p className="font-semibold capitalize">{tier}</p>
+              <p className="text-sm text-muted-foreground">{xpScore.toLocaleString()} XP</p>
             </div>
-            <Progress value={experience.progressInTier} className="h-2" />
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" />
-              {pointsToNext.toLocaleString()} more XP to reach {tierConfig[nextTier.tier].label}
-            </p>
           </div>
-        )}
-
-        {!nextTier && (
-          <div className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg p-3 text-center">
-            <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-              🏆 You&apos;ve reached the highest tier!
-            </p>
-          </div>
-        )}
-
-        <div className="pt-2 border-t flex justify-between text-sm">
-          <div>
-            <p className="text-muted-foreground">Earned</p>
-            <p className="font-medium text-green-600 dark:text-green-400">
-              +{experience.totalEarned.toLocaleString()}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-muted-foreground">Lost</p>
-            <p className="font-medium text-red-600 dark:text-red-400">
-              -{experience.totalLost.toLocaleString()}
-            </p>
-          </div>
+          {nextTier && (
+            <div className="text-right text-sm text-muted-foreground">
+              <TrendingUp className="h-4 w-4 inline mr-1" />
+              Next: {nextTier.tier}
+            </div>
+          )}
         </div>
+
+        {showDetails && nextTier && (
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Progress to {nextTier.tier}</span>
+              <span>{Math.round(progressInTier)}%</span>
+            </div>
+            <Progress value={progressInTier} className="h-2" />
+            <p className="text-xs text-muted-foreground text-right">
+              {(nextTier.minScore - xpScore).toLocaleString()} XP to go
+            </p>
+          </div>
+        )}
+
+        {showDetails && (
+          <p className="text-xs text-muted-foreground">
+            {config.description}
+          </p>
+        )}
       </CardContent>
     </Card>
   )

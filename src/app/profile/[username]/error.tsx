@@ -1,10 +1,8 @@
 'use client'
 
 import { useEffect } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
-import Link from 'next/link'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function ProfileError({
   error,
@@ -18,30 +16,16 @@ export default function ProfileError({
   }, [error])
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <Card className="border-destructive">
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center text-center gap-4">
-            <AlertTriangle className="h-12 w-12 text-destructive" />
-            <div>
-              <h1 className="text-xl font-bold mb-2">Unable to load profile</h1>
-              <p className="text-muted-foreground mb-4">
-                There was an error loading this profile. Please try again.
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <Button onClick={reset} variant="outline">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Try Again
-              </Button>
-              <Button asChild>
-                <Link href="/">
-                  <Home className="h-4 w-4 mr-2" />
-                  Go Home
-                </Link>
-              </Button>
-            </div>
-          </div>
+    <div className="container max-w-2xl py-16">
+      <Card>
+        <CardHeader>
+          <CardTitle>Something went wrong</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground">
+            We encountered an error loading this profile.
+          </p>
+          <Button onClick={reset}>Try again</Button>
         </CardContent>
       </Card>
     </div>
