@@ -1,0 +1,2 @@
+Debug timestamp: 2026-02-17T20:36:00Z
+This file triggers a Vercel deployment to test profile page fixes.
