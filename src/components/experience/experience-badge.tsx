@@ -10,16 +10,16 @@ import {
   Crown 
 } from 'lucide-react'
 
-export type ReputationTier = 'newcomer' | 'reader' | 'contributor' | 'veteran' | 'champion'
+export type ExperienceTier = 'newcomer' | 'reader' | 'contributor' | 'veteran' | 'champion'
 
-interface ReputationBadgeProps {
-  tier: ReputationTier
+interface ExperienceBadgeProps {
+  tier: ExperienceTier
   size?: 'sm' | 'md' | 'lg'
   showLabel?: boolean
   className?: string
 }
 
-const tierConfig: Record<ReputationTier, {
+const tierConfig: Record<ExperienceTier, {
   label: string
   icon: typeof Sprout
   color: string
@@ -75,12 +75,12 @@ const sizeConfig = {
   }
 }
 
-export function ReputationBadge({ 
+export function ExperienceBadge({ 
   tier, 
   size = 'md', 
   showLabel = true,
   className 
-}: ReputationBadgeProps) {
+}: ExperienceBadgeProps) {
   const config = tierConfig[tier]
   const sizes = sizeConfig[size]
   const Icon = config.icon
