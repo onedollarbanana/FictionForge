@@ -43,8 +43,8 @@ export function GiveRepButton({
       const supabase = createClient()
       const { data } = await supabase.rpc('has_given_peer_rep', {
         giver_user_id: currentUserId,
-        target_type: targetType,
-        target_id: targetId
+        p_target_type: targetType,
+        p_target_id: targetId
       })
       setHasGiven(!!data)
       setIsChecking(false)
@@ -70,13 +70,14 @@ export function GiveRepButton({
     const { data, error: rpcError } = await supabase.rpc('give_peer_rep', {
       giver_user_id: currentUserId,
       receiver_user_id: receiverUserId,
-      target_type: targetType,
-      target_id: targetId
+      p_target_type: targetType,
+      p_target_id: targetId
     })
 
     setIsLoading(false)
 
     if (rpcError) {
+      console.error('RPC Error:', rpcError)
       setError('Failed to give rep')
       setTimeout(() => setError(null), 2000)
       return
