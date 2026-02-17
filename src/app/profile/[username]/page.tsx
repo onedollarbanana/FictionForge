@@ -111,12 +111,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     .limit(5)
 
   // Get reading history (only for own profile)
-  let readingHistory: Array<{
-    story_id: string
-    last_read_at: string
-    story: { id: string; title: string; slug: string } | null
-    chapter: { id: string; title: string; chapter_number: number } | null
-  }> | null = null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let readingHistory: any[] | null = null
   
   if (isOwnProfile) {
     const { data: history } = await supabase
