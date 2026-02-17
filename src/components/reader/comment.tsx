@@ -6,6 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Heart, MessageSquare, Pin, Pencil, Trash2, MoreVertical, X, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { GiveRepButton } from "@/components/reputation";
 
 interface CommentData {
   id: string;
@@ -414,6 +415,13 @@ export function Comment({
                 <Heart className={`h-3 w-3 mr-1 ${liked ? "fill-red-500 text-red-500" : ""}`} />
                 {likesCount}
               </Button>
+
+              <GiveRepButton
+                targetType="comment"
+                targetId={comment.id}
+                receiverUserId={comment.user_id}
+                currentUserId={currentUserId}
+              />
               
               {!isReply && currentUserId && (
                 <Button
