@@ -43,6 +43,7 @@ export default function EditStoryPage() {
   const [blurb, setBlurb] = useState("");
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [status, setStatus] = useState("ongoing");
+  const [visibility, setVisibility] = useState("published");
   const [genres, setGenres] = useState<string[]>([]);
   const [tags, setTags] = useState("");
   const [defaultNoteBefore, setDefaultNoteBefore] = useState("");
@@ -70,6 +71,7 @@ export default function EditStoryPage() {
       setBlurb(data.blurb || "");
       setCoverUrl(data.cover_url || null);
       setStatus(data.status || "ongoing");
+      setVisibility(data.visibility || "published");
       setGenres(data.genres || []);
       setTags((data.tags || []).join(", "));
       setDefaultNoteBefore(data.default_author_note_before || "");
@@ -99,6 +101,7 @@ export default function EditStoryPage() {
         blurb: blurb || null,
         cover_url: coverUrl,
         status,
+        visibility,
         genres,
         tags: tagArray,
         default_author_note_before: defaultNoteBefore || null,
@@ -190,6 +193,27 @@ export default function EditStoryPage() {
               <SelectItem value="dropped">Dropped</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div>
+          <Label htmlFor="visibility">Visibility</Label>
+          <Select value={visibility} onValueChange={setVisibility}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="published">Published</SelectItem>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="unlisted">Unlisted</SelectItem>
+              <SelectItem value="removed">Removed</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-sm text-muted-foreground mt-1">
+            {visibility === 'published' && 'Visible in browse and search'}
+            {visibility === 'draft' && 'Only visible to you'}
+            {visibility === 'unlisted' && 'Only accessible via direct link'}
+            {visibility === 'removed' && 'Hidden from all readers'}
+          </p>
         </div>
 
         <div>
