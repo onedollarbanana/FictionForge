@@ -13,17 +13,7 @@ import {
   Flame,
   Sparkles
 } from 'lucide-react'
-
-export type ExperienceTier = 
-  | 'newcomer' 
-  | 'reader' 
-  | 'regular'
-  | 'contributor' 
-  | 'veteran' 
-  | 'master'
-  | 'legend'
-  | 'elite'
-  | 'mythic'
+import type { ExperienceTier } from './types'
 
 interface ExperienceBadgeProps {
   tier: ExperienceTier

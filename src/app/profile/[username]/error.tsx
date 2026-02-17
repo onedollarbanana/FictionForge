@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
 import Link from 'next/link'
@@ -13,48 +14,36 @@ export default function ProfileError({
   reset: () => void
 }) {
   useEffect(() => {
-    // Log detailed error info
-    console.error('Profile Page Error:', {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      digest: error.digest,
-    })
+    console.error('Profile Page Error:', error)
   }, [error])
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4">
-      <div className="text-center max-w-md">
-        <AlertTriangle className="h-24 w-24 mx-auto text-destructive mb-6" />
-        <h1 className="text-4xl font-bold mb-2">Profile Error</h1>
-        <p className="text-xl text-muted-foreground mb-4">
-          We couldn&apos;t load this profile.
-        </p>
-        {/* Temporarily show error in production for debugging */}
-        <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg mb-6 text-left text-sm">
-          <p className="font-mono text-red-600 dark:text-red-400 break-all">
-            {error.message || 'Unknown error'}
-          </p>
-          {error.digest && (
-            <p className="text-xs text-muted-foreground mt-2">Digest: {error.digest}</p>
-          )}
-          {error.name && (
-            <p className="text-xs text-muted-foreground mt-1">Type: {error.name}</p>
-          )}
-        </div>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button onClick={reset}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Try Again
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/">
-              <Home className="h-4 w-4 mr-2" />
-              Go Home
-            </Link>
-          </Button>
-        </div>
-      </div>
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <Card className="border-destructive">
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center text-center gap-4">
+            <AlertTriangle className="h-12 w-12 text-destructive" />
+            <div>
+              <h1 className="text-xl font-bold mb-2">Unable to load profile</h1>
+              <p className="text-muted-foreground mb-4">
+                There was an error loading this profile. Please try again.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button onClick={reset} variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
+              <Button asChild>
+                <Link href="/">
+                  <Home className="h-4 w-4 mr-2" />
+                  Go Home
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

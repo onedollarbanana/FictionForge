@@ -14,10 +14,10 @@ import {
   BookMarked,
   Pencil,
   User,
-  AlertTriangle,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { ExperienceCard, ExperienceTier } from "@/components/experience";
+import { ExperienceCard } from "@/components/experience";
+import type { ExperienceTier } from "@/components/experience/types";
 
 export const dynamic = "force-dynamic";
 
@@ -63,295 +63,255 @@ const defaultStats: ReadingStats = {
   member_since: new Date().toISOString(),
 };
 
-// Error display component
-function ErrorDisplay({ error, step }: { error: unknown; step: string }) {
-  const message = error instanceof Error ? error.message : String(error);
-  const stack = error instanceof Error ? error.stack : undefined;
+export default async function ProfilePage({ params }: PageProps) {
+  const { username } = params;
+  const supabase = await createClient();
+
+  // Get the profile user
+  const { data: profileUser, error: profileError } = await supabase
+    .from("profiles")
+    .select("id, username, display_name, avatar_url, bio, created_at")
+    .eq("username", username)
+    .single();
+
+  if (profileError || !profileUser) {
+    notFound();
+  }
+
+  // Get current user
+  const {
+    data: { user: currentUser },
+  } = await supabase.auth.getUser();
+
+  const isOwnProfile = currentUser?.id === profileUser.id;
+
+  // Get reading stats
+  let stats: ReadingStats = { ...defaultStats, member_since: profileUser.created_at };
   
+  const { data: statsData } = await supabase.rpc("get_user_reading_stats", {
+    p_user_id: profileUser.id,
+  });
+  
+  if (statsData) {
+    stats = {
+      chapters_read: statsData.chapters_read || 0,
+      stories_in_library: statsData.stories_in_library || 0,
+      stories_completed: statsData.stories_completed || 0,
+      stories_reading: statsData.stories_reading || 0,
+      favorite_genres: statsData.favorite_genres || [],
+      recent_activity: statsData.recent_activity || [],
+      member_since: profileUser.created_at,
+    };
+  }
+
+  // Get experience data
+  let experienceData: ExperienceData | null = null;
+  
+  const { data: expData } = await supabase.rpc("get_user_experience", {
+    p_user_id: profileUser.id,
+  });
+  
+  if (expData) {
+    experienceData = {
+      xpScore: expData.xpScore || 0,
+      tier: (expData.tier as ExperienceTier) || 'newcomer',
+      totalEarned: expData.totalEarned || 0,
+      totalLost: expData.totalLost || 0,
+      tierMinScore: expData.tierMinScore || 0,
+      tierMaxScore: expData.tierMaxScore || 100,
+      progressInTier: expData.progressInTier || 0,
+    };
+  }
+
+  // Get authored stories count
+  const { count: storiesCount } = await supabase
+    .from("stories")
+    .select("*", { count: "exact", head: true })
+    .eq("author_id", profileUser.id)
+    .eq("status", "published");
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <Card className="border-red-500">
+      {/* Profile Header */}
+      <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="flex items-start gap-4">
-            <AlertTriangle className="h-8 w-8 text-red-500 flex-shrink-0" />
-            <div>
-              <h1 className="text-xl font-bold text-red-600 mb-2">Profile Error at: {step}</h1>
-              <p className="font-mono text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded mb-4 break-all">
-                {message}
-              </p>
-              {stack && (
-                <details className="text-xs">
-                  <summary className="cursor-pointer text-muted-foreground">Stack trace</summary>
-                  <pre className="mt-2 p-2 bg-muted rounded overflow-auto max-h-48 text-xs">
-                    {stack}
-                  </pre>
-                </details>
+          <div className="flex flex-col sm:flex-row items-start gap-6">
+            <Avatar className="h-24 w-24 sm:h-32 sm:w-32">
+              <AvatarImage src={profileUser.avatar_url || undefined} />
+              <AvatarFallback className="text-2xl">
+                {(profileUser.display_name || profileUser.username || "U")[0].toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
+                <h1 className="text-2xl sm:text-3xl font-bold truncate">
+                  {profileUser.display_name || profileUser.username}
+                </h1>
+                {isOwnProfile && (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href="/settings/profile">
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit Profile
+                    </Link>
+                  </Button>
+                )}
+              </div>
+
+              <p className="text-muted-foreground mb-3">@{profileUser.username}</p>
+
+              {profileUser.bio && (
+                <p className="text-sm mb-4 max-w-prose">{profileUser.bio}</p>
               )}
+
+              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  <span>
+                    Joined{" "}
+                    {formatDistanceToNow(new Date(stats.member_since), {
+                      addSuffix: true,
+                    })}
+                  </span>
+                </div>
+                {(storiesCount ?? 0) > 0 && (
+                  <div className="flex items-center gap-1">
+                    <Pencil className="h-4 w-4" />
+                    <span>{storiesCount} published stories</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
-}
 
-export default async function ProfilePage({ params }: PageProps) {
-  let currentStep = "initialization";
-  
-  try {
-    // Next.js 14 - params is direct object, not Promise
-    currentStep = "extracting username";
-    const { username } = params;
-    
-    currentStep = "creating supabase client";
-    const supabase = await createClient();
+      {/* Experience Card */}
+      {experienceData && (
+        <div className="mb-6">
+          <ExperienceCard
+            xpScore={experienceData.xpScore}
+            tier={experienceData.tier}
+            tierMinScore={experienceData.tierMinScore}
+            tierMaxScore={experienceData.tierMaxScore}
+            progressInTier={experienceData.progressInTier}
+            showDetails={isOwnProfile}
+          />
+        </div>
+      )}
 
-    // Get current user to check if viewing own profile
-    currentStep = "getting current user";
-    const {
-      data: { user: currentUser },
-    } = await supabase.auth.getUser();
-
-    // Fetch profile
-    currentStep = "fetching profile for: " + username;
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("username", username)
-      .single();
-
-    if (error || !profile) {
-      notFound();
-    }
-
-    currentStep = "checking if own profile";
-    const isOwnProfile = currentUser?.id === profile.id;
-
-    // Fetch reading stats with error handling
-    currentStep = "fetching reading stats";
-    let stats: ReadingStats = { ...defaultStats, member_since: profile.created_at };
-    try {
-      const { data: statsData, error: statsError } = await supabase.rpc("get_user_reading_stats", {
-        target_user_id: profile.id,
-      });
-      if (statsError) {
-        console.error('Error fetching reading stats:', statsError);
-      } else if (statsData) {
-        stats = {
-          chapters_read: statsData.chapters_read ?? 0,
-          stories_in_library: statsData.stories_in_library ?? 0,
-          stories_completed: statsData.stories_completed ?? 0,
-          stories_reading: statsData.stories_reading ?? 0,
-          favorite_genres: Array.isArray(statsData.favorite_genres) ? statsData.favorite_genres : [],
-          recent_activity: Array.isArray(statsData.recent_activity) ? statsData.recent_activity : [],
-          member_since: profile.created_at,
-        };
-      }
-    } catch (e) {
-      console.error('Exception fetching reading stats:', e);
-    }
-
-    // Fetch experience data with error handling
-    currentStep = "fetching experience data";
-    let experience: ExperienceData | null = null;
-    try {
-      const { data: experienceData, error: expError } = await supabase.rpc("get_user_experience", {
-        target_user_id: profile.id,
-      });
-      if (expError) {
-        console.error('Error fetching experience:', expError);
-      } else if (experienceData) {
-        experience = experienceData as ExperienceData;
-      }
-    } catch (e) {
-      console.error('Exception fetching experience:', e);
-    }
-
-    currentStep = "rendering profile";
-    return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Profile Header */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-              {/* Avatar */}
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={profile.avatar_url || undefined} />
-                <AvatarFallback className="text-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
-                  {profile.display_name?.[0]?.toUpperCase() ||
-                    profile.username[0].toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-
-              {/* Info */}
-              <div className="flex-1 text-center sm:text-left">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div>
-                    <h1 className="text-2xl font-bold">
-                      {profile.display_name || profile.username}
-                    </h1>
-                  </div>
-                  {isOwnProfile && (
-                    <Button asChild variant="outline" size="sm">
-                      <Link href="/settings/profile">
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Edit Profile
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-
-                <p className="text-muted-foreground">@{profile.username}</p>
-
-                {profile.bio && (
-                  <p className="mt-3 text-muted-foreground whitespace-pre-wrap">
-                    {profile.bio}
-                  </p>
-                )}
-
-                <div className="flex flex-wrap justify-center sm:justify-start gap-4 mt-4 text-sm">
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>
-                      Joined{" "}
-                      {formatDistanceToNow(new Date(profile.created_at), {
-                        addSuffix: true,
-                      })}
-                    </span>
-                  </div>
-                  {profile.is_author && (
-                    <Link
-                      href={`/author/${profile.username}`}
-                      className="flex items-center gap-1.5 text-primary hover:underline"
-                    >
-                      <User className="h-4 w-4" />
-                      <span>View Author Page</span>
-                    </Link>
-                  )}
-                </div>
-              </div>
-            </div>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardContent className="pt-4 pb-4 text-center">
+            <BookOpen className="h-6 w-6 mx-auto mb-2 text-primary" />
+            <div className="text-2xl font-bold">{stats.chapters_read}</div>
+            <div className="text-xs text-muted-foreground">Chapters Read</div>
           </CardContent>
         </Card>
 
-        {/* Reading Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <BookOpen className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-              <p className="text-2xl font-bold">{stats.chapters_read}</p>
-              <p className="text-sm text-muted-foreground">Chapters Read</p>
-            </CardContent>
-          </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4 text-center">
+            <Library className="h-6 w-6 mx-auto mb-2 text-primary" />
+            <div className="text-2xl font-bold">{stats.stories_in_library}</div>
+            <div className="text-xs text-muted-foreground">In Library</div>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <Library className="h-8 w-8 mx-auto mb-2 text-purple-500" />
-              <p className="text-2xl font-bold">{stats.stories_in_library}</p>
-              <p className="text-sm text-muted-foreground">In Library</p>
-            </CardContent>
-          </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4 text-center">
+            <BookMarked className="h-6 w-6 mx-auto mb-2 text-primary" />
+            <div className="text-2xl font-bold">{stats.stories_reading}</div>
+            <div className="text-xs text-muted-foreground">Reading</div>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <BookMarked className="h-8 w-8 mx-auto mb-2 text-green-500" />
-              <p className="text-2xl font-bold">{stats.stories_reading}</p>
-              <p className="text-sm text-muted-foreground">Currently Reading</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-emerald-500" />
-              <p className="text-2xl font-bold">{stats.stories_completed}</p>
-              <p className="text-sm text-muted-foreground">Completed</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Experience Card */}
-          <ExperienceCard experience={experience} />
-
-          {/* Favorite Genres */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Favorite Genres</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!stats.favorite_genres || stats.favorite_genres.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  No reading history yet
-                </p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {stats.favorite_genres.map((g) => (
-                    <Badge key={g.genre} variant="secondary" className="text-sm">
-                      {g.genre}
-                      <span className="ml-1.5 text-muted-foreground">
-                        ({g.count})
-                      </span>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Recent Activity */}
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-lg">Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!stats.recent_activity || stats.recent_activity.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  No reading activity yet
-                </p>
-              ) : (
-                <div className="grid sm:grid-cols-2 gap-3">
-                  {stats.recent_activity.map((activity) => (
-                    <Link
-                      key={activity.story_id}
-                      href={`/story/${activity.story_slug}`}
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors"
-                    >
-                      <div className="relative w-10 h-14 flex-shrink-0 rounded overflow-hidden bg-muted">
-                        {activity.cover_url ? (
-                          <Image
-                            src={activity.cover_url}
-                            alt={activity.story_title}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                            <BookOpen className="w-4 h-4 text-white/80" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">
-                          {activity.story_title}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Chapter {activity.chapter_number} •{" "}
-                          {formatDistanceToNow(new Date(activity.read_at), {
-                            addSuffix: true,
-                          })}
-                        </p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardContent className="pt-4 pb-4 text-center">
+            <CheckCircle2 className="h-6 w-6 mx-auto mb-2 text-primary" />
+            <div className="text-2xl font-bold">{stats.stories_completed}</div>
+            <div className="text-xs text-muted-foreground">Completed</div>
+          </CardContent>
+        </Card>
       </div>
-    );
-  } catch (error) {
-    // Return a visible error in the UI instead of throwing
-    return <ErrorDisplay error={error} step={currentStep} />;
-  }
+
+      {/* Favorite Genres */}
+      {stats.favorite_genres.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg">Favorite Genres</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {stats.favorite_genres.map((genre) => (
+                <Badge key={genre.genre} variant="secondary">
+                  {genre.genre} ({genre.count})
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent Activity */}
+      {stats.recent_activity.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Recent Reading</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {stats.recent_activity.map((activity, index) => (
+                <div key={index} className="flex items-center gap-4">
+                  <div className="relative h-12 w-12 flex-shrink-0">
+                    {activity.cover_url ? (
+                      <Image
+                        src={activity.cover_url}
+                        alt={activity.story_title}
+                        fill
+                        className="object-cover rounded"
+                      />
+                    ) : (
+                      <div className="h-full w-full bg-muted rounded flex items-center justify-center">
+                        <BookOpen className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <Link
+                      href={`/story/${activity.story_slug}`}
+                      className="font-medium hover:underline truncate block"
+                    >
+                      {activity.story_title}
+                    </Link>
+                    <p className="text-sm text-muted-foreground">
+                      Chapter {activity.chapter_number} •{" "}
+                      {formatDistanceToNow(new Date(activity.read_at), {
+                        addSuffix: true,
+                      })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Empty State for non-own profiles with no activity */}
+      {!isOwnProfile &&
+        stats.chapters_read === 0 &&
+        stats.stories_in_library === 0 && (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <User className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground">
+                {profileUser.display_name || profileUser.username} hasn&apos;t started
+                reading yet.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+    </div>
+  );
 }
