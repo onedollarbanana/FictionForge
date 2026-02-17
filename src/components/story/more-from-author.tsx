@@ -1,80 +1,96 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { StoryCard } from '@/components/story/story-card'
-
-interface Story {
-  id: string
-  title: string
-  tagline: string | null
-  cover_url: string | null
-  genres: string[]
-  tags: string[]
-  rating_average: number | null
-  rating_count: number
-  total_views: number
-  chapter_count: number
-  author: {
-    id: string
-    username: string
-  }
-}
+import { createClient } from '@/lib/supabase/server';
+import { StoryCard, type StoryCardData } from '@/components/story/story-card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { User } from 'lucide-react';
+import Link from 'next/link';
 
 interface MoreFromAuthorProps {
-  storyId: string
-  authorId: string
-  authorUsername: string
+  storyId: string;
+  authorId: string;
+  authorName: string;
+  authorUsername: string;
+  limit?: number;
 }
 
-export function MoreFromAuthor({ storyId, authorId, authorUsername }: MoreFromAuthorProps) {
-  const [stories, setStories] = useState<Story[]>([])
-  const [loading, setLoading] = useState(true)
+export async function MoreFromAuthor({ 
+  storyId, 
+  authorId,
+  authorName,
+  authorUsername,
+  limit = 3 
+}: MoreFromAuthorProps) {
+  const supabase = await createClient();
 
-  useEffect(() => {
-    async function fetchAuthorStories() {
-      const supabase = createClient()
-      
-      const { data } = await supabase
-        .from('stories')
-        .select(`
-          id,
-          title,
-          tagline,
-          cover_url,
-          genres,
-          tags,
-          rating_average,
-          rating_count,
-          total_views,
-          chapter_count,
-          author:profiles!stories_author_id_fkey(id, username)
-        `)
-        .eq('author_id', authorId)
-        .neq('status', 'dropped')
-        .neq('id', storyId)
-        .order('total_views', { ascending: false })
-        .limit(4)
+  // Find other stories by the same author
+  const { data: stories, error } = await supabase
+    .from('stories')
+    .select(`
+      id,
+      title,
+      tagline,
+      blurb,
+      cover_url,
+      genres,
+      tags,
+      status,
+      total_views,
+      follower_count,
+      chapter_count,
+      rating_average,
+      rating_count,
+      updated_at,
+      profiles (
+        username,
+        display_name
+      )
+    `)
+    .eq('author_id', authorId)
+    .eq('visibility', 'published')
+    .neq('id', storyId)
+    .gt('chapter_count', 0)
+    .order('total_views', { ascending: false })
+    .limit(limit);
 
-      if (data) {
-        setStories(data as unknown as Story[])
-      }
-      setLoading(false)
-    }
+  if (error) {
+    console.error('Error fetching more from author:', error);
+    return null;
+  }
 
-    fetchAuthorStories()
-  }, [authorId, storyId])
+  if (!stories || stories.length === 0) {
+    return null;
+  }
 
-  if (loading || stories.length === 0) return null
+  const typedStories = stories as unknown as StoryCardData[];
 
   return (
-    <section className="mt-12">
-      <h2 className="text-xl font-semibold mb-4">More from {authorUsername}</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stories.map((story) => (
-          <StoryCard key={story.id} story={story} />
-        ))}
-      </div>
-    </section>
-  )
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center justify-between text-lg">
+          <div className="flex items-center gap-2">
+            <User className="h-5 w-5 text-primary" />
+            More from {authorName}
+          </div>
+          <Link 
+            href={`/author/${authorUsername}`}
+            className="text-sm font-normal text-primary hover:underline"
+          >
+            View all
+          </Link>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {typedStories.map((story) => (
+            <StoryCard
+              key={story.id}
+              story={story}
+              variant="horizontal"
+              size="sm"
+              hideAuthor
+            />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }

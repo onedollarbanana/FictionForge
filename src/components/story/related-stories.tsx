@@ -1,86 +1,85 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { StoryCard } from '@/components/story/story-card'
-
-interface Story {
-  id: string
-  title: string
-  tagline: string | null
-  cover_url: string | null
-  genres: string[]
-  tags: string[]
-  rating_average: number | null
-  rating_count: number
-  total_views: number
-  chapter_count: number
-  author: {
-    id: string
-    username: string
-  }
-}
+import { createClient } from '@/lib/supabase/server';
+import { StoryCard, type StoryCardData } from '@/components/story/story-card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Sparkles } from 'lucide-react';
 
 interface RelatedStoriesProps {
-  storyId: string
-  genres: string[]
-  authorId: string
+  storyId: string;
+  genres: string[];
+  authorId: string;
+  limit?: number;
 }
 
-export function RelatedStories({ storyId, genres, authorId }: RelatedStoriesProps) {
-  const [stories, setStories] = useState<Story[]>([])
-  const [loading, setLoading] = useState(true)
+export async function RelatedStories({ 
+  storyId, 
+  genres, 
+  authorId,
+  limit = 4 
+}: RelatedStoriesProps) {
+  const supabase = await createClient();
 
-  useEffect(() => {
-    async function fetchRelated() {
-      const supabase = createClient()
-      
-      // Find stories with overlapping genres, excluding current story and same author
-      const { data } = await supabase
-        .from('stories')
-        .select(`
-          id,
-          title,
-          tagline,
-          cover_url,
-          genres,
-          tags,
-          rating_average,
-          rating_count,
-          total_views,
-          chapter_count,
-          author:profiles!stories_author_id_fkey(id, username)
-        `)
-        .neq('status', 'dropped')
-        .neq('id', storyId)
-        .neq('author_id', authorId)
-        .overlaps('genres', genres)
-        .order('total_views', { ascending: false })
-        .limit(4)
+  // Find stories with overlapping genres, excluding current story and same author
+  const { data: stories, error } = await supabase
+    .from('stories')
+    .select(`
+      id,
+      title,
+      tagline,
+      blurb,
+      cover_url,
+      genres,
+      tags,
+      status,
+      total_views,
+      follower_count,
+      chapter_count,
+      rating_average,
+      rating_count,
+      updated_at,
+      profiles (
+        username,
+        display_name
+      )
+    `)
+    .eq('visibility', 'published')
+    .neq('id', storyId)
+    .neq('author_id', authorId)
+    .overlaps('genres', genres)
+    .gt('chapter_count', 0)
+    .order('total_views', { ascending: false })
+    .limit(limit);
 
-      if (data) {
-        setStories(data as unknown as Story[])
-      }
-      setLoading(false)
-    }
+  if (error) {
+    console.error('Error fetching related stories:', error);
+    return null;
+  }
 
-    if (genres.length > 0) {
-      fetchRelated()
-    } else {
-      setLoading(false)
-    }
-  }, [storyId, genres, authorId])
+  if (!stories || stories.length === 0) {
+    return null;
+  }
 
-  if (loading || stories.length === 0) return null
+  const typedStories = stories as unknown as StoryCardData[];
 
   return (
-    <section className="mt-12">
-      <h2 className="text-xl font-semibold mb-4">Similar Stories</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stories.map((story) => (
-          <StoryCard key={story.id} story={story} />
-        ))}
-      </div>
-    </section>
-  )
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Sparkles className="h-5 w-5 text-primary" />
+          You Might Also Like
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 gap-3">
+          {typedStories.map((story) => (
+            <StoryCard
+              key={story.id}
+              story={story}
+              variant="compact"
+              size="sm"
+            />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
