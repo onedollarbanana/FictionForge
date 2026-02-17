@@ -16,11 +16,11 @@ import { MoreFromAuthor } from "@/components/story/more-from-author";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 export default async function StoryPage({ params }: PageProps) {
-  const { id } = await params;
+  const { id } = params;
   const supabase = await createClient();
 
   // Fetch story with author info

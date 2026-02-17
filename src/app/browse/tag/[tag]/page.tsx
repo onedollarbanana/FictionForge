@@ -7,12 +7,12 @@ import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
-  params: Promise<{ tag: string }>;
+  params: { tag: string };
   searchParams: Promise<{ sort?: string }>;
 }
 
 export default async function TagPage({ params, searchParams }: PageProps) {
-  const { tag } = await params;
+  const { tag } = params;
   const { sort = 'popular' } = await searchParams;
   
   const decodedTag = decodeURIComponent(tag);

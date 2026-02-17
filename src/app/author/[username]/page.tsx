@@ -11,11 +11,11 @@ import { formatDistanceToNow } from "date-fns";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: Promise<{ username: string }>;
+  params: { username: string };
 }
 
 export default async function AuthorPage({ params }: PageProps) {
-  const { username } = await params;
+  const { username } = params;
   const supabase = await createClient();
 
   // Fetch author profile

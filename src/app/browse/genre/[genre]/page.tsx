@@ -9,12 +9,12 @@ import { notFound } from 'next/navigation';
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
-  params: Promise<{ genre: string }>;
+  params: { genre: string };
   searchParams: Promise<{ sort?: string }>;
 }
 
 export default async function GenrePage({ params, searchParams }: PageProps) {
-  const { genre } = await params;
+  const { genre } = params;
   const { sort = 'popular' } = await searchParams;
   
   const decodedGenre = decodeURIComponent(genre);

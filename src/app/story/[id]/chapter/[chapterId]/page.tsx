@@ -19,11 +19,11 @@ import { headers } from "next/headers";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: Promise<{ id: string; chapterId: string }>;
+  params: { id: string; chapterId: string };
 }
 
 export default async function ChapterReadingPage({ params }: PageProps) {
-  const { id: storyId, chapterId } = await params;
+  const { id: storyId, chapterId } = params;
   const supabase = await createClient();
 
   // Get current user (may be null if not logged in)
