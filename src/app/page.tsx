@@ -53,6 +53,7 @@ export default async function Home() {
           cover_url,
           chapter_count,
           updated_at,
+          visibility,
           profiles (
             username
           )
@@ -86,7 +87,12 @@ export default async function Home() {
       }
 
       continueReadingItems = progressData
-        .filter((p: any) => p.stories)
+        .filter((p: any) => {
+          if (!p.stories) return false;
+          const story = Array.isArray(p.stories) ? p.stories[0] : p.stories;
+          // Filter out draft and removed stories
+          return story?.visibility !== 'draft' && story?.visibility !== 'removed';
+        })
         .map((p: any) => {
           // Supabase returns single relation as object, not array
           const story = Array.isArray(p.stories) ? p.stories[0] : p.stories;
