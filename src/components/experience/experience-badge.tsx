@@ -7,10 +7,23 @@ import {
   BookOpen, 
   Pen, 
   Shield, 
-  Crown 
+  Crown,
+  Star,
+  Gem,
+  Flame,
+  Sparkles
 } from 'lucide-react'
 
-export type ExperienceTier = 'newcomer' | 'reader' | 'contributor' | 'veteran' | 'champion'
+export type ExperienceTier = 
+  | 'newcomer' 
+  | 'reader' 
+  | 'regular'
+  | 'contributor' 
+  | 'veteran' 
+  | 'master'
+  | 'legend'
+  | 'elite'
+  | 'mythic'
 
 interface ExperienceBadgeProps {
   tier: ExperienceTier
@@ -37,6 +50,12 @@ const tierConfig: Record<ExperienceTier, {
     color: 'text-blue-600 dark:text-blue-400',
     bgColor: 'bg-blue-100 dark:bg-blue-900/30'
   },
+  regular: {
+    label: 'Regular',
+    icon: Star,
+    color: 'text-teal-600 dark:text-teal-400',
+    bgColor: 'bg-teal-100 dark:bg-teal-900/30'
+  },
   contributor: {
     label: 'Contributor',
     icon: Pen,
@@ -49,9 +68,27 @@ const tierConfig: Record<ExperienceTier, {
     color: 'text-amber-600 dark:text-amber-400',
     bgColor: 'bg-amber-100 dark:bg-amber-900/30'
   },
-  champion: {
-    label: 'Champion',
+  master: {
+    label: 'Master',
     icon: Crown,
+    color: 'text-orange-600 dark:text-orange-400',
+    bgColor: 'bg-orange-100 dark:bg-orange-900/30'
+  },
+  legend: {
+    label: 'Legend',
+    icon: Flame,
+    color: 'text-red-600 dark:text-red-400',
+    bgColor: 'bg-red-100 dark:bg-red-900/30'
+  },
+  elite: {
+    label: 'Elite',
+    icon: Gem,
+    color: 'text-cyan-600 dark:text-cyan-400',
+    bgColor: 'bg-cyan-100 dark:bg-cyan-900/30'
+  },
+  mythic: {
+    label: 'Mythic',
+    icon: Sparkles,
     color: 'text-yellow-500 dark:text-yellow-400',
     bgColor: 'bg-gradient-to-r from-yellow-100 to-amber-100 dark:from-yellow-900/30 dark:to-amber-900/30'
   }
@@ -81,7 +118,7 @@ export function ExperienceBadge({
   showLabel = true,
   className 
 }: ExperienceBadgeProps) {
-  const config = tierConfig[tier]
+  const config = tierConfig[tier] || tierConfig.newcomer
   const sizes = sizeConfig[size]
   const Icon = config.icon
 

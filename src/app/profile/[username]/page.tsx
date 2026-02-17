@@ -16,7 +16,7 @@ import {
   User,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { ExperienceCard } from "@/components/experience";
+import { ExperienceCard, ExperienceTier } from "@/components/experience";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +39,7 @@ interface ReadingStats {
 
 interface ExperienceData {
   xpScore: number;
-  tier: 'newcomer' | 'reader' | 'contributor' | 'veteran' | 'champion';
+  tier: ExperienceTier;
   totalEarned: number;
   totalLost: number;
   tierMinScore: number;

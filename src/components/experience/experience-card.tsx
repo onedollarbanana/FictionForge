@@ -17,12 +17,17 @@ interface ExperienceCardProps {
   experience: ExperienceData | null
 }
 
+// Maps current tier to next tier with its minimum score threshold
 const nextTierMap: Record<ExperienceTier, { tier: ExperienceTier; minScore: number } | null> = {
   newcomer: { tier: 'reader', minScore: 100 },
-  reader: { tier: 'contributor', minScore: 500 },
+  reader: { tier: 'regular', minScore: 250 },
+  regular: { tier: 'contributor', minScore: 500 },
   contributor: { tier: 'veteran', minScore: 1000 },
-  veteran: { tier: 'champion', minScore: 2500 },
-  champion: null
+  veteran: { tier: 'master', minScore: 2500 },
+  master: { tier: 'legend', minScore: 5000 },
+  legend: { tier: 'elite', minScore: 10000 },
+  elite: { tier: 'mythic', minScore: 25000 },
+  mythic: null
 }
 
 export function ExperienceCard({ experience }: ExperienceCardProps) {
