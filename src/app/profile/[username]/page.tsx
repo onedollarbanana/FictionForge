@@ -110,7 +110,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       id,
       title,
       slug,
-      description,
+      blurb,
       cover_url,
       total_views,
       chapter_count,
@@ -467,9 +467,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                             {story.chapter_count || 0} chapters
                           </span>
                         </div>
-                        {story.description && (
+                        {story.blurb && (
                           <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                            {story.description}
+                            {story.blurb}
                           </p>
                         )}
                       </div>
