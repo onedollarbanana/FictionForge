@@ -315,32 +315,35 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             <TabsContent value="reviews">
               {reviews && reviews.length > 0 ? (
                 <div className="space-y-4">
-                  {reviews.map((review) => (
-                    <Card key={review.id}>
-                      <CardContent className="py-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <Link 
-                            href={`/story/${(review.story as { slug: string })?.slug}`}
-                            className="font-medium hover:underline"
-                          >
-                            {(review.story as { title: string })?.title}
-                          </Link>
-                          <div className="flex items-center gap-1">
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span className="font-medium">{review.overall_rating}</span>
+                  {reviews.map((review) => {
+                    const storyData = review.story as unknown as { id: string; title: string; slug: string } | null
+                    return (
+                      <Card key={review.id}>
+                        <CardContent className="py-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <Link 
+                              href={`/story/${storyData?.slug || ''}`}
+                              className="font-medium hover:underline"
+                            >
+                              {storyData?.title || 'Unknown Story'}
+                            </Link>
+                            <div className="flex items-center gap-1">
+                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                              <span className="font-medium">{review.overall_rating}</span>
+                            </div>
                           </div>
-                        </div>
-                        {review.review_text && (
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {review.review_text}
+                          {review.review_text && (
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {review.review_text}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}
                           </p>
-                        )}
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
                 </div>
               ) : (
                 <Card>
