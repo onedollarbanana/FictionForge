@@ -28,14 +28,15 @@ import type { FeaturedBadge } from '@/components/achievements/types'
 import { ProfileBorder } from '@/components/profile/profile-border'
 
 interface ProfilePageProps {
-  params: { username: string }
+  params: Promise<{ username: string }>
 }
 
 export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
-  const username = decodeURIComponent(params.username)
+  const { username } = await params
+  const decodedUsername = decodeURIComponent(username)
   return {
-    title: `${username}'s Profile | FictionForge`,
-    description: `View ${username}'s stories, library, and activity on FictionForge`
+    title: `${decodedUsername}'s Profile | FictionForge`,
+    description: `View ${decodedUsername}'s stories, library, and activity on FictionForge`
   }
 }
 
@@ -67,15 +68,33 @@ function StatCard({
   )
 }
 
+// Type for achievement items from get_user_achievements RPC
+interface AchievementItem {
+  achievementId: string
+  unlockedAt: string | null
+  achievement: {
+    id: string
+    name: string
+    description: string
+    icon: string
+    category: string
+    xpReward: number
+    sortOrder: number
+    threshold: number
+    statKey: string
+  }
+}
+
 export default async function ProfilePage({ params }: ProfilePageProps) {
-  const username = decodeURIComponent(params.username)
+  const { username } = await params
+  const decodedUsername = decodeURIComponent(username)
   const supabase = await createClient()
   
   // Get user profile
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('*')
-    .eq('username', username)
+    .eq('username', decodedUsername)
     .single()
   
   if (profileError || !profile) {
@@ -192,8 +211,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const { data: achievementsData } = await supabase
     .rpc('get_user_achievements', { target_user_id: profile.id })
   
-  const achievements = achievementsData || []
-  const unlockedCount = achievements.filter((a: { unlockedAt: string | null }) => a.unlockedAt).length
+  const achievements: AchievementItem[] = achievementsData || []
+  const unlockedCount = achievements.filter((item) => item.unlockedAt).length
 
   // Get user's equipped border
   let equippedBorder = null
@@ -219,11 +238,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   }
 
   // Calculate stats
-  interface StoryStats {
-    total_views: number | null
-    chapter_count: number | null
-  }
-  
   const totalViews = stories?.reduce((sum, story) => sum + (story.total_views || 0), 0) || 0
   const totalChapters = stories?.reduce((sum, story) => sum + (story.chapter_count || 0), 0) || 0
 
@@ -611,16 +625,16 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               {achievements.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {achievements
-                    .filter((a: { unlockedAt: string | null }) => a.unlockedAt)
-                    .map((achievement: { id: string; name: string; description: string; icon: string; category: string; tier: number; xpReward: number; unlockedAt: string }) => (
+                    .filter((item) => item.unlockedAt)
+                    .map((item) => (
                       <div 
-                        key={achievement.id} 
+                        key={item.achievementId} 
                         className="flex items-center gap-2 p-3 rounded-lg bg-muted/50"
                       >
-                        <AchievementBadge achievement={achievement} size="sm" />
+                        <AchievementBadge achievement={item.achievement} size="sm" />
                         <div className="min-w-0">
-                          <p className="font-medium text-sm truncate">{achievement.name}</p>
-                          <p className="text-xs text-muted-foreground">+{achievement.xpReward} XP</p>
+                          <p className="font-medium text-sm truncate">{item.achievement.name}</p>
+                          <p className="text-xs text-muted-foreground">+{item.achievement.xpReward} XP</p>
                         </div>
                       </div>
                     ))
