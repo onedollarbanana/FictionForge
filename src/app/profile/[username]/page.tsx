@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { BookOpen, Calendar, Eye, Star, Users, Library, MessageSquare, Award, History, Clock } from 'lucide-react'
+import { BookOpen, Calendar, Eye, Star, Users, Library, MessageSquare, Award, History, Clock, PenLine } from 'lucide-react'
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { ExperienceCard } from '@/components/experience'
@@ -21,6 +21,35 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
     title: `${username}'s Profile | FictionForge`,
     description: `View ${username}'s profile, stories, and reading activity on FictionForge`
   }
+}
+
+// Stat card component matching author dashboard style
+function StatCard({ 
+  icon: Icon, 
+  label, 
+  value, 
+  color 
+}: { 
+  icon: React.ElementType
+  label: string
+  value: number | string
+  color: string
+}) {
+  return (
+    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 hover:shadow-md transition-shadow">
+      <div className="flex items-center gap-3">
+        <div className={`p-2 rounded-lg ${color}`}>
+          <Icon className="w-5 h-5" />
+        </div>
+        <div>
+          <p className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+            {typeof value === 'number' ? value.toLocaleString() : value}
+          </p>
+          <p className="text-xs text-zinc-500">{label}</p>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
@@ -156,290 +185,323 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   }, 0) || 0
 
   return (
-    <div className="container max-w-6xl py-8">
-      {/* Profile Header */}
-      <Card className="mb-8">
-        <CardContent className="pt-6">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
+      <div className="container max-w-6xl py-8 px-4">
+        {/* Profile Header */}
+        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 md:p-8 mb-8">
           <div className="flex flex-col md:flex-row gap-6 items-start">
-            <Avatar className="h-24 w-24">
+            <Avatar className="h-24 w-24 md:h-28 md:w-28 ring-4 ring-zinc-100 dark:ring-zinc-800">
               <AvatarImage src={profile.avatar_url || undefined} />
-              <AvatarFallback className="text-2xl">
+              <AvatarFallback className="text-3xl bg-gradient-to-br from-amber-400 to-orange-500 text-white">
                 {profile.username?.charAt(0).toUpperCase() || '?'}
               </AvatarFallback>
             </Avatar>
             
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-2xl font-bold">{profile.display_name || profile.username}</h1>
+              <div className="flex flex-wrap items-center gap-3 mb-2">
+                <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-zinc-100">
+                  {profile.display_name || profile.username}
+                </h1>
                 {profile.role === 'author' && (
-                  <Badge variant="secondary">Author</Badge>
+                  <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                    <PenLine className="h-3 w-3 mr-1" />
+                    Author
+                  </Badge>
                 )}
               </div>
-              <p className="text-muted-foreground mb-4">@{profile.username}</p>
+              <p className="text-zinc-500 mb-4">@{profile.username}</p>
               
               {profile.bio && (
-                <p className="text-sm mb-4">{profile.bio}</p>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4 max-w-2xl">
+                  {profile.bio}
+                </p>
               )}
               
-              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
+              <div className="flex flex-wrap gap-6 text-sm text-zinc-500">
+                <span className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   Joined {formatDistanceToNow(new Date(profile.created_at), { addSuffix: true })}
                 </span>
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
-                  {followerCount || 0} followers · {followingCount || 0} following
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100">{followerCount || 0}</span> followers
+                  <span className="mx-1">·</span>
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100">{followingCount || 0}</span> following
                 </span>
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid md:grid-cols-3 gap-8">
-        {/* Sidebar Stats */}
-        <div className="space-y-6">
-          {/* Experience Card */}
-          <ExperienceCard experience={experienceData} showDetails={true} />
-          
-          {/* Stats Card */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Stats</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm">
-                  <BookOpen className="h-4 w-4" />
-                  Stories
-                </span>
-                <span className="font-medium">{stories?.length || 0}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm">
-                  <Eye className="h-4 w-4" />
-                  Total Views
-                </span>
-                <span className="font-medium">{totalViews.toLocaleString()}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm">
-                  <Star className="h-4 w-4" />
-                  Chapters Written
-                </span>
-                <span className="font-medium">{totalChapters}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm">
-                  <Library className="h-4 w-4" />
-                  Library
-                </span>
-                <span className="font-medium">{libraryCount || 0} stories</span>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
-        {/* Main Content */}
-        <div className="md:col-span-2">
-          <Tabs defaultValue="stories">
-            <TabsList className="mb-4">
-              <TabsTrigger value="stories" className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
-                Stories
-              </TabsTrigger>
-              <TabsTrigger value="reviews" className="flex items-center gap-2">
-                <Award className="h-4 w-4" />
-                Reviews
-              </TabsTrigger>
-              <TabsTrigger value="comments" className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Comments
-              </TabsTrigger>
-              {isOwnProfile && (
-                <TabsTrigger value="history" className="flex items-center gap-2">
-                  <History className="h-4 w-4" />
-                  History
-                </TabsTrigger>
-              )}
-            </TabsList>
-            
-            <TabsContent value="stories">
-              {stories && stories.length > 0 ? (
-                <div className="space-y-4">
-                  {stories.map((story) => {
-                    const genres = story.story_genres as unknown as Array<{genres: {name: string, slug: string}}>
-                    const chapterData = story.chapters as unknown as { count: number }[] | null
-                    return (
-                      <Card key={story.id}>
-                        <CardContent className="py-4">
-                          <div className="flex gap-4">
-                            {story.cover_image_url && (
-                              <img 
-                                src={story.cover_image_url} 
-                                alt={story.title}
-                                className="w-16 h-24 object-cover rounded"
-                              />
-                            )}
-                            <div className="flex-1">
-                              <Link href={`/story/${story.slug}`} className="hover:underline">
-                                <h3 className="font-semibold">{story.title}</h3>
-                              </Link>
-                              <div className="flex flex-wrap gap-1 my-2">
-                                {genres?.slice(0, 3).map((g) => (
-                                  <Badge key={g.genres.slug} variant="outline" className="text-xs">
-                                    {g.genres.name}
-                                  </Badge>
-                                ))}
-                              </div>
-                              <div className="flex gap-4 text-sm text-muted-foreground">
-                                <span>{chapterData?.[0]?.count || 0} chapters</span>
-                                <span>{(story.view_count || 0).toLocaleString()} views</span>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <StatCard 
+            icon={BookOpen} 
+            label="Stories Published" 
+            value={stories?.length || 0} 
+            color="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+          />
+          <StatCard 
+            icon={Eye} 
+            label="Total Views" 
+            value={totalViews} 
+            color="bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+          />
+          <StatCard 
+            icon={PenLine} 
+            label="Chapters Written" 
+            value={totalChapters} 
+            color="bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"
+          />
+          <StatCard 
+            icon={Library} 
+            label="In Library" 
+            value={libraryCount || 0} 
+            color="bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
+          />
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Experience Card */}
+            <ExperienceCard experience={experienceData} showDetails={true} />
+          </div>
+
+          {/* Main Content */}
+          <div className="lg:col-span-2">
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+              <Tabs defaultValue="stories" className="w-full">
+                <div className="border-b border-zinc-200 dark:border-zinc-800 px-4">
+                  <TabsList className="h-14 bg-transparent border-0 gap-4">
+                    <TabsTrigger 
+                      value="stories" 
+                      className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-amber-500 rounded-none px-1 pb-4 pt-4"
+                    >
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      Stories
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="reviews"
+                      className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-amber-500 rounded-none px-1 pb-4 pt-4"
+                    >
+                      <Award className="h-4 w-4 mr-2" />
+                      Reviews
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="comments"
+                      className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-amber-500 rounded-none px-1 pb-4 pt-4"
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Comments
+                    </TabsTrigger>
+                    {isOwnProfile && (
+                      <TabsTrigger 
+                        value="history"
+                        className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-amber-500 rounded-none px-1 pb-4 pt-4"
+                      >
+                        <History className="h-4 w-4 mr-2" />
+                        History
+                      </TabsTrigger>
+                    )}
+                  </TabsList>
                 </div>
-              ) : (
-                <Card>
-                  <CardContent className="py-8 text-center text-muted-foreground">
-                    No published stories yet
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="reviews">
-              {reviews && reviews.length > 0 ? (
-                <div className="space-y-4">
-                  {reviews.map((review) => {
-                    const storyData = review.story as unknown as { id: string; title: string; slug: string } | null
-                    return (
-                      <Card key={review.id}>
-                        <CardContent className="py-4">
-                          <div className="flex items-start justify-between mb-2">
-                            <Link 
-                              href={`/story/${storyData?.slug || ''}`}
-                              className="font-medium hover:underline"
+                
+                <div className="p-4 md:p-6">
+                  <TabsContent value="stories" className="mt-0">
+                    {stories && stories.length > 0 ? (
+                      <div className="space-y-4">
+                        {stories.map((story) => {
+                          const genres = story.story_genres as unknown as Array<{genres: {name: string, slug: string}}>
+                          const chapterData = story.chapters as unknown as { count: number }[] | null
+                          return (
+                            <div 
+                              key={story.id}
+                              className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 hover:shadow-md transition-shadow bg-zinc-50 dark:bg-zinc-800/50"
                             >
-                              {storyData?.title || 'Unknown Story'}
-                            </Link>
-                            <div className="flex items-center gap-1">
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                              <span className="font-medium">{review.overall_rating}</span>
-                            </div>
-                          </div>
-                          {review.review_text && (
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {review.review_text}
-                            </p>
-                          )}
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
-                </div>
-              ) : (
-                <Card>
-                  <CardContent className="py-8 text-center text-muted-foreground">
-                    No reviews yet
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="comments">
-              {comments && comments.length > 0 ? (
-                <div className="space-y-4">
-                  {comments.map((comment) => {
-                    const chapter = comment.chapter as unknown as {
-                      id: string
-                      title: string
-                      chapter_number: number
-                      story: { id: string; title: string; slug: string }
-                    } | null
-                    return (
-                      <Card key={comment.id}>
-                        <CardContent className="py-4">
-                          {chapter && (
-                            <Link 
-                              href={`/story/${chapter.story.slug}/chapter/${chapter.chapter_number}`}
-                              className="text-sm font-medium hover:underline block mb-2"
-                            >
-                              {chapter.story.title} · Chapter {chapter.chapter_number}
-                            </Link>
-                          )}
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {comment.content}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
-                </div>
-              ) : (
-                <Card>
-                  <CardContent className="py-8 text-center text-muted-foreground">
-                    No comments yet
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-            
-            {isOwnProfile && (
-              <TabsContent value="history">
-                {readingHistory && readingHistory.length > 0 ? (
-                  <div className="space-y-4">
-                    {readingHistory.map((item) => {
-                      const story = item.story as { id: string; title: string; slug: string } | null
-                      const chapter = item.chapter as { id: string; title: string; chapter_number: number } | null
-                      if (!story) return null
-                      return (
-                        <Card key={item.story_id}>
-                          <CardContent className="py-4">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <Link 
-                                  href={`/story/${story.slug}`}
-                                  className="font-medium hover:underline"
-                                >
-                                  {story.title}
-                                </Link>
-                                {chapter && (
-                                  <p className="text-sm text-muted-foreground">
-                                    Chapter {chapter.chapter_number}: {chapter.title}
-                                  </p>
+                              <div className="flex gap-4">
+                                {story.cover_image_url && (
+                                  <img 
+                                    src={story.cover_image_url} 
+                                    alt={story.title}
+                                    className="w-16 h-24 object-cover rounded-lg shadow-sm"
+                                  />
                                 )}
-                              </div>
-                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <Clock className="h-4 w-4" />
-                                {formatDistanceToNow(new Date(item.last_read_at), { addSuffix: true })}
+                                <div className="flex-1 min-w-0">
+                                  <Link href={`/story/${story.slug}`} className="hover:text-amber-600 transition-colors">
+                                    <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                                      {story.title}
+                                    </h3>
+                                  </Link>
+                                  <div className="flex flex-wrap gap-1 my-2">
+                                    {genres?.slice(0, 3).map((g) => (
+                                      <Badge 
+                                        key={g.genres.slug} 
+                                        variant="outline" 
+                                        className="text-xs bg-white dark:bg-zinc-900"
+                                      >
+                                        {g.genres.name}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                  <div className="flex gap-4 text-sm text-zinc-500">
+                                    <span className="flex items-center gap-1">
+                                      <BookOpen className="h-3 w-3" />
+                                      {chapterData?.[0]?.count || 0} chapters
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <Eye className="h-3 w-3" />
+                                      {(story.view_count || 0).toLocaleString()} views
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          </CardContent>
-                        </Card>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <Card>
-                    <CardContent className="py-8 text-center text-muted-foreground">
-                      No reading history yet
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-            )}
-          </Tabs>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <div className="py-12 text-center text-zinc-500">
+                        <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                        <p>No published stories yet</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="reviews" className="mt-0">
+                    {reviews && reviews.length > 0 ? (
+                      <div className="space-y-4">
+                        {reviews.map((review) => {
+                          const storyData = review.story as unknown as { id: string; title: string; slug: string } | null
+                          return (
+                            <div 
+                              key={review.id}
+                              className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 hover:shadow-md transition-shadow bg-zinc-50 dark:bg-zinc-800/50"
+                            >
+                              <div className="flex items-start justify-between mb-2">
+                                <Link 
+                                  href={`/story/${storyData?.slug || ''}`}
+                                  className="font-medium text-zinc-900 dark:text-zinc-100 hover:text-amber-600 transition-colors"
+                                >
+                                  {storyData?.title || 'Unknown Story'}
+                                </Link>
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900/30">
+                                  <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                                  <span className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
+                                    {review.overall_rating}
+                                  </span>
+                                </div>
+                              </div>
+                              {review.review_text && (
+                                <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2">
+                                  {review.review_text}
+                                </p>
+                              )}
+                              <p className="text-xs text-zinc-400 mt-2">
+                                {formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}
+                              </p>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <div className="py-12 text-center text-zinc-500">
+                        <Award className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                        <p>No reviews yet</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="comments" className="mt-0">
+                    {comments && comments.length > 0 ? (
+                      <div className="space-y-4">
+                        {comments.map((comment) => {
+                          const chapter = comment.chapter as unknown as {
+                            id: string
+                            title: string
+                            chapter_number: number
+                            story: { id: string; title: string; slug: string }
+                          } | null
+                          return (
+                            <div 
+                              key={comment.id}
+                              className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 hover:shadow-md transition-shadow bg-zinc-50 dark:bg-zinc-800/50"
+                            >
+                              {chapter && (
+                                <Link 
+                                  href={`/story/${chapter.story.slug}/chapter/${chapter.chapter_number}`}
+                                  className="text-sm font-medium text-zinc-900 dark:text-zinc-100 hover:text-amber-600 transition-colors block mb-2"
+                                >
+                                  {chapter.story.title} · Chapter {chapter.chapter_number}
+                                </Link>
+                              )}
+                              <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2">
+                                {comment.content}
+                              </p>
+                              <p className="text-xs text-zinc-400 mt-2">
+                                {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                              </p>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <div className="py-12 text-center text-zinc-500">
+                        <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                        <p>No comments yet</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  {isOwnProfile && (
+                    <TabsContent value="history" className="mt-0">
+                      {readingHistory && readingHistory.length > 0 ? (
+                        <div className="space-y-4">
+                          {readingHistory.map((item) => {
+                            const story = item.story as { id: string; title: string; slug: string } | null
+                            const chapter = item.chapter as { id: string; title: string; chapter_number: number } | null
+                            if (!story) return null
+                            return (
+                              <div 
+                                key={item.story_id}
+                                className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 hover:shadow-md transition-shadow bg-zinc-50 dark:bg-zinc-800/50"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <Link 
+                                      href={`/story/${story.slug}`}
+                                      className="font-medium text-zinc-900 dark:text-zinc-100 hover:text-amber-600 transition-colors"
+                                    >
+                                      {story.title}
+                                    </Link>
+                                    {chapter && (
+                                      <p className="text-sm text-zinc-500">
+                                        Chapter {chapter.chapter_number}: {chapter.title}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1 text-sm text-zinc-400">
+                                    <Clock className="h-4 w-4" />
+                                    {formatDistanceToNow(new Date(item.last_read_at), { addSuffix: true })}
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <div className="py-12 text-center text-zinc-500">
+                          <History className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                          <p>No reading history yet</p>
+                          <p className="text-xs mt-1">Start reading stories to see your history here</p>
+                        </div>
+                      )}
+                    </TabsContent>
+                  )}
+                </div>
+              </Tabs>
+            </div>
+          </div>
         </div>
       </div>
     </div>
