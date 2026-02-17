@@ -30,6 +30,7 @@ export default async function StoryPage({ params }: PageProps) {
       *,
       profiles (
         username,
+        display_name,
         avatar_url
       )
     `)
@@ -37,6 +38,15 @@ export default async function StoryPage({ params }: PageProps) {
     .single();
 
   if (error || !story) {
+    notFound();
+  }
+
+  // Get current user to check ownership
+  const { data: { user } } = await supabase.auth.getUser();
+  const isOwner = user && story.author_id === user.id;
+
+  // Check visibility - only owner can see draft/removed stories
+  if ((story.visibility === 'draft' || story.visibility === 'removed') && !isOwner) {
     notFound();
   }
 
@@ -50,9 +60,6 @@ export default async function StoryPage({ params }: PageProps) {
 
   const publishedChapters = chapters || [];
   const totalWords = publishedChapters.reduce((sum, ch) => sum + (ch.word_count || 0), 0);
-
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
 
   // Fetch announcements for this story (last 30 days)
   const thirtyDaysAgo = new Date();
@@ -95,6 +102,8 @@ export default async function StoryPage({ params }: PageProps) {
     readChapterIds = new Set((chapterReads || []).map(r => r.chapter_id));
   }
 
+  const authorName = story.profiles?.display_name || story.profiles?.username || 'Unknown';
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Breadcrumb */}
@@ -128,7 +137,7 @@ export default async function StoryPage({ params }: PageProps) {
             className="text-muted-foreground hover:text-primary flex items-center gap-2 mb-4"
           >
             <User className="h-4 w-4" />
-            {story.profiles?.username || "Unknown Author"}
+            {authorName}
           </Link>
 
           {/* Stats Row */}
@@ -287,6 +296,7 @@ export default async function StoryPage({ params }: PageProps) {
       <MoreFromAuthor 
         storyId={id}
         authorId={story.author_id}
+        authorName={authorName}
         authorUsername={story.profiles?.username || 'Unknown'}
       />
 
