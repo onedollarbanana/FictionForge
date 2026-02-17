@@ -1,5 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { StoryCardData } from '@/components/story/story-card';
+
+// Re-export StoryCardData as RankedStory for backward compatibility
+export type RankedStory = StoryCardData;
 
 export type RankingPeriod = 'daily' | 'weekly' | 'monthly' | 'all-time';
 export type RankingType = 'trending' | 'popular' | 'top-rated' | 'rising';
@@ -9,6 +13,9 @@ interface RankingOptions {
   type: RankingType;
   limit?: number;
 }
+
+// Helper type for Supabase client
+type SupabaseClientType = SupabaseClient<any, 'public', any>;
 
 export async function getRankings(options: RankingOptions): Promise<StoryCardData[]> {
   const { type, limit = 50 } = options;
@@ -93,4 +100,161 @@ export function getTypeLabel(type: RankingType): string {
     case 'rising':
       return 'Rising Stars';
   }
+}
+
+// Homepage-specific ranking functions
+export async function getRisingStars(limit: number = 10, supabase?: SupabaseClientType): Promise<StoryCardData[]> {
+  const client = supabase || await createClient();
+  
+  const { data, error } = await client
+    .from('stories')
+    .select(`
+      id,
+      title,
+      tagline,
+      blurb,
+      cover_url,
+      genres,
+      tags,
+      status,
+      total_views,
+      follower_count,
+      chapter_count,
+      rating_average,
+      rating_count,
+      created_at,
+      updated_at,
+      profiles (
+        username,
+        display_name
+      )
+    `)
+    .eq('visibility', 'published')
+    .gt('chapter_count', 0)
+    .order('follower_count', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching rising stars:', error);
+    return [];
+  }
+
+  return (data || []) as unknown as StoryCardData[];
+}
+
+export async function getPopularThisWeek(limit: number = 10, supabase?: SupabaseClientType): Promise<StoryCardData[]> {
+  const client = supabase || await createClient();
+  
+  const { data, error } = await client
+    .from('stories')
+    .select(`
+      id,
+      title,
+      tagline,
+      blurb,
+      cover_url,
+      genres,
+      tags,
+      status,
+      total_views,
+      follower_count,
+      chapter_count,
+      rating_average,
+      rating_count,
+      created_at,
+      updated_at,
+      profiles (
+        username,
+        display_name
+      )
+    `)
+    .eq('visibility', 'published')
+    .gt('chapter_count', 0)
+    .order('total_views', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching popular this week:', error);
+    return [];
+  }
+
+  return (data || []) as unknown as StoryCardData[];
+}
+
+export async function getLatestUpdates(limit: number = 10, supabase?: SupabaseClientType): Promise<StoryCardData[]> {
+  const client = supabase || await createClient();
+  
+  const { data, error } = await client
+    .from('stories')
+    .select(`
+      id,
+      title,
+      tagline,
+      blurb,
+      cover_url,
+      genres,
+      tags,
+      status,
+      total_views,
+      follower_count,
+      chapter_count,
+      rating_average,
+      rating_count,
+      created_at,
+      updated_at,
+      profiles (
+        username,
+        display_name
+      )
+    `)
+    .eq('visibility', 'published')
+    .gt('chapter_count', 0)
+    .order('updated_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching latest updates:', error);
+    return [];
+  }
+
+  return (data || []) as unknown as StoryCardData[];
+}
+
+export async function getMostFollowed(limit: number = 10, supabase?: SupabaseClientType): Promise<StoryCardData[]> {
+  const client = supabase || await createClient();
+  
+  const { data, error } = await client
+    .from('stories')
+    .select(`
+      id,
+      title,
+      tagline,
+      blurb,
+      cover_url,
+      genres,
+      tags,
+      status,
+      total_views,
+      follower_count,
+      chapter_count,
+      rating_average,
+      rating_count,
+      created_at,
+      updated_at,
+      profiles (
+        username,
+        display_name
+      )
+    `)
+    .eq('visibility', 'published')
+    .gt('chapter_count', 0)
+    .order('follower_count', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching most followed:', error);
+    return [];
+  }
+
+  return (data || []) as unknown as StoryCardData[];
 }

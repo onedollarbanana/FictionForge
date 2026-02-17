@@ -25,6 +25,7 @@ import { ExperienceCard } from '@/components/experience/experience-card'
 import type { ExperienceData } from '@/components/experience/types'
 import { AchievementBadge } from '@/components/achievements/achievement-badge'
 import type { FeaturedBadge } from '@/components/achievements/types'
+import { ProfileBorder, type ProfileBorderData } from '@/components/profile/profile-border'
 
 interface ProfilePageProps {
   params: { username: string }
@@ -70,16 +71,40 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const username = decodeURIComponent(params.username)
   const supabase = await createClient()
   
-  // Get user profile
+  // Get user profile with equipped border
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('*')
+    .select(`
+      *,
+      profile_borders (
+        id,
+        name,
+        description,
+        css_class,
+        unlock_type,
+        unlock_value,
+        rarity,
+        sort_order
+      )
+    `)
     .eq('username', username)
     .single()
   
   if (profileError || !profile) {
     notFound()
   }
+
+  // Transform border data to match component interface
+  const equippedBorder: ProfileBorderData | null = profile.profile_borders ? {
+    id: profile.profile_borders.id,
+    name: profile.profile_borders.name,
+    description: profile.profile_borders.description,
+    cssClass: profile.profile_borders.css_class,
+    unlockType: profile.profile_borders.unlock_type,
+    unlockValue: profile.profile_borders.unlock_value,
+    rarity: profile.profile_borders.rarity,
+    sortOrder: profile.profile_borders.sort_order,
+  } : null;
 
   console.log("DEBUG - Profile loaded:", profile.id, profile.username)
   
@@ -209,20 +234,22 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       <Card className="mb-8">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-6 items-start">
-            {/* Avatar */}
+            {/* Avatar with Border */}
             <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden">
-                {profile.avatar_url ? (
-                  <Image
-                    src={profile.avatar_url}
-                    alt={profile.username}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <User className="h-12 w-12 text-muted-foreground" />
-                )}
-              </div>
+              <ProfileBorder border={equippedBorder} size="lg">
+                <div className="w-full h-full rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden">
+                  {profile.avatar_url ? (
+                    <Image
+                      src={profile.avatar_url}
+                      alt={profile.username}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <User className="h-12 w-12 text-muted-foreground" />
+                  )}
+                </div>
+              </ProfileBorder>
               {experience && (
                 <div className="absolute -bottom-1 -right-1">
                   <ExperienceBadge tier={experience.tier} size="sm" />

@@ -74,7 +74,7 @@ export async function RelatedStories({
             <StoryCard
               key={story.id}
               story={story}
-              variant="compact"
+              variant="vertical"
               size="sm"
             />
           ))}

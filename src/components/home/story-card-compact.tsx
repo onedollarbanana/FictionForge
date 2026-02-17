@@ -8,11 +8,11 @@ interface StoryCardCompactProps {
   story: {
     id: string
     title: string
-    blurb: string | null
-    tagline: string | null
-    cover_url: string | null
-    genres: string[] | null
-    tags: string[] | null
+    blurb?: string | null
+    tagline?: string | null
+    cover_url?: string | null
+    genres?: string[] | null
+    tags?: string[] | null
     chapter_count?: number | null
     total_views?: number | null
     total_likes?: number | null
@@ -21,7 +21,12 @@ interface StoryCardCompactProps {
     rating_count?: number | null
     updated_at?: string | null
     author?: {
-      username: string
+      username?: string
+      display_name?: string | null
+    } | null
+    profiles?: {
+      username?: string
+      display_name?: string | null
     } | null
   }
   rank?: number

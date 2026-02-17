@@ -49,6 +49,8 @@ interface StoryCardProps {
   className?: string;
   /** Render children at card bottom (e.g., action buttons) */
   children?: React.ReactNode;
+  /** Hide author name in display */
+  hideAuthor?: boolean;
 }
 
 // Genre color mapping for gradient fallbacks
@@ -111,6 +113,7 @@ export function StoryCard({
   href,
   className,
   children,
+  hideAuthor = false,
 }: StoryCardProps) {
   const primaryGenre = story.genres?.[0] || "Fantasy";
   const gradientClass = genreGradients[primaryGenre] || genreGradients.Fantasy;
@@ -170,7 +173,7 @@ export function StoryCard({
                 </h3>
               </Link>
               
-              {authorUsername ? (
+              {!hideAuthor && (authorUsername ? (
                 <Link 
                   href={`/author/${authorUsername}`}
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
@@ -179,7 +182,7 @@ export function StoryCard({
                 </Link>
               ) : (
                 <p className="text-sm text-muted-foreground">by {getAuthorName(story)}</p>
-              )}
+              ))}
             </div>
 
             {story.status && (
@@ -373,9 +376,11 @@ export function StoryCard({
           </p>
         )}
 
-        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-          by {getAuthorName(story)}
-        </p>
+        {!hideAuthor && (
+          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+            by {getAuthorName(story)}
+          </p>
+        )}
 
         {/* Visible stats (non-hover) for medium and large */}
         {size !== "sm" && (
