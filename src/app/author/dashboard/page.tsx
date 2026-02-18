@@ -196,12 +196,20 @@ export default function AuthorDashboard() {
           <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Author Dashboard</h1>
           <p className="text-zinc-500 mt-1">Track your stories and engagement</p>
         </div>
-        <Link href="/author/stories/new">
-          <Button className="gap-2">
-            <Plus className="w-4 h-4" />
-            New Story
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/author/stats">
+            <Button variant="outline" className="gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Writing Stats
+            </Button>
+          </Link>
+          <Link href="/author/stories/new">
+            <Button className="gap-2">
+              <Plus className="w-4 h-4" />
+              New Story
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Tab Navigation */}
