@@ -262,9 +262,9 @@ export default async function StoryPage({ params }: PageProps) {
 
       {/* Description */}
       <Card className="mb-6">
-        <CardContent className="pt-6">
+        <CardContent className="pt-6 overflow-hidden">
           <h2 className="text-lg font-semibold mb-3">Description</h2>
-          <p className="text-muted-foreground whitespace-pre-wrap">
+          <p className="text-muted-foreground whitespace-pre-wrap break-words">
             {story.blurb || "No description provided."}
           </p>
         </CardContent>
