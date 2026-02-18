@@ -35,7 +35,27 @@ export default function NewChapterPage() {
   const [loading, setLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [draftRecovered, setDraftRecovered] = useState(false);
   const router = useRouter();
+
+  const DRAFT_KEY = `fictionforge-draft-${storyId}`;
+
+  // Auto-save draft to localStorage (debounced)
+  const autoSaveDraft = useMemo(
+    () => debounce((data: { title: string; content: JSONContent | null; authorNoteBefore: string; authorNoteAfter: string }) => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({
+          ...data,
+          savedAt: new Date().toISOString(),
+        }));
+        setSaveStatus("saved");
+        setLastSaved(new Date());
+      } catch (e) {
+        // localStorage full or unavailable - silently ignore
+      }
+    }, 2000),
+    [DRAFT_KEY]
+  );
 
   // Word count from Tiptap JSON
   const wordCount = content ? countWordsFromJSON(content) : 0;
@@ -51,12 +71,30 @@ export default function NewChapterPage() {
       
       if (data) {
         setStoryTitle(data.title);
-        // Auto-populate default author notes if set
-        if (data.default_author_note_before) {
-          setAuthorNoteBefore(data.default_author_note_before);
-        }
-        if (data.default_author_note_after) {
-          setAuthorNoteAfter(data.default_author_note_after);
+
+        // Check for saved draft in localStorage
+        const savedDraft = localStorage.getItem(DRAFT_KEY);
+        if (savedDraft) {
+          try {
+            const draft = JSON.parse(savedDraft);
+            if (draft.title) setTitle(draft.title);
+            if (draft.content) setContent(draft.content);
+            if (draft.authorNoteBefore) setAuthorNoteBefore(draft.authorNoteBefore);
+            if (draft.authorNoteAfter) setAuthorNoteAfter(draft.authorNoteAfter);
+            if (draft.savedAt) setLastSaved(new Date(draft.savedAt));
+            setSaveStatus("saved");
+            setDraftRecovered(true);
+          } catch (e) {
+            // Corrupted draft - ignore
+          }
+        } else {
+          // Only apply defaults if there's NO saved draft
+          if (data.default_author_note_before) {
+            setAuthorNoteBefore(data.default_author_note_before);
+          }
+          if (data.default_author_note_after) {
+            setAuthorNoteAfter(data.default_author_note_after);
+          }
         }
       }
     }
@@ -64,12 +102,13 @@ export default function NewChapterPage() {
     if (storyId) {
       loadStory();
     }
-  }, [storyId]);
+  }, [storyId, DRAFT_KEY]);
 
   const handleContentChange = useCallback((newContent: JSONContent) => {
     setContent(newContent);
     setSaveStatus("unsaved");
-  }, []);
+    autoSaveDraft({ title, content: newContent, authorNoteBefore, authorNoteAfter });
+  }, [autoSaveDraft, title, authorNoteBefore, authorNoteAfter]);
 
   const handleSubmit = async (e: React.FormEvent, publish: boolean) => {
     e.preventDefault();
@@ -144,6 +183,7 @@ export default function NewChapterPage() {
       })
       .eq("id", storyId);
 
+    localStorage.removeItem(DRAFT_KEY);
     router.push(`/author/stories/${storyId}`);
   };
 
@@ -166,6 +206,26 @@ export default function NewChapterPage() {
 
       <h1 className="text-3xl font-bold mb-8">New Chapter</h1>
 
+      {draftRecovered && (
+        <div className="flex items-center justify-between p-3 text-sm bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded mb-4">
+          <span>📝 Unsaved draft recovered</span>
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.removeItem(DRAFT_KEY);
+              setDraftRecovered(false);
+              setTitle("");
+              setContent(null);
+              setAuthorNoteBefore("");
+              setAuthorNoteAfter("");
+            }}
+            className="text-xs underline hover:no-underline"
+          >
+            Discard draft
+          </button>
+        </div>
+      )}
+
       <form className="space-y-6">
         {error && (
           <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-950 rounded">
@@ -178,7 +238,11 @@ export default function NewChapterPage() {
           <Input
             id="title"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              setSaveStatus("unsaved");
+              autoSaveDraft({ title: e.target.value, content, authorNoteBefore, authorNoteAfter });
+            }}
             placeholder="Chapter 1: The Beginning"
             required
             maxLength={200}
@@ -191,7 +255,11 @@ export default function NewChapterPage() {
           <Textarea
             id="authorNoteBefore"
             value={authorNoteBefore}
-            onChange={(e) => setAuthorNoteBefore(e.target.value)}
+            onChange={(e) => {
+              setAuthorNoteBefore(e.target.value);
+              setSaveStatus("unsaved");
+              autoSaveDraft({ title, content, authorNoteBefore: e.target.value, authorNoteAfter });
+            }}
             placeholder="Add a note that appears before the chapter..."
             rows={2}
             className="text-sm"
@@ -214,7 +282,11 @@ export default function NewChapterPage() {
           <Textarea
             id="authorNoteAfter"
             value={authorNoteAfter}
-            onChange={(e) => setAuthorNoteAfter(e.target.value)}
+            onChange={(e) => {
+              setAuthorNoteAfter(e.target.value);
+              setSaveStatus("unsaved");
+              autoSaveDraft({ title, content, authorNoteBefore, authorNoteAfter: e.target.value });
+            }}
             placeholder="Add a note that appears after the chapter..."
             rows={2}
             className="text-sm"
