@@ -64,6 +64,11 @@ export function BrowseStoryCard({ story, className }: BrowseStoryCardProps) {
   const visibleTags = expanded ? allTags : allTags.slice(0, MAX_VISIBLE_TAGS);
   const hiddenTagCount = allTags.length - MAX_VISIBLE_TAGS;
 
+  const MAX_VISIBLE_GENRES = 3;
+  const allGenres = story.genres || [];
+  const visibleGenres = expanded ? allGenres : allGenres.slice(0, MAX_VISIBLE_GENRES);
+  const hiddenGenreCount = allGenres.length - MAX_VISIBLE_GENRES;
+
   return (
     <div
       className={cn(
@@ -147,15 +152,23 @@ export function BrowseStoryCard({ story, className }: BrowseStoryCardProps) {
         </div>
 
         {/* Genres */}
-        {story.genres && story.genres.length > 0 && (
+        {allGenres.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
-            {story.genres.map((genre) => (
+            {visibleGenres.map((genre) => (
               <Link key={genre} href={`/browse/genre/${encodeURIComponent(genre)}`}>
                 <Badge variant="secondary" className="text-xs hover:bg-secondary/80 cursor-pointer">
                   {genre}
                 </Badge>
               </Link>
             ))}
+            {!expanded && hiddenGenreCount > 0 && (
+              <button
+                onClick={() => setExpanded(true)}
+                className="px-2 py-0.5 bg-secondary rounded-full text-xs text-primary hover:bg-primary/10 transition-colors"
+              >
+                +{hiddenGenreCount} more
+              </button>
+            )}
           </div>
         )}
 
