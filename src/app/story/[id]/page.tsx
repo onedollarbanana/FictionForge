@@ -13,6 +13,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { RelatedStories } from "@/components/story/related-stories";
 import { MoreFromAuthor } from "@/components/story/more-from-author";
 import { ReportButton } from "@/components/moderation/report-button";
+import { NominateButton } from "@/components/story/nominate-button";
 
 export const dynamic = "force-dynamic";
 
@@ -211,7 +212,7 @@ export default async function StoryPage({ params }: PageProps) {
           </div>
           {/* Report Button - only for logged-in non-owners */}
           {user && !isOwner && (
-            <div className="mt-2">
+            <div className="mt-2 flex items-center gap-2">
               <ReportButton
                 contentType="story"
                 contentId={id}
@@ -219,6 +220,9 @@ export default async function StoryPage({ params }: PageProps) {
                 size="sm"
                 variant="ghost"
               />
+              {story.visibility === 'published' && (
+                <NominateButton storyId={id} storyWordCount={totalWords} />
+              )}
             </div>
           )}
         </div>

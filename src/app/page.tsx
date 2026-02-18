@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCommunityPicksForHomepage } from "@/lib/community-picks";
 import { 
   getRisingStars, 
   getPopularThisWeek, 
@@ -11,7 +12,7 @@ import { HeroSection } from "@/components/home/hero-section";
 import { ContinueReading } from "@/components/home/continue-reading";
 import { GenreLinks } from "@/components/home/genre-links";
 import { StoryCarousel } from "@/components/home/story-carousel";
-import { Rocket, Flame, Clock, Heart, Sparkles, Award } from "lucide-react";
+import { Rocket, Flame, Clock, Heart, Sparkles, Award, Trophy } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,7 @@ export default async function Home() {
     getMostFollowed(10, supabase),
     getNewReleases(10, supabase),
     getStaffPicks(10, supabase),
+    getCommunityPicksForHomepage(10, supabase),
   ]);
 
   if (user) {
@@ -120,7 +122,7 @@ export default async function Home() {
   }
 
   // Wait for rankings to complete
-  const [risingStars, popularThisWeek, latestUpdates, mostFollowed, newReleases, staffPicks] = await rankingsPromise;
+  const [risingStars, popularThisWeek, latestUpdates, mostFollowed, newReleases, staffPicks, communityPicks] = await rankingsPromise;
 
   const isLoggedIn = !!user;
 
@@ -144,6 +146,15 @@ export default async function Home() {
             stories={staffPicks}
             viewAllLink="/featured"
             emptyMessage="Staff picks coming soon!"
+          />
+        )}
+        {communityPicks.length > 0 && (
+          <StoryCarousel
+            title="Community Picks"
+            icon={<Trophy className="h-5 w-5 text-amber-500" />}
+            stories={communityPicks}
+            viewAllLink="/community-picks"
+            emptyMessage="Community picks coming soon!"
           />
         )}
         <StoryCarousel

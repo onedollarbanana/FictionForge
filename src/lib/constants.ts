@@ -80,3 +80,8 @@ export const TAGS = [
   'Gods',
   'Demons',
 ]
+
+// Community Picks
+export const COMMUNITY_PICK_MIN_XP = 250; // "regular" tier
+export const COMMUNITY_PICK_MAX_VOTES_PER_MONTH = 3;
+export const COMMUNITY_PICK_MIN_WORDS = 10000;

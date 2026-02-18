@@ -51,6 +51,7 @@ export default function EditStoryPage() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState("");
+  const [hideCommunityBadge, setHideCommunityBadge] = useState(false);
 
   useEffect(() => {
     async function loadStory() {
@@ -76,6 +77,7 @@ export default function EditStoryPage() {
       setTags((data.tags || []).join(", "));
       setDefaultNoteBefore(data.default_author_note_before || "");
       setDefaultNoteAfter(data.default_author_note_after || "");
+      setHideCommunityBadge(data.hide_community_badge || false);
       setInitialLoading(false);
     }
 
@@ -106,6 +108,7 @@ export default function EditStoryPage() {
         tags: tagArray,
         default_author_note_before: defaultNoteBefore || null,
         default_author_note_after: defaultNoteAfter || null,
+        hide_community_badge: hideCommunityBadge,
         updated_at: new Date().toISOString(),
       })
       .eq("id", storyId);
@@ -253,6 +256,25 @@ export default function EditStoryPage() {
           <p className="text-sm text-muted-foreground mt-1">
             Add tags to help readers find your story
           </p>
+        </div>
+
+        {/* Community Pick Badge Setting */}
+        <div className="border-t pt-6 mt-6">
+          <h2 className="text-lg font-semibold mb-4">Community Pick</h2>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={!hideCommunityBadge}
+              onChange={(e) => setHideCommunityBadge(!e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <div>
+              <span className="text-sm font-medium">Show Community Pick badge on story cover</span>
+              <p className="text-sm text-muted-foreground">
+                If your story is selected as a Community Pick, a badge will appear on the cover
+              </p>
+            </div>
+          </label>
         </div>
 
         {/* Default Author Notes Section */}
