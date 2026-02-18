@@ -3,13 +3,14 @@ import {
   getRisingStars, 
   getPopularThisWeek, 
   getLatestUpdates,
-  getMostFollowed 
+  getMostFollowed,
+  getNewReleases 
 } from "@/lib/rankings";
 import { HeroSection } from "@/components/home/hero-section";
 import { ContinueReading } from "@/components/home/continue-reading";
 import { GenreLinks } from "@/components/home/genre-links";
 import { StoryCarousel } from "@/components/home/story-carousel";
-import { Rocket, Flame, Clock, Heart } from "lucide-react";
+import { Rocket, Flame, Clock, Heart, Sparkles } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,7 @@ export default async function Home() {
     getPopularThisWeek(10, supabase),
     getLatestUpdates(10, supabase),
     getMostFollowed(10, supabase),
+    getNewReleases(10, supabase),
   ]);
 
   if (user) {
@@ -116,7 +118,7 @@ export default async function Home() {
   }
 
   // Wait for rankings to complete
-  const [risingStars, popularThisWeek, latestUpdates, mostFollowed] = await rankingsPromise;
+  const [risingStars, popularThisWeek, latestUpdates, mostFollowed, newReleases] = await rankingsPromise;
 
   const isLoggedIn = !!user;
 
@@ -134,10 +136,18 @@ export default async function Home() {
 
         {/* Story Carousels */}
         <StoryCarousel
+          title="New Releases"
+          icon={<Sparkles className="h-5 w-5 text-emerald-500" />}
+          stories={newReleases}
+          viewAllLink="/new-releases"
+          emptyMessage="New stories coming soon!"
+        />
+
+        <StoryCarousel
           title="Rising Stars"
           icon={<Rocket className="h-5 w-5 text-orange-500" />}
           stories={risingStars}
-          viewAllLink="/browse?sort=rising"
+          viewAllLink="/rising-stars"
           emptyMessage="New stories coming soon!"
         />
 
@@ -145,7 +155,7 @@ export default async function Home() {
           title="Popular This Week"
           icon={<Flame className="h-5 w-5 text-red-500" />}
           stories={popularThisWeek}
-          viewAllLink="/browse?sort=popular"
+          viewAllLink="/popular"
           emptyMessage="Check back soon for popular stories"
         />
 
@@ -153,7 +163,7 @@ export default async function Home() {
           title="Latest Updates"
           icon={<Clock className="h-5 w-5 text-blue-500" />}
           stories={latestUpdates}
-          viewAllLink="/browse?sort=updated"
+          viewAllLink="/recently-updated"
           emptyMessage="No recent updates"
         />
 
@@ -161,7 +171,7 @@ export default async function Home() {
           title="Most Followed"
           icon={<Heart className="h-5 w-5 text-pink-500" />}
           stories={mostFollowed}
-          viewAllLink="/browse?sort=followers"
+          viewAllLink="/most-followed"
           emptyMessage="Follow your first story!"
         />
       </main>

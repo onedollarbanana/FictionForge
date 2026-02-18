@@ -258,3 +258,46 @@ export async function getMostFollowed(limit: number = 10, supabase?: SupabaseCli
 
   return (data || []) as unknown as StoryCardData[];
 }
+
+export async function getNewReleases(limit: number = 10, supabase?: SupabaseClientType): Promise<StoryCardData[]> {
+  const client = supabase || await createClient();
+
+  const sixtyDaysAgo = new Date();
+  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
+  const { data, error } = await client
+    .from('stories')
+    .select(`
+      id,
+      title,
+      tagline,
+      blurb,
+      cover_url,
+      genres,
+      tags,
+      status,
+      total_views,
+      follower_count,
+      chapter_count,
+      rating_average,
+      rating_count,
+      created_at,
+      updated_at,
+      profiles!author_id(
+        username,
+        display_name
+      )
+    `)
+    .eq('visibility', 'published')
+    .gt('chapter_count', 0)
+    .gte('created_at', sixtyDaysAgo.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching new releases:', error);
+    return [];
+  }
+
+  return (data || []) as unknown as StoryCardData[];
+}
