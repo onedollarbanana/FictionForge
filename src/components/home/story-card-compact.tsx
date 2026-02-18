@@ -50,7 +50,7 @@ export function StoryCardCompact({ story, rank, showRank = false }: StoryCardCom
     <Link href={`/story/${story.id}`} className="block group flex-shrink-0 w-[180px] sm:w-[200px]">
       <div className="bg-card border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow h-full flex flex-col">
         {/* Cover Image */}
-        <div className="relative w-full aspect-[3/4] overflow-hidden bg-muted">
+        <div className="relative w-full aspect-[2/3] overflow-hidden bg-muted">
           {showRank && rank && (
             <div className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm shadow">
               {rank}
@@ -145,7 +145,7 @@ export function StoryCardCompact({ story, rank, showRank = false }: StoryCardCom
 export function StoryCardCompactSkeleton() {
   return (
     <div className="w-[180px] sm:w-[200px] bg-card border rounded-lg overflow-hidden">
-      <div className="w-full aspect-[3/4] bg-muted animate-pulse" />
+      <div className="w-full aspect-[2/3] bg-muted animate-pulse" />
       <div className="p-3 space-y-2">
         <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
         <div className="h-4 bg-muted rounded animate-pulse w-1/2" />
