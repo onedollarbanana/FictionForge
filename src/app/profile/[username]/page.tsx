@@ -254,9 +254,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   })
 
   return (
-    <main className="container max-w-6xl py-8">
+    <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
       {/* Profile Header */}
-      <Card className="mb-8">
+      <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-6 items-start">
             {/* Avatar with Border */}
@@ -332,7 +332,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       </Card>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard 
           icon={BookOpen} 
           label="Stories Published" 
