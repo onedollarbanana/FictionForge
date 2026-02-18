@@ -4,7 +4,8 @@ import { BookOpen } from "lucide-react";
 import { Suspense } from "react";
 import Link from "next/link";
 import { BrowseFilters } from "@/components/browse/browse-filters";
-import { StoryCard, type StoryCardData } from "@/components/story/story-card";
+import { type StoryCardData } from "@/components/story/story-card";
+import { BrowseStoryGrid } from "@/components/story/browse-story-grid";
 
 export const dynamic = "force-dynamic";
 
@@ -154,16 +155,7 @@ export default async function BrowsePage({
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
-          {paginatedStories.map((story) => (
-            <StoryCard
-              key={story.id}
-              story={story}
-              variant="vertical"
-              size="md"
-            />
-          ))}
-        </div>
+        <BrowseStoryGrid stories={paginatedStories} />
       )}
 
       {totalPages > 1 && (

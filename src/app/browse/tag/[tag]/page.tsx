@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { BookOpen, Tag } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { StoryCard, type StoryCardData } from '@/components/story/story-card';
+import { type StoryCardData } from '@/components/story/story-card';
+import { BrowseStoryGrid } from '@/components/story/browse-story-grid';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { GenreTagSort } from '@/components/browse/genre-tag-sort';
 
@@ -96,16 +97,7 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
         <GenreTagSort currentSort={sort} />
       </div>
       
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
-        {typedStories.map((story) => (
-          <StoryCard
-            key={story.id}
-            story={story}
-            variant="vertical"
-            size="md"
-          />
-        ))}
-      </div>
+      <BrowseStoryGrid stories={typedStories} />
     </div>
   );
 }
