@@ -184,6 +184,12 @@ export default async function StoryPage({ params }: PageProps) {
             {story.status?.charAt(0).toUpperCase() + story.status?.slice(1) || "Ongoing"}
           </Badge>
 
+          {story.release_schedule && (
+            <span className="text-sm text-muted-foreground flex items-center gap-1">
+              📅 {story.release_schedule}
+            </span>
+          )}
+
           {/* Genres - now clickable */}
           {story.genres && story.genres.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 mb-3">

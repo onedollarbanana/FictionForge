@@ -52,6 +52,7 @@ export default function EditStoryPage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState("");
   const [hideCommunityBadge, setHideCommunityBadge] = useState(false);
+  const [releaseSchedule, setReleaseSchedule] = useState("");
 
   useEffect(() => {
     async function loadStory() {
@@ -78,6 +79,7 @@ export default function EditStoryPage() {
       setDefaultNoteBefore(data.default_author_note_before || "");
       setDefaultNoteAfter(data.default_author_note_after || "");
       setHideCommunityBadge(data.hide_community_badge || false);
+      setReleaseSchedule(data.release_schedule || "");
       setInitialLoading(false);
     }
 
@@ -109,6 +111,7 @@ export default function EditStoryPage() {
         default_author_note_before: defaultNoteBefore || null,
         default_author_note_after: defaultNoteAfter || null,
         hide_community_badge: hideCommunityBadge,
+        release_schedule: releaseSchedule || null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", storyId);
@@ -255,6 +258,21 @@ export default function EditStoryPage() {
           />
           <p className="text-sm text-muted-foreground mt-1">
             Add tags to help readers find your story
+          </p>
+        </div>
+
+        {/* Release Schedule */}
+        <div className="space-y-2">
+          <Label htmlFor="releaseSchedule">Release Schedule</Label>
+          <Input
+            id="releaseSchedule"
+            value={releaseSchedule}
+            onChange={(e) => setReleaseSchedule(e.target.value)}
+            placeholder="e.g., New chapters every Monday & Thursday"
+            maxLength={100}
+          />
+          <p className="text-xs text-muted-foreground">
+            Shown on your story page to let readers know when to expect new chapters
           </p>
         </div>
 
