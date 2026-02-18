@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, Check, Clock, Eye, Heart, User } from "lucide-react";
+import { BookOpen, Check, Clock, Eye, Heart, Pencil, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { LibraryButton } from "@/components/story/LibraryButton";
 import { AnnouncementBanner } from "@/components/announcements";
@@ -14,6 +14,8 @@ import { RelatedStories } from "@/components/story/related-stories";
 import { MoreFromAuthor } from "@/components/story/more-from-author";
 import { ReportButton } from "@/components/moderation/report-button";
 import { NominateButton } from "@/components/story/nominate-button";
+import { CommunityPickBadge } from "@/components/story/community-pick-badge";
+import { getCommunityPickBadge } from "@/lib/community-picks";
 
 export const dynamic = "force-dynamic";
 
@@ -104,6 +106,9 @@ export default async function StoryPage({ params }: PageProps) {
     readChapterIds = new Set((chapterReads || []).map(r => r.chapter_id));
   }
 
+  // Check if this story is a Community Pick
+  const communityPickData = await getCommunityPickBadge(id, supabase);
+
   const authorName = story.profiles?.display_name || story.profiles?.username || 'Unknown';
 
   return (
@@ -118,7 +123,8 @@ export default async function StoryPage({ params }: PageProps) {
       <div className="flex flex-col md:flex-row gap-6 mb-8">
         {/* Cover Image - 2:3 aspect ratio */}
         {story.cover_url ? (
-          <div className="w-full md:w-48 aspect-[2/3] rounded-lg overflow-hidden shrink-0">
+          <div className="relative w-full md:w-48 aspect-[2/3] rounded-lg overflow-hidden shrink-0">
+            <CommunityPickBadge pickMonth={communityPickData?.pickMonth} />
             <img
               src={`${story.cover_url}?t=${new Date(story.updated_at).getTime()}`}
               alt={`Cover for ${story.title}`}
@@ -126,13 +132,24 @@ export default async function StoryPage({ params }: PageProps) {
             />
           </div>
         ) : (
-          <div className="w-full md:w-48 aspect-[2/3] bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center shrink-0">
+          <div className="relative w-full md:w-48 aspect-[2/3] bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center shrink-0">
+            <CommunityPickBadge pickMonth={communityPickData?.pickMonth} />
             <BookOpen className="h-16 w-16 text-primary/40" />
           </div>
         )}
 
         <div className="flex-1">
-          <h1 className="text-3xl font-bold mb-2">{story.title}</h1>
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <h1 className="text-3xl font-bold">{story.title}</h1>
+            {isOwner && (
+              <Button variant="outline" size="sm" asChild className="shrink-0">
+                <Link href={`/author/stories/${id}/edit`}>
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Edit
+                </Link>
+              </Button>
+            )}
+          </div>
           
           <Link 
             href={`/author/${story.profiles?.username}`}
