@@ -24,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-export type ReportContentType = "story" | "chapter" | "comment" | "rating" | "user";
+export type ReportContentType = "story" | "chapter" | "comment" | "rating" | "profile";
 
 const REPORT_REASONS = [
   { value: "spam", label: "Spam" },

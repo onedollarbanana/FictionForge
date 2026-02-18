@@ -15,6 +15,7 @@ import { ScrollToTop } from "@/components/reader/scroll-to-top";
 import { AutoLibraryAdd } from "@/components/reader/auto-library-add";
 import { ChevronLeft } from "lucide-react";
 import { headers } from "next/headers";
+import { ReportButton } from "@/components/moderation/report-button";
 
 export const dynamic = "force-dynamic";
 
@@ -190,6 +191,18 @@ export default async function ChapterReadingPage({ params }: PageProps) {
             currentUserId={user?.id ?? null}
           />
         </div>
+        {/* Report Button - only for logged-in non-authors */}
+        {user && user.id !== chapter.stories?.author_id && (
+          <div className="mt-2 flex justify-center">
+            <ReportButton
+              contentType="chapter"
+              contentId={chapterId}
+              contentTitle={`${chapter.stories?.title} - Ch. ${chapter.chapter_number}: ${chapter.title}`}
+              size="sm"
+              variant="ghost"
+            />
+          </div>
+        )}
 
         {/* Chapter Navigation - Hidden on mobile (bottom nav shows instead) */}
         <div className="hidden md:block">

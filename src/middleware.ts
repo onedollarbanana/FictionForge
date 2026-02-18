@@ -42,6 +42,32 @@ export async function middleware(request: NextRequest) {
   try {
     const { data: { user } } = await supabase.auth.getUser()
 
+    // Check if user is suspended or banned
+    if (user && !request.nextUrl.pathname.startsWith('/suspended') && !request.nextUrl.pathname.startsWith('/api') && !request.nextUrl.pathname.startsWith('/auth')) {
+      const { data: modAction } = await supabase
+        .from('user_moderation')
+        .select('action, reason, expires_at')
+        .eq('user_id', user.id)
+        .in('action', ['ban', 'suspension_1d', 'suspension_3d', 'suspension_7d', 'suspension_30d'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (modAction) {
+        const isBan = modAction.action === 'ban';
+        const isSuspensionActive = modAction.expires_at && new Date(modAction.expires_at) > new Date();
+
+        if (isBan || isSuspensionActive) {
+          const params = new URLSearchParams({
+            reason: modAction.reason || 'Policy violation',
+            ...(modAction.expires_at ? { until: modAction.expires_at } : {}),
+            type: isBan ? 'ban' : 'suspension',
+          });
+          return NextResponse.redirect(new URL(`/suspended?${params.toString()}`, request.url));
+        }
+      }
+    }
+
     // Protected routes - require auth
     if (request.nextUrl.pathname.startsWith('/author')) {
       if (!user) {

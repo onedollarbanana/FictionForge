@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Heart, MessageSquare, Pin, Pencil, Trash2, MoreVertical, X, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { GiveRepButton } from "@/components/reputation";
+import { ReportButton } from "@/components/moderation/report-button";
 
 interface CommentData {
   id: string;
@@ -422,6 +423,15 @@ export function Comment({
                 receiverUserId={comment.user_id}
                 currentUserId={currentUserId}
               />
+              {currentUserId && !isOwnComment && (
+                <ReportButton
+                  contentType="comment"
+                  contentId={comment.id}
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs"
+                />
+              )}
               
               {!isReply && currentUserId && (
                 <Button

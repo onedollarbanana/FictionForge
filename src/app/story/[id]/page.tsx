@@ -12,6 +12,7 @@ import { StoryRatingSection } from "@/components/story/story-rating-section";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { RelatedStories } from "@/components/story/related-stories";
 import { MoreFromAuthor } from "@/components/story/more-from-author";
+import { ReportButton } from "@/components/moderation/report-button";
 
 export const dynamic = "force-dynamic";
 
@@ -208,6 +209,18 @@ export default async function StoryPage({ params }: PageProps) {
               initialFollowerCount={story.follower_count ?? 0} 
             />
           </div>
+          {/* Report Button - only for logged-in non-owners */}
+          {user && !isOwner && (
+            <div className="mt-2">
+              <ReportButton
+                contentType="story"
+                contentId={id}
+                contentTitle={story.title}
+                size="sm"
+                variant="ghost"
+              />
+            </div>
+          )}
         </div>
       </div>
 
