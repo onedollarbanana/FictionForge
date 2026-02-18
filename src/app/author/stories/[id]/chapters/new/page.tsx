@@ -187,6 +187,14 @@ export default function NewChapterPage() {
       })
       .eq("id", storyId);
 
+    // Log writing activity
+    if (wordCount > 0) {
+      await supabase.rpc('log_writing_activity', {
+        p_user_id: user.id,
+        p_words: wordCount,
+      });
+    }
+
     localStorage.removeItem(DRAFT_KEY);
     router.push(`/author/stories/${storyId}`);
   };
