@@ -4,13 +4,14 @@ import {
   getPopularThisWeek, 
   getLatestUpdates,
   getMostFollowed,
-  getNewReleases 
+  getNewReleases,
+  getStaffPicks 
 } from "@/lib/rankings";
 import { HeroSection } from "@/components/home/hero-section";
 import { ContinueReading } from "@/components/home/continue-reading";
 import { GenreLinks } from "@/components/home/genre-links";
 import { StoryCarousel } from "@/components/home/story-carousel";
-import { Rocket, Flame, Clock, Heart, Sparkles } from "lucide-react";
+import { Rocket, Flame, Clock, Heart, Sparkles, Award } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,7 @@ export default async function Home() {
     getLatestUpdates(10, supabase),
     getMostFollowed(10, supabase),
     getNewReleases(10, supabase),
+    getStaffPicks(10, supabase),
   ]);
 
   if (user) {
@@ -118,7 +120,7 @@ export default async function Home() {
   }
 
   // Wait for rankings to complete
-  const [risingStars, popularThisWeek, latestUpdates, mostFollowed, newReleases] = await rankingsPromise;
+  const [risingStars, popularThisWeek, latestUpdates, mostFollowed, newReleases, staffPicks] = await rankingsPromise;
 
   const isLoggedIn = !!user;
 
@@ -135,6 +137,15 @@ export default async function Home() {
         <GenreLinks />
 
         {/* Story Carousels */}
+        {staffPicks.length > 0 && (
+          <StoryCarousel
+            title="Staff Picks"
+            icon={<Award className="h-5 w-5 text-yellow-500" />}
+            stories={staffPicks}
+            viewAllLink="/featured"
+            emptyMessage="Staff picks coming soon!"
+          />
+        )}
         <StoryCarousel
           title="New Releases"
           icon={<Sparkles className="h-5 w-5 text-emerald-500" />}

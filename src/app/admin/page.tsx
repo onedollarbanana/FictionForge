@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileWarning, AlertTriangle, Users, BookOpen, Eye, EyeOff } from "lucide-react";
+import { FileWarning, AlertTriangle, Users, BookOpen, Eye, EyeOff, Award } from "lucide-react";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +16,7 @@ export default async function AdminDashboard() {
     hiddenCommentsResult,
     activeUsersResult,
     suspendedUsersResult,
+    featuredCountResult,
   ] = await Promise.all([
     supabase.from("reports").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("dmca_claims").select("id", { count: "exact", head: true }).eq("status", "pending"),
@@ -25,6 +26,7 @@ export default async function AdminDashboard() {
     supabase.from("user_moderation").select("id", { count: "exact", head: true })
       .in("action", ["suspended", "banned"])
       .or("expires_at.is.null,expires_at.gt.now()"),
+    supabase.from("featured_stories").select("id", { count: "exact", head: true }),
   ]);
 
   const pendingReports = pendingReportsResult.count ?? 0;
@@ -33,6 +35,7 @@ export default async function AdminDashboard() {
   const hiddenComments = hiddenCommentsResult.count ?? 0;
   const totalUsers = activeUsersResult.count ?? 0;
   const suspendedUsers = suspendedUsersResult.count ?? 0;
+  const featuredCount = featuredCountResult.count ?? 0;
 
   // Fetch recent reports
   const { data: recentReports } = await supabase
@@ -119,6 +122,19 @@ export default async function AdminDashboard() {
             <p className="text-xs text-muted-foreground">Removed from public view</p>
           </CardContent>
         </Card>
+
+        <Link href="/admin/featured">
+          <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Staff Picks</CardTitle>
+              <Award className="h-4 w-4 text-yellow-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{featuredCount}</div>
+              <p className="text-xs text-muted-foreground">Featured stories</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Recent Reports */}
