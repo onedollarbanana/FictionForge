@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen } from "lucide-react";
 import { Suspense } from "react";
+import Link from "next/link";
 import { BrowseFilters } from "@/components/browse/browse-filters";
 import { StoryCard, type StoryCardData } from "@/components/story/story-card";
 
@@ -11,6 +12,21 @@ interface SearchParams {
   search?: string;
   genre?: string;
   sort?: string;
+  tag?: string;
+  page?: string;
+}
+
+const PAGE_SIZE = 40;
+
+function buildPageUrl(searchParams: SearchParams, page: number): string {
+  const params = new URLSearchParams();
+  if (searchParams.search) params.set("q", searchParams.search);
+  if (searchParams.genre) params.set("genre", searchParams.genre);
+  if (searchParams.sort && searchParams.sort !== "updated") params.set("sort", searchParams.sort);
+  if (searchParams.tag) params.set("tag", searchParams.tag);
+  if (page > 1) params.set("page", String(page));
+  const qs = params.toString();
+  return `/browse${qs ? `?${qs}` : ""}`;
 }
 
 export default async function BrowsePage({
@@ -18,7 +34,7 @@ export default async function BrowsePage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { search, genre, sort = "updated" } = await searchParams;
+  const { search, genre, sort = "updated", tag, page } = await searchParams;
   const supabase = await createClient();
 
   // Fetch all stories with author info and ratings
@@ -53,6 +69,14 @@ export default async function BrowsePage({
 
   let filteredStories = (stories as unknown as StoryCardData[]) || [];
 
+  // Compute genre counts for filters
+  const genreCounts: Record<string, number> = {};
+  (stories as unknown as StoryCardData[])?.forEach(story => {
+    story.genres?.forEach((g: string) => {
+      genreCounts[g] = (genreCounts[g] || 0) + 1;
+    });
+  });
+
   // Apply search filter
   if (search) {
     const searchLower = search.toLowerCase();
@@ -68,6 +92,16 @@ export default async function BrowsePage({
   if (genre) {
     filteredStories = filteredStories.filter((story) =>
       story.genres?.includes(genre)
+    );
+  }
+
+  // Apply tag filter
+  const selectedTags = tag ? tag.split(',').map(t => t.trim().toLowerCase()) : [];
+  if (selectedTags.length > 0) {
+    filteredStories = filteredStories.filter((story) =>
+      selectedTags.every((t) =>
+        story.tags?.some((st: string) => st.toLowerCase() === t)
+      )
     );
   }
 
@@ -87,15 +121,21 @@ export default async function BrowsePage({
     }
   });
 
+  // Pagination
+  const currentPage = Math.max(1, parseInt(page || '1'));
+  const totalPages = Math.ceil(filteredStories.length / PAGE_SIZE);
+  const paginatedStories = filteredStories.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
   const resultCount = filteredStories.length;
-  const hasFilters = search || genre || sort !== "updated";
+  const hasFilters = search || genre || sort !== "updated" || tag;
+  const sp = { search, genre, sort, tag, page };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <h1 className="text-3xl font-bold mb-6">Browse Stories</h1>
 
       <Suspense fallback={<div className="h-12 bg-muted animate-pulse rounded-md mb-6" />}>
-        <BrowseFilters />
+        <BrowseFilters genreCounts={genreCounts} />
       </Suspense>
 
       {hasFilters && (
@@ -104,18 +144,18 @@ export default async function BrowsePage({
         </p>
       )}
 
-      {filteredStories.length === 0 ? (
+      {paginatedStories.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">
-              {search || genre ? "No stories match your filters" : "No stories published yet"}
+              {search || genre || tag ? "No stories match your filters" : "No stories published yet"}
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
-          {filteredStories.map((story) => (
+          {paginatedStories.map((story) => (
             <StoryCard
               key={story.id}
               story={story}
@@ -123,6 +163,30 @@ export default async function BrowsePage({
               size="md"
             />
           ))}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-2 mt-8">
+          {currentPage > 1 && (
+            <Link
+              href={buildPageUrl(sp, currentPage - 1)}
+              className="px-4 py-2 text-sm border rounded-md hover:bg-muted transition-colors"
+            >
+              ← Previous
+            </Link>
+          )}
+          <span className="px-4 py-2 text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages}
+          </span>
+          {currentPage < totalPages && (
+            <Link
+              href={buildPageUrl(sp, currentPage + 1)}
+              className="px-4 py-2 text-sm border rounded-md hover:bg-muted transition-colors"
+            >
+              Next →
+            </Link>
+          )}
         </div>
       )}
     </div>

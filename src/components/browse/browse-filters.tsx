@@ -4,7 +4,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, X } from "lucide-react";
+import { Search, X, ChevronDown, ChevronUp } from "lucide-react";
+import { TAGS } from "@/lib/constants";
 
 const GENRES = [
   "Fantasy",
@@ -29,9 +30,14 @@ const SORT_OPTIONS = [
   { value: "newest", label: "Newest First" },
   { value: "popular", label: "Most Popular" },
   { value: "followers", label: "Most Followed" },
+  { value: "rating", label: "Highest Rated" },
 ];
 
-export function BrowseFilters() {
+interface BrowseFiltersProps {
+  genreCounts?: Record<string, number>;
+}
+
+export function BrowseFilters({ genreCounts }: BrowseFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -39,8 +45,12 @@ export function BrowseFilters() {
   const currentSearch = searchParams.get("q") || "";
   const currentGenre = searchParams.get("genre") || "";
   const currentSort = searchParams.get("sort") || "updated";
+  const currentTags = searchParams.get("tag") || "";
 
   const [searchInput, setSearchInput] = useState(currentSearch);
+  const [showTags, setShowTags] = useState(false);
+
+  const selectedTags = currentTags ? currentTags.split(",").map(t => t.trim()) : [];
 
   const updateParams = useCallback((key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -49,10 +59,19 @@ export function BrowseFilters() {
     } else {
       params.delete(key);
     }
+    // Reset to page 1 when filters change
+    params.delete("page");
     startTransition(() => {
       router.push(`/browse?${params.toString()}`);
     });
   }, [router, searchParams]);
+
+  const toggleTag = useCallback((tag: string) => {
+    const newTags = selectedTags.includes(tag)
+      ? selectedTags.filter(t => t !== tag)
+      : [...selectedTags, tag];
+    updateParams("tag", newTags.join(","));
+  }, [selectedTags, updateParams]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +90,7 @@ export function BrowseFilters() {
     });
   };
 
-  const hasActiveFilters = currentSearch || currentGenre || currentSort !== "updated";
+  const hasActiveFilters = currentSearch || currentGenre || currentSort !== "updated" || currentTags;
 
   return (
     <div className="space-y-4 mb-8">
@@ -114,7 +133,7 @@ export function BrowseFilters() {
             <option value="">All Genres</option>
             {GENRES.map((genre) => (
               <option key={genre} value={genre}>
-                {genre}
+                {genre}{genreCounts?.[genre] ? ` (${genreCounts[genre]})` : ''}
               </option>
             ))}
           </select>
@@ -136,6 +155,22 @@ export function BrowseFilters() {
           </select>
         </div>
 
+        {/* Tag Toggle */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowTags(!showTags)}
+          className="text-sm"
+        >
+          {showTags ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
+          {showTags ? "Hide tags" : "Show tags"}
+          {selectedTags.length > 0 && (
+            <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-xs">
+              {selectedTags.length}
+            </span>
+          )}
+        </Button>
+
         {/* Clear Filters */}
         {hasActiveFilters && (
           <Button
@@ -149,6 +184,25 @@ export function BrowseFilters() {
           </Button>
         )}
       </div>
+
+      {/* Tag Selector */}
+      {showTags && (
+        <div className="flex flex-wrap gap-2 p-4 border rounded-lg bg-muted/30">
+          {TAGS.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => toggleTag(tag)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                selectedTags.includes(tag)
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Active filter indicator */}
       {isPending && (
