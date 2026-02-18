@@ -67,7 +67,7 @@ export function BrowseStoryCard({ story, className }: BrowseStoryCardProps) {
   return (
     <div
       className={cn(
-        "flex gap-4 p-4 border rounded-lg bg-card hover:border-primary/30 transition-colors relative",
+        "flex gap-4 p-4 border rounded-lg bg-card hover:border-primary/30 transition-colors relative overflow-hidden",
         className
       )}
     >
@@ -97,12 +97,12 @@ export function BrowseStoryCard({ story, className }: BrowseStoryCardProps) {
       </Link>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 overflow-hidden">
         {/* Title + Status row */}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <Link href={`/story/${story.id}`}>
-              <h3 className="font-semibold text-lg hover:text-primary transition-colors line-clamp-1">
+              <h3 className="font-semibold text-lg hover:text-primary transition-colors line-clamp-1 break-words">
                 {story.title}
               </h3>
             </Link>
@@ -192,21 +192,22 @@ export function BrowseStoryCard({ story, className }: BrowseStoryCardProps) {
           )}
         </div>
 
-        {/* Blurb */}
-        {(story.tagline || story.blurb) && (
+        {/* Tagline - separate line */}
+        {story.tagline && (
+          <p className="text-sm font-medium text-foreground/80 mt-2 break-words">
+            {story.tagline}
+          </p>
+        )}
+
+        {/* Blurb - always visible, 2-line clamp when collapsed */}
+        {story.blurb && (
           <p
             className={cn(
-              "text-sm text-muted-foreground mt-2",
+              "text-sm text-muted-foreground mt-1 break-words",
               !expanded && "line-clamp-2"
             )}
           >
-            {story.tagline && (
-              <span className="font-medium text-foreground/80">
-                {story.tagline}
-                {story.blurb && expanded ? " — " : ""}
-              </span>
-            )}
-            {expanded ? story.blurb : !story.tagline ? story.blurb : null}
+            {story.blurb}
           </p>
         )}
 
