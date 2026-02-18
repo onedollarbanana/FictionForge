@@ -51,7 +51,7 @@ export default async function RatingsPage() {
         id,
         title,
         cover_url,
-        profiles (
+        profiles!author_id(
           username
         )
       )

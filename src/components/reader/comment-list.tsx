@@ -73,7 +73,7 @@ export function CommentList({ chapterId, currentUserId, storyAuthorId }: Comment
         user_id,
         parent_id,
         is_pinned,
-        profiles (
+        profiles!user_id(
           username,
           avatar_url
         )

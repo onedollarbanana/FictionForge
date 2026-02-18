@@ -39,7 +39,7 @@ export async function MoreFromAuthor({
       rating_average,
       rating_count,
       updated_at,
-      profiles (
+      profiles!author_id(
         username,
         display_name
       )

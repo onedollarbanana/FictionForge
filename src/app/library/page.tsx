@@ -62,7 +62,7 @@ export default async function LibraryPage() {
         rating_average,
         rating_count,
         updated_at,
-        profiles (
+        profiles!author_id(
           username
         )
       )

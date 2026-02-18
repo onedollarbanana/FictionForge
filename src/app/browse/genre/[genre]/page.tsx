@@ -57,7 +57,7 @@ export default async function GenrePage({ params, searchParams }: GenrePageProps
       rating_count,
       created_at,
       updated_at,
-      profiles (
+      profiles!author_id(
         username,
         display_name
       )

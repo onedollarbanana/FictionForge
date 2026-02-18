@@ -40,7 +40,7 @@ export default async function ChapterReadingPage({ params }: PageProps) {
         author_id,
         default_author_note_before,
         default_author_note_after,
-        profiles (
+        profiles!author_id(
           username
         )
       )

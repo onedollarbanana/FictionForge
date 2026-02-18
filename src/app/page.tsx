@@ -54,7 +54,7 @@ export default async function Home() {
           chapter_count,
           updated_at,
           visibility,
-          profiles (
+          profiles!author_id(
             username
           )
         )

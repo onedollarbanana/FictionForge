@@ -40,7 +40,7 @@ export async function getRankings(options: RankingOptions): Promise<StoryCardDat
       rating_count,
       created_at,
       updated_at,
-      profiles (
+      profiles!author_id(
         username,
         display_name
       )
@@ -124,7 +124,7 @@ export async function getRisingStars(limit: number = 10, supabase?: SupabaseClie
       rating_count,
       created_at,
       updated_at,
-      profiles (
+      profiles!author_id(
         username,
         display_name
       )
@@ -163,7 +163,7 @@ export async function getPopularThisWeek(limit: number = 10, supabase?: Supabase
       rating_count,
       created_at,
       updated_at,
-      profiles (
+      profiles!author_id(
         username,
         display_name
       )
@@ -202,7 +202,7 @@ export async function getLatestUpdates(limit: number = 10, supabase?: SupabaseCl
       rating_count,
       created_at,
       updated_at,
-      profiles (
+      profiles!author_id(
         username,
         display_name
       )
@@ -241,7 +241,7 @@ export async function getMostFollowed(limit: number = 10, supabase?: SupabaseCli
       rating_count,
       created_at,
       updated_at,
-      profiles (
+      profiles!author_id(
         username,
         display_name
       )

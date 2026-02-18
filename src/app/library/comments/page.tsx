@@ -54,7 +54,7 @@ export default async function CommentsPage() {
           id,
           title,
           cover_url,
-          profiles (
+          profiles!author_id(
             username
           )
         )

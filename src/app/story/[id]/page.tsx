@@ -28,7 +28,7 @@ export default async function StoryPage({ params }: PageProps) {
     .from("stories")
     .select(`
       *,
-      profiles (
+      profiles!author_id(
         username,
         display_name,
         avatar_url
