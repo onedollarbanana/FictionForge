@@ -15,6 +15,61 @@ import { EditorToolbar } from './editor-toolbar'
 import { StatBox, SystemMessage, Spoiler } from './extensions'
 import '@/styles/editor.css'
 
+/**
+ * Cleans HTML pasted from Word, Google Docs, and other rich text sources.
+ * Strips unwanted styles, classes, and attributes while preserving structure.
+ */
+function cleanPastedHTML(html: string): string {
+  if (typeof DOMParser === 'undefined') return html;
+
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+
+  // Remove all style, meta, link, and xml tags (Word/Docs add these)
+  doc.querySelectorAll('style, meta, link, xml, o\\:p, w\\:wrap').forEach(el => el.remove());
+
+  // Process all elements
+  doc.querySelectorAll('*').forEach(el => {
+    // Remove all class attributes (Word classes like MsoNormal, etc.)
+    el.removeAttribute('class');
+
+    // Remove all style attributes (inline styles from Word/Docs)
+    el.removeAttribute('style');
+
+    // Remove Word-specific attributes
+    Array.from(el.attributes).forEach(attr => {
+      if (attr.name.startsWith('mso-') ||
+          attr.name.startsWith('v:') ||
+          attr.name.startsWith('o:') ||
+          attr.name.startsWith('w:') ||
+          attr.name === 'lang' ||
+          attr.name === 'dir') {
+        el.removeAttribute(attr.name);
+      }
+    });
+
+    // Convert Word-style bold/italic spans (remove empty spans)
+    if (el.tagName === 'SPAN' && el.innerHTML === el.textContent) {
+      // Unwrap span - replace with just text
+      el.replaceWith(...Array.from(el.childNodes));
+    }
+  });
+
+  // Convert Google Docs line breaks
+  doc.querySelectorAll('br.Apple-interchange-newline').forEach(br => {
+    br.removeAttribute('class');
+  });
+
+  // Clean up empty paragraphs that only contain &nbsp; or whitespace
+  doc.querySelectorAll('p').forEach(p => {
+    if (p.innerHTML.trim() === '&nbsp;' || p.innerHTML.trim() === '') {
+      // Keep as empty paragraph (Tiptap handles these correctly)
+      p.innerHTML = '<br>';
+    }
+  });
+
+  return doc.body.innerHTML;
+}
+
 interface TiptapEditorProps {
   content: JSONContent | null
   onChange: (content: JSONContent) => void
@@ -66,6 +121,9 @@ export function TiptapEditor({ content, onChange, placeholder }: TiptapEditorPro
     editorProps: {
       attributes: {
         class: 'tiptap-editor prose prose-invert max-w-none min-h-[400px] p-4 focus:outline-none',
+      },
+      transformPastedHTML(html) {
+        return cleanPastedHTML(html);
       },
     },
   })
