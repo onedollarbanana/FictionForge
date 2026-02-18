@@ -6,6 +6,7 @@ import { type StoryCardData } from '@/components/story/story-card';
 import { BrowseStoryGrid } from '@/components/story/browse-story-grid';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { GenreTagSort } from '@/components/browse/genre-tag-sort';
+import { enrichWithCommunityPicks } from '@/lib/community-picks';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,6 +68,7 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
   }
 
   const typedStories = (stories || []) as unknown as StoryCardData[];
+  await enrichWithCommunityPicks(typedStories, supabase);
 
   // If no stories found with this tag, show 404
   if (typedStories.length === 0) {

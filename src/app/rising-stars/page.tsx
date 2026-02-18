@@ -5,6 +5,7 @@ import { type StoryCardData } from '@/components/story/story-card';
 import { BrowseStoryGrid } from '@/components/story/browse-story-grid';
 import { GenreTagSort } from '@/components/browse/genre-tag-sort';
 import { getRisingStars } from '@/lib/rankings';
+import { enrichWithCommunityPicks } from '@/lib/community-picks';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +47,9 @@ export default async function RisingStarsPage({ searchParams }: PageProps) {
     if (error) console.error('Error:', error);
     typedStories = (stories || []) as unknown as StoryCardData[];
   }
+
+  const supabaseForEnrich = await createClient();
+  await enrichWithCommunityPicks(typedStories, supabaseForEnrich);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { BrowseFilters } from "@/components/browse/browse-filters";
 import { type StoryCardData } from "@/components/story/story-card";
 import { BrowseStoryGrid } from "@/components/story/browse-story-grid";
+import { enrichWithCommunityPicks } from "@/lib/community-picks";
 
 export const dynamic = "force-dynamic";
 
@@ -121,6 +122,8 @@ export default async function BrowsePage({
         return new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime();
     }
   });
+
+  await enrichWithCommunityPicks(filteredStories, supabase);
 
   // Pagination
   const currentPage = Math.max(1, parseInt(page || '1'));

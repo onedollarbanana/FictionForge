@@ -134,3 +134,31 @@ export async function getCommunityPickBadge(
 
   return { pickMonth: data.pick_month };
 }
+
+/**
+ * Enrich an array of stories with community pick month info.
+ * Queries community_picks table for matching story IDs.
+ */
+export async function enrichWithCommunityPicks(
+  stories: { id: string; communityPickMonth?: string | null }[],
+  supabase: any
+): Promise<void> {
+  if (!stories.length) return;
+  const storyIds = stories.map((s) => s.id);
+  const { data: picks } = await supabase
+    .from("community_picks")
+    .select("story_id, pick_month")
+    .in("story_id", storyIds);
+  if (!picks?.length) return;
+  // Use the most recent pick month per story
+  const pickMap = new Map<string, string>();
+  for (const p of picks) {
+    const existing = pickMap.get(p.story_id);
+    if (!existing || p.pick_month > existing) {
+      pickMap.set(p.story_id, p.pick_month);
+    }
+  }
+  for (const story of stories) {
+    story.communityPickMonth = pickMap.get(story.id) || null;
+  }
+}

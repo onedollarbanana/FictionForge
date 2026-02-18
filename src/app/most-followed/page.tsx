@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { type StoryCardData } from '@/components/story/story-card';
 import { BrowseStoryGrid } from '@/components/story/browse-story-grid';
 import { GenreTagSort } from '@/components/browse/genre-tag-sort';
+import { enrichWithCommunityPicks } from '@/lib/community-picks';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +42,7 @@ export default async function MostFollowedPage({ searchParams }: PageProps) {
 
   if (error) console.error('Error:', error);
   const typedStories = (stories || []) as unknown as StoryCardData[];
+  await enrichWithCommunityPicks(typedStories, supabase);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">

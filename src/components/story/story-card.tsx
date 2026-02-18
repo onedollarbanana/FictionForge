@@ -22,6 +22,7 @@ export interface StoryCardData {
   word_count?: number | null;
   rating_average?: number | null;
   rating_count?: number | null;
+  communityPickMonth?: string | null;
   updated_at?: string;
   created_at?: string;
   author?: {

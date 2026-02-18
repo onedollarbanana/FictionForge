@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { BookOpen, Eye, Heart, BookMarked, Clock, Star, Plus, Minus, Users } from "lucide-react";
+import { BookOpen, Eye, Heart, BookMarked, Clock, Star, Plus, Minus, Users, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -77,7 +77,7 @@ export function BrowseStoryCard({ story, className }: BrowseStoryCardProps) {
       )}
     >
       {/* Cover Image */}
-      <Link href={`/story/${story.id}`} className="shrink-0">
+      <Link href={`/story/${story.id}`} className="shrink-0 relative">
         {story.cover_url ? (
           <div className="relative w-24 h-36 sm:w-28 sm:h-40">
             <Image
@@ -97,6 +97,12 @@ export function BrowseStoryCard({ story, className }: BrowseStoryCardProps) {
             )}
           >
             <BookOpen className="h-8 w-8 text-white/40" />
+          </div>
+        )}
+        {story.communityPickMonth && (
+          <div className="absolute top-0 left-0 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-br-md rounded-tl-md flex items-center gap-0.5 z-10">
+            <Trophy className="h-3 w-3" />
+            Pick
           </div>
         )}
       </Link>

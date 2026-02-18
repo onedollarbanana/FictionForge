@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { type StoryCardData } from '@/components/story/story-card';
 import { BrowseStoryGrid } from '@/components/story/browse-story-grid';
 import { GenreTagSort } from '@/components/browse/genre-tag-sort';
+import { enrichWithCommunityPicks } from '@/lib/community-picks';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +47,8 @@ export default async function FeaturedPage({ searchParams }: PageProps) {
       return story as StoryCardData;
     })
     .filter(Boolean) as StoryCardData[];
+
+  await enrichWithCommunityPicks(typedStories, supabase);
 
   // Apply secondary sort if requested
   if (sort === 'newest') {

@@ -7,6 +7,7 @@ import { BrowseStoryGrid } from '@/components/story/browse-story-grid';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { GENRES } from '@/lib/constants';
 import { GenreTagSort } from '@/components/browse/genre-tag-sort';
+import { enrichWithCommunityPicks } from '@/lib/community-picks';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,6 +74,7 @@ export default async function GenrePage({ params, searchParams }: GenrePageProps
   }
 
   const typedStories = (stories || []) as unknown as StoryCardData[];
+  await enrichWithCommunityPicks(typedStories, supabase);
 
   return (
     <div className="container mx-auto px-4 py-8">
