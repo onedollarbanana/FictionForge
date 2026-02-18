@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { TiptapEditor, countWordsFromJSON } from "@/components/editor/tiptap-editor";
+import { Clock } from "lucide-react";
+import { showToast } from "@/components/ui/toast";
 
 // Debounce utility
 function debounce<T extends (...args: Parameters<T>) => void>(
@@ -32,6 +34,7 @@ interface Chapter {
   is_published: boolean;
   author_note_before: string | null;
   author_note_after: string | null;
+  scheduled_for: string | null;
   story_id: string;
 }
 
@@ -49,6 +52,7 @@ export default function EditChapterPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [scheduledFor, setScheduledFor] = useState<string>("");
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const router = useRouter();
@@ -91,6 +95,9 @@ export default function EditChapterPage() {
         setContent(chapterData.content as JSONContent);
         setAuthorNoteBefore(chapterData.author_note_before || "");
         setAuthorNoteAfter(chapterData.author_note_after || "");
+        if (chapterData.scheduled_for) {
+          setScheduledFor(new Date(chapterData.scheduled_for).toISOString().slice(0, 16));
+        }
       }
       
       setLoading(false);
@@ -142,7 +149,7 @@ export default function EditChapterPage() {
     }
   }, [autoSave, content]);
 
-  const handleSubmit = async (e: React.FormEvent, publish: boolean) => {
+  const handleSubmit = async (e: React.FormEvent, publish: boolean, scheduleDate?: string) => {
     e.preventDefault();
     setError(null);
     setSaving(true);
@@ -169,6 +176,7 @@ export default function EditChapterPage() {
         published_at: isNowPublished && !wasPublished ? new Date().toISOString() : undefined,
         author_note_before: authorNoteBefore || null,
         author_note_after: authorNoteAfter || null,
+        scheduled_for: publish ? null : (scheduleDate ? new Date(scheduleDate).toISOString() : null),
         updated_at: new Date().toISOString(),
       })
       .eq("id", chapterId);
@@ -250,9 +258,15 @@ export default function EditChapterPage() {
             Published
           </span>
         )}
-        {!chapter?.is_published && (
+        {!chapter?.is_published && !chapter?.scheduled_for && (
           <span className="px-2 py-1 text-xs rounded bg-yellow-500/20 text-yellow-400">
             Draft
+          </span>
+        )}
+        {chapter?.scheduled_for && !chapter?.is_published && (
+          <span className="px-2 py-1 text-xs rounded bg-blue-500/20 text-blue-400 flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            Scheduled: {new Date(chapter.scheduled_for).toLocaleDateString()}
           </span>
         )}
       </div>
@@ -312,6 +326,55 @@ export default function EditChapterPage() {
           />
         </div>
 
+        {/* Schedule Publishing */}
+        {!chapter?.is_published && (
+          <div className="space-y-2">
+            <Label>Schedule Publishing (Optional)</Label>
+            <div className="flex items-center gap-3">
+              <input
+                type="datetime-local"
+                value={scheduledFor}
+                onChange={(e) => setScheduledFor(e.target.value)}
+                min={new Date().toISOString().slice(0, 16)}
+                className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+              {scheduledFor && (
+                <button
+                  type="button"
+                  onClick={() => setScheduledFor("")}
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            {scheduledFor && (
+              <p className="text-sm text-muted-foreground">
+                This chapter will be automatically published on {new Date(scheduledFor).toLocaleString()}
+              </p>
+            )}
+            {chapter?.scheduled_for && !chapter?.is_published && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  const supabase = createClient();
+                  await supabase
+                    .from("chapters")
+                    .update({ scheduled_for: null })
+                    .eq("id", chapterId);
+                  setScheduledFor("");
+                  setChapter(prev => prev ? { ...prev, scheduled_for: null } : null);
+                  showToast("Schedule cancelled", "success");
+                }}
+              >
+                Cancel Schedule
+              </Button>
+            )}
+          </div>
+        )}
+
         <div className="flex gap-4 pt-4">
           <Button
             type="button"
@@ -328,6 +391,18 @@ export default function EditChapterPage() {
               onClick={(e) => handleSubmit(e, true)}
             >
               {saving ? "Publishing..." : "Publish"}
+            </Button>
+          )}
+          {scheduledFor && !chapter?.is_published && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={saving || !title.trim()}
+              onClick={(e) => handleSubmit(e, false, scheduledFor)}
+              className="gap-1"
+            >
+              <Clock className="w-4 h-4" />
+              {saving ? "Scheduling..." : "Schedule"}
             </Button>
           )}
         </div>

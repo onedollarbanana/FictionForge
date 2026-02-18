@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { TiptapEditor, countWordsFromJSON } from "@/components/editor/tiptap-editor";
+import { Clock } from "lucide-react";
 
 // Debounce utility
 function debounce<T extends (...args: Parameters<T>) => void>(
@@ -36,13 +37,14 @@ export default function NewChapterPage() {
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [draftRecovered, setDraftRecovered] = useState(false);
+  const [scheduledFor, setScheduledFor] = useState<string>("");
   const router = useRouter();
 
   const DRAFT_KEY = `fictionforge-draft-${storyId}`;
 
   // Auto-save draft to localStorage (debounced)
   const autoSaveDraft = useMemo(
-    () => debounce((data: { title: string; content: JSONContent | null; authorNoteBefore: string; authorNoteAfter: string }) => {
+    () => debounce((data: { title: string; content: JSONContent | null; authorNoteBefore: string; authorNoteAfter: string; scheduledFor?: string }) => {
       try {
         localStorage.setItem(DRAFT_KEY, JSON.stringify({
           ...data,
@@ -81,6 +83,7 @@ export default function NewChapterPage() {
             if (draft.content) setContent(draft.content);
             if (draft.authorNoteBefore) setAuthorNoteBefore(draft.authorNoteBefore);
             if (draft.authorNoteAfter) setAuthorNoteAfter(draft.authorNoteAfter);
+            if (draft.scheduledFor) setScheduledFor(draft.scheduledFor);
             if (draft.savedAt) setLastSaved(new Date(draft.savedAt));
             setSaveStatus("saved");
             setDraftRecovered(true);
@@ -107,10 +110,10 @@ export default function NewChapterPage() {
   const handleContentChange = useCallback((newContent: JSONContent) => {
     setContent(newContent);
     setSaveStatus("unsaved");
-    autoSaveDraft({ title, content: newContent, authorNoteBefore, authorNoteAfter });
-  }, [autoSaveDraft, title, authorNoteBefore, authorNoteAfter]);
+    autoSaveDraft({ title, content: newContent, authorNoteBefore, authorNoteAfter, scheduledFor });
+  }, [autoSaveDraft, title, authorNoteBefore, authorNoteAfter, scheduledFor]);
 
-  const handleSubmit = async (e: React.FormEvent, publish: boolean) => {
+  const handleSubmit = async (e: React.FormEvent, publish: boolean, scheduleDate?: string) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -154,6 +157,7 @@ export default function NewChapterPage() {
         published_at: publish ? new Date().toISOString() : null,
         author_note_before: authorNoteBefore || null,
         author_note_after: authorNoteAfter || null,
+        scheduled_for: scheduleDate ? new Date(scheduleDate).toISOString() : null,
       })
       .select()
       .single();
@@ -285,12 +289,40 @@ export default function NewChapterPage() {
             onChange={(e) => {
               setAuthorNoteAfter(e.target.value);
               setSaveStatus("unsaved");
-              autoSaveDraft({ title, content, authorNoteBefore, authorNoteAfter: e.target.value });
+              autoSaveDraft({ title, content, authorNoteBefore, authorNoteAfter: e.target.value, scheduledFor });
             }}
             placeholder="Add a note that appears after the chapter..."
             rows={2}
             className="text-sm"
           />
+        </div>
+
+        {/* Schedule Publishing */}
+        <div className="space-y-2">
+          <Label>Schedule Publishing (Optional)</Label>
+          <div className="flex items-center gap-3">
+            <input
+              type="datetime-local"
+              value={scheduledFor}
+              onChange={(e) => setScheduledFor(e.target.value)}
+              min={new Date().toISOString().slice(0, 16)}
+              className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+            {scheduledFor && (
+              <button
+                type="button"
+                onClick={() => setScheduledFor("")}
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          {scheduledFor && (
+            <p className="text-sm text-muted-foreground">
+              This chapter will be automatically published on {new Date(scheduledFor).toLocaleString()}
+            </p>
+          )}
         </div>
 
         <div className="flex gap-4 pt-4">
@@ -309,6 +341,18 @@ export default function NewChapterPage() {
           >
             {loading ? "Publishing..." : "Publish"}
           </Button>
+          {scheduledFor && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={loading || !title.trim()}
+              onClick={(e) => handleSubmit(e, false, scheduledFor)}
+              className="gap-1"
+            >
+              <Clock className="w-4 h-4" />
+              {loading ? "Scheduling..." : "Schedule"}
+            </Button>
+          )}
         </div>
       </form>
     </div>
