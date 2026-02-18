@@ -274,3 +274,18 @@
   border-top: 1px solid hsl(var(--border));
   margin: 2rem 0;
 }
+
+/* Link Styles */
+.tiptap-editor a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  cursor: text;
+}
+
+/* Image Styles */
+.tiptap-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 1rem 0;
+}

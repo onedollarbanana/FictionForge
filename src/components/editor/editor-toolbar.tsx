@@ -152,6 +152,43 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
 
       <Divider />
 
+      {/* Scene Break, Link, Image */}
+      <ToolbarButton
+        onClick={() => editor.chain().focus().setHorizontalRule().run()}
+        title="Scene Break (Horizontal Rule)"
+      >
+        ―
+      </ToolbarButton>
+      <ToolbarButton
+        onClick={() => {
+          if (editor.isActive('link')) {
+            editor.chain().focus().unsetLink().run()
+          } else {
+            const url = window.prompt('Enter URL:')
+            if (url) {
+              editor.chain().focus().setLink({ href: url }).run()
+            }
+          }
+        }}
+        isActive={editor.isActive('link')}
+        title="Insert Link"
+      >
+        🔗
+      </ToolbarButton>
+      <ToolbarButton
+        onClick={() => {
+          const url = window.prompt('Enter image URL:')
+          if (url) {
+            editor.chain().focus().setImage({ src: url, alt: 'Image' }).run()
+          }
+        }}
+        title="Insert Image (URL)"
+      >
+        🖼️
+      </ToolbarButton>
+
+      <Divider />
+
       {/* Custom nodes */}
       <ToolbarButton
         onClick={() => editor.chain().focus().setStatBox({ variant: 'blue', title: 'STAT BOX' }).run()}

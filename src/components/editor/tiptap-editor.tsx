@@ -9,6 +9,8 @@ import { Table } from '@tiptap/extension-table'
 import { TableRow } from '@tiptap/extension-table-row'
 import { TableCell } from '@tiptap/extension-table-cell'
 import { TableHeader } from '@tiptap/extension-table-header'
+import Link from '@tiptap/extension-link'
+import Image from '@tiptap/extension-image'
 import { EditorToolbar } from './editor-toolbar'
 import { StatBox, SystemMessage, Spoiler } from './extensions'
 import '@/styles/editor.css'
@@ -40,6 +42,16 @@ export function TiptapEditor({ content, onChange, placeholder }: TiptapEditorPro
       TableRow,
       TableCell,
       TableHeader,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-primary underline',
+        },
+      }),
+      Image.configure({
+        inline: false,
+        allowBase64: false,
+      }),
       StatBox,
       SystemMessage,
       Spoiler,

@@ -8,6 +8,8 @@ import { Table } from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
+import Link from '@tiptap/extension-link'
+import Image from '@tiptap/extension-image'
 import { StatBox, SystemMessage, Spoiler } from "@/components/editor/extensions";
 import "@/styles/editor.css";
 
@@ -35,6 +37,16 @@ export function TiptapRenderer({ content, className = "" }: TiptapRendererProps)
       TableRow,
       TableCell,
       TableHeader,
+      Link.configure({
+        openOnClick: true,
+        HTMLAttributes: {
+          class: 'text-primary underline',
+        },
+      }),
+      Image.configure({
+        inline: false,
+        allowBase64: false,
+      }),
       StatBox,
       SystemMessage,
       Spoiler,
