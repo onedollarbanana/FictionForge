@@ -11,6 +11,7 @@ interface Profile {
   avatar_url: string | null
   bio: string | null
   created_at: string
+  role: 'user' | 'moderator' | 'admin'
 }
 
 interface UseUserReturn {
