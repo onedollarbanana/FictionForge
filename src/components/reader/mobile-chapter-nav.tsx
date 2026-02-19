@@ -56,44 +56,44 @@ export function MobileChapterNav({
       >
         {/* Inner container matches content width */}
         <div className={`container mx-auto px-2 ${widthClass}`}>
-          <div className="flex items-center justify-between py-2">
+          <div className="flex items-center justify-between py-1.5">
             {/* Previous Chapter */}
             {prevChapter ? (
               <Link href={`/story/${storyId}/chapter/${prevChapter.id}`}>
                 <Button 
-                  variant="ghost" 
+                  variant="outline" 
                   size="sm" 
-                  className={`flex items-center gap-1 ${
+                  className={`flex items-center gap-1 h-9 px-3 text-xs font-medium ${
                     isAutoTheme 
-                      ? 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800' 
+                      ? 'border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300' 
                       : ''
                   }`}
-                  style={explicitTheme ? { color: explicitTheme.text } : undefined}
+                  style={explicitTheme ? { color: explicitTheme.text, borderColor: explicitTheme.borderColor } : undefined}
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                  <span className="sr-only sm:not-sr-only">Prev</span>
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  Prev
                 </Button>
               </Link>
             ) : (
-              <Button variant="ghost" size="sm" disabled className="opacity-30">
-                <ChevronLeft className="h-4 w-4" />
-                <span className="sr-only sm:not-sr-only">Prev</span>
+              <Button variant="outline" size="sm" disabled className="opacity-30 h-9 px-3 text-xs">
+                <ChevronLeft className="h-3.5 w-3.5" />
+                Prev
               </Button>
             )}
 
             {/* Chapter indicator & TOC link */}
             <Link 
               href={`/story/${storyId}`}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-colors ${
+              className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md transition-colors ${
                 isAutoTheme 
                   ? 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400' 
                   : ''
               }`}
               style={explicitTheme ? { color: explicitTheme.text } : undefined}
             >
-              <List className="h-4 w-4" />
-              <span className="text-sm font-medium">
-                {currentChapterNumber} / {totalChapters}
+              <List className="h-3.5 w-3.5" />
+              <span className="text-xs font-medium">
+                {currentChapterNumber}/{totalChapters}
               </span>
             </Link>
 
@@ -103,10 +103,10 @@ export function MobileChapterNav({
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  className={isAutoTheme 
+                  className={`h-9 w-9 p-0 ${isAutoTheme 
                     ? 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800' 
                     : ''
-                  }
+                  }`}
                   style={explicitTheme ? { color: explicitTheme.text } : undefined}
                 >
                   <Settings className="h-4 w-4" />
@@ -132,23 +132,23 @@ export function MobileChapterNav({
             {nextChapter ? (
               <Link href={`/story/${storyId}/chapter/${nextChapter.id}`}>
                 <Button 
-                  variant="ghost" 
+                  variant="outline" 
                   size="sm" 
-                  className={`flex items-center gap-1 ${
+                  className={`flex items-center gap-1 h-9 px-3 text-xs font-medium ${
                     isAutoTheme 
-                      ? 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800' 
+                      ? 'border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300' 
                       : ''
                   }`}
-                  style={explicitTheme ? { color: explicitTheme.text } : undefined}
+                  style={explicitTheme ? { color: explicitTheme.text, borderColor: explicitTheme.borderColor } : undefined}
                 >
-                  <span className="sr-only sm:not-sr-only">Next</span>
-                  <ChevronRight className="h-4 w-4" />
+                  Next
+                  <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
               </Link>
             ) : (
-              <Button variant="ghost" size="sm" disabled className="opacity-30">
-                <span className="sr-only sm:not-sr-only">Next</span>
-                <ChevronRight className="h-4 w-4" />
+              <Button variant="outline" size="sm" disabled className="opacity-30 h-9 px-3 text-xs">
+                Next
+                <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             )}
           </div>

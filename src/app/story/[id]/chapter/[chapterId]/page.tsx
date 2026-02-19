@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { TiptapRenderer } from "@/components/reader/tiptap-renderer";
 import { ChapterNav } from "@/components/reader/chapter-nav";
-import { ChapterLikeButton } from "@/components/reader/chapter-like-button";
 import { ReadingProgressTracker } from "@/components/reader/reading-progress-tracker";
 import { ViewTracker } from "@/components/reader/view-tracker";
 import { CommentList } from "@/components/reader/comment-list";
@@ -13,6 +12,8 @@ import { SwipeNavigation } from "@/components/reader/swipe-navigation";
 import { MobileChapterNav } from "@/components/reader/mobile-chapter-nav";
 import { ScrollToTop } from "@/components/reader/scroll-to-top";
 import { AutoLibraryAdd } from "@/components/reader/auto-library-add";
+import { ChapterCompleteCard } from "@/components/reader/chapter-complete-card";
+import { ReadingTimeEstimate, countWordsFromTiptap } from "@/components/reader/reading-time-estimate";
 import { ChevronLeft } from "lucide-react";
 import { headers } from "next/headers";
 import { ReportButton } from "@/components/moderation/report-button";
@@ -72,6 +73,9 @@ export default async function ChapterReadingPage({ params }: PageProps) {
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter = currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
 
+  // Calculate word count for reading time
+  const wordCount = countWordsFromTiptap(chapter.content);
+
   // Get the current URL for sharing
   const headersList = await headers();
   const host = headersList.get('host') || 'fiction-forge-mu.vercel.app';
@@ -88,7 +92,10 @@ export default async function ChapterReadingPage({ params }: PageProps) {
         <ChevronLeft className="h-4 w-4" />
         <span className="truncate max-w-[200px]">{chapter.stories?.title}</span>
       </Link>
-      <span className="text-sm font-medium">Chapter {chapter.chapter_number}</span>
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-medium">Chapter {chapter.chapter_number}</span>
+        <ReadingTimeEstimate wordCount={wordCount} />
+      </div>
     </>
   );
 
@@ -135,15 +142,18 @@ export default async function ChapterReadingPage({ params }: PageProps) {
       >
         <header className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold">{chapter.title}</h1>
-          <p className="opacity-70 mt-2">
-            By{" "}
-            <Link
-              href={`/author/${chapter.stories?.profiles?.username}`}
-              className="hover:underline"
-            >
-              {chapter.stories?.profiles?.username || "Unknown"}
-            </Link>
-          </p>
+          <div className="flex items-center gap-3 mt-2">
+            <p className="opacity-70">
+              By{" "}
+              <Link
+                href={`/author/${chapter.stories?.profiles?.username}`}
+                className="hover:underline"
+              >
+                {chapter.stories?.profiles?.username || "Unknown"}
+              </Link>
+            </p>
+            <ReadingTimeEstimate wordCount={wordCount} />
+          </div>
         </header>
 
         {/* Story Default Author's Note (Before) */}
@@ -183,26 +193,31 @@ export default async function ChapterReadingPage({ params }: PageProps) {
           </div>
         )}
 
-        {/* Like Button */}
-        <div className="mt-8 flex justify-center">
-          <ChapterLikeButton
-            chapterId={chapterId}
-            initialLikes={chapter.likes ?? 0}
-            currentUserId={user?.id ?? null}
-          />
-        </div>
-        {/* Report Button - only for logged-in non-authors */}
-        {user && user.id !== chapter.stories?.author_id && (
-          <div className="mt-2 flex justify-center">
-            <ReportButton
-              contentType="chapter"
-              contentId={chapterId}
-              contentTitle={`${chapter.stories?.title} - Ch. ${chapter.chapter_number}: ${chapter.title}`}
-              size="sm"
-              variant="ghost"
-            />
-          </div>
-        )}
+        {/* Chapter Complete Card - replaces standalone like/report/nav */}
+        <ChapterCompleteCard
+          storyId={storyId}
+          storyTitle={chapter.stories?.title ?? ""}
+          chapterId={chapterId}
+          chapterNumber={chapter.chapter_number}
+          chapterTitle={chapter.title}
+          totalChapters={chapters.length}
+          initialLikes={chapter.likes ?? 0}
+          currentUserId={user?.id ?? null}
+          storyAuthorId={chapter.stories?.author_id ?? ""}
+          prevChapter={prevChapter ? { id: prevChapter.id, title: prevChapter.title } : null}
+          nextChapter={nextChapter ? { id: nextChapter.id, title: nextChapter.title } : null}
+          reportButton={
+            user && user.id !== chapter.stories?.author_id ? (
+              <ReportButton
+                contentType="chapter"
+                contentId={chapterId}
+                contentTitle={`${chapter.stories?.title} - Ch. ${chapter.chapter_number}: ${chapter.title}`}
+                size="sm"
+                variant="ghost"
+              />
+            ) : undefined
+          }
+        />
 
         {/* Chapter Navigation - Hidden on mobile (bottom nav shows instead) */}
         <div className="hidden md:block">
