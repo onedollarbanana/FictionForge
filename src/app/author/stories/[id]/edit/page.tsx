@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CoverUpload } from "@/components/story/cover-upload";
+import { CONTENT_WARNINGS } from "@/lib/content-warnings";
 
 const GENRES = [
   "Fantasy",
@@ -53,6 +54,7 @@ export default function EditStoryPage() {
   const [error, setError] = useState("");
   const [hideCommunityBadge, setHideCommunityBadge] = useState(false);
   const [releaseSchedule, setReleaseSchedule] = useState("");
+  const [contentWarnings, setContentWarnings] = useState<string[]>([]);
 
   useEffect(() => {
     async function loadStory() {
@@ -80,6 +82,7 @@ export default function EditStoryPage() {
       setDefaultNoteAfter(data.default_author_note_after || "");
       setHideCommunityBadge(data.hide_community_badge || false);
       setReleaseSchedule(data.release_schedule || "");
+      setContentWarnings(data.content_warnings || []);
       setInitialLoading(false);
     }
 
@@ -112,6 +115,7 @@ export default function EditStoryPage() {
         default_author_note_after: defaultNoteAfter || null,
         hide_community_badge: hideCommunityBadge,
         release_schedule: releaseSchedule || null,
+        content_warnings: contentWarnings.length > 0 ? contentWarnings : null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", storyId);
@@ -259,6 +263,31 @@ export default function EditStoryPage() {
           <p className="text-sm text-muted-foreground mt-1">
             Add tags to help readers find your story
           </p>
+        </div>
+
+        {/* Content Warnings */}
+        <div className="space-y-2">
+          <Label>Content Warnings</Label>
+          <p className="text-xs text-muted-foreground">Select any that apply to help readers make informed choices</p>
+          <div className="grid grid-cols-2 gap-2">
+            {CONTENT_WARNINGS.map((warning) => (
+              <label key={warning.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={contentWarnings.includes(warning.value)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setContentWarnings([...contentWarnings, warning.value]);
+                    } else {
+                      setContentWarnings(contentWarnings.filter(w => w !== warning.value));
+                    }
+                  }}
+                  className="rounded border-zinc-300 dark:border-zinc-600"
+                />
+                {warning.label}
+              </label>
+            ))}
+          </div>
         </div>
 
         {/* Release Schedule */}

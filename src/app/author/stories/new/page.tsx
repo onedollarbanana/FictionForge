@@ -12,6 +12,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { MultiSelect } from '@/components/ui/multi-select'
 import { GENRES, TAGS } from '@/lib/constants'
+import { CONTENT_WARNINGS } from '@/lib/content-warnings'
 
 export default function NewStoryPage() {
   const router = useRouter()
@@ -21,6 +22,7 @@ export default function NewStoryPage() {
   const [blurb, setBlurb] = useState('')
   const [selectedGenres, setSelectedGenres] = useState<string[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [contentWarnings, setContentWarnings] = useState<string[]>([])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,6 +58,7 @@ export default function NewStoryPage() {
           author_id: user.id,
           genres: selectedGenres,
           tags: selectedTags.length > 0 ? selectedTags : null,
+          content_warnings: contentWarnings.length > 0 ? contentWarnings : null,
           status: 'ongoing',
           visibility: 'draft',
           word_count: 0,
@@ -149,6 +152,31 @@ export default function NewStoryPage() {
             maxItems={10}
             placeholder="Select tags..."
           />
+        </div>
+
+        {/* Content Warnings */}
+        <div className="space-y-2">
+          <Label>Content Warnings</Label>
+          <p className="text-xs text-muted-foreground">Select any that apply to help readers make informed choices</p>
+          <div className="grid grid-cols-2 gap-2">
+            {CONTENT_WARNINGS.map((warning) => (
+              <label key={warning.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={contentWarnings.includes(warning.value)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setContentWarnings([...contentWarnings, warning.value]);
+                    } else {
+                      setContentWarnings(contentWarnings.filter(w => w !== warning.value));
+                    }
+                  }}
+                  className="rounded border-zinc-300 dark:border-zinc-600"
+                />
+                {warning.label}
+              </label>
+            ))}
+          </div>
         </div>
 
         <div className="flex justify-end gap-3">
