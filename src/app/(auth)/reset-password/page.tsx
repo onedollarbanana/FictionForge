@@ -4,15 +4,14 @@ export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function LoginPage() {
-  const [email, setEmail] = useState("");
+export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -21,10 +20,20 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
+    const { error } = await supabase.auth.updateUser({
       password,
     });
 
@@ -34,16 +43,15 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/author/dashboard");
-    router.refresh();
+    router.push("/login?message=Password updated successfully");
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-md p-8 space-y-6 bg-card rounded-lg border">
         <div className="text-center">
-          <h1 className="text-2xl font-bold">Welcome back</h1>
-          <p className="text-muted-foreground">Sign in to your account</p>
+          <h1 className="text-2xl font-bold">Reset your password</h1>
+          <p className="text-muted-foreground">Enter your new password below</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -54,19 +62,7 @@ export default function LoginPage() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">New password</Label>
             <Input
               id="password"
               type="password"
@@ -74,29 +70,30 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              minLength={6}
+            />
+            <p className="text-xs text-muted-foreground">
+              Must be at least 6 characters
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm new password</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={6}
             />
           </div>
 
-          <div className="flex justify-end">
-            <Link
-              href="/forgot-password"
-              className="text-sm text-primary hover:underline"
-            >
-              Forgot password?
-            </Link>
-          </div>
-
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Signing in..." : "Sign in"}
+            {loading ? "Updating password..." : "Update password"}
           </Button>
         </form>
-
-        <p className="text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link href="/signup" className="text-primary hover:underline">
-            Sign up
-          </Link>
-        </p>
       </div>
     </div>
   );
