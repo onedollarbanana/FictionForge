@@ -95,6 +95,19 @@ function getSubscriptionPeriod(subscription: Stripe.Subscription) {
   };
 }
 
+// Helper to safely access Invoice properties that Stripe v20 types don't expose
+// These fields still exist in the API response but were removed from TypeScript types
+function getInvoiceFields(invoice: Stripe.Invoice) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const inv = invoice as any;
+  return {
+    subscription: inv.subscription as string | null,
+    amountPaid: (inv.amount_paid ?? inv.amountPaid ?? 0) as number,
+    hostedInvoiceUrl: (inv.hosted_invoice_url ?? inv.hostedInvoiceUrl ?? null) as string | null,
+    paymentIntent: (typeof inv.payment_intent === 'string' ? inv.payment_intent : null) as string | null,
+  };
+}
+
 async function handleSubscriptionCreated(
   supabase: AdminClient,
   subscription: Stripe.Subscription
@@ -208,10 +221,11 @@ async function handleInvoicePaid(
   supabase: AdminClient,
   invoice: Stripe.Invoice
 ) {
-  if (!invoice.subscription) return;
+  const inv = getInvoiceFields(invoice);
+  if (!inv.subscription) return;
 
   // Get subscription to find user
-  const sub = await stripe.subscriptions.retrieve(invoice.subscription as string);
+  const sub = await stripe.subscriptions.retrieve(inv.subscription);
   const userId = sub.metadata.user_id;
   if (!userId) return;
 
@@ -219,7 +233,7 @@ async function handleInvoicePaid(
   const { data: dbSub } = await supabase
     .from('subscriptions')
     .select('id')
-    .eq('stripe_subscription_id', invoice.subscription as string)
+    .eq('stripe_subscription_id', inv.subscription)
     .maybeSingle();
 
   await supabase.from('transactions').insert({
@@ -227,11 +241,11 @@ async function handleInvoicePaid(
     subscription_id: dbSub?.id || null,
     type: 'reader_premium_payment',
     status: 'succeeded',
-    amount_cents: invoice.amount_paid,
+    amount_cents: inv.amountPaid,
     currency: invoice.currency,
-    stripe_payment_intent_id: typeof invoice.payment_intent === 'string' ? invoice.payment_intent : null,
+    stripe_payment_intent_id: inv.paymentIntent,
     stripe_invoice_id: invoice.id,
-    stripe_receipt_url: invoice.hosted_invoice_url,
+    stripe_receipt_url: inv.hostedInvoiceUrl,
     description: `Reader Premium - ${sub.items.data[0]?.price?.recurring?.interval === 'year' ? 'Annual' : 'Monthly'}`,
   });
 }
@@ -240,10 +254,11 @@ async function handlePaymentFailed(
   supabase: AdminClient,
   invoice: Stripe.Invoice
 ) {
-  if (!invoice.subscription) return;
+  const inv = getInvoiceFields(invoice);
+  if (!inv.subscription) return;
 
   await supabase
     .from('subscriptions')
     .update({ status: 'past_due', updated_at: new Date().toISOString() })
-    .eq('stripe_subscription_id', invoice.subscription as string);
+    .eq('stripe_subscription_id', inv.subscription);
 }
