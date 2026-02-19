@@ -26,6 +26,7 @@ import type { ExperienceData } from '@/components/experience/types'
 import { AchievementBadge } from '@/components/achievements/achievement-badge'
 import type { FeaturedBadge } from '@/components/achievements/types'
 import { ProfileBorder } from '@/components/profile/profile-border'
+import { ReportButton } from '@/components/moderation/report-button'
 
 // Force dynamic rendering - no static caching
 export const dynamic = 'force-dynamic'
@@ -326,6 +327,15 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   Edit Profile
                 </Link>
               </div>
+            )}
+            {!isOwnProfile && (
+              <ReportButton
+                contentType="profile"
+                contentId={profile.id}
+                contentTitle={profile.username}
+                variant="ghost"
+                size="sm"
+              />
             )}
           </div>
         </CardContent>
