@@ -76,6 +76,13 @@ export function Footer() {
           {/* Connect */}
           <div className="space-y-4">
             <h3 className="font-semibold">Connect</h3>
+            <ul className="space-y-2 text-sm mb-3">
+              <li>
+                <Link href="/support" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Support Center
+                </Link>
+              </li>
+            </ul>
             <div className="flex gap-4">
               <a
                 href="https://twitter.com/fictionforge"
