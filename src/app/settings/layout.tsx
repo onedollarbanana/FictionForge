@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { User, Circle, Bell, Trash2 } from "lucide-react";
+import { User, Circle, Bell, Trash2, CreditCard } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +20,7 @@ export default async function SettingsLayout({
   const navItems = [
     { href: "/settings/profile", label: "Profile", icon: User },
     { href: "/settings/borders", label: "Borders", icon: Circle },
+    { href: "/settings/billing", label: "Billing", icon: CreditCard },
     // Future settings pages:
     { href: "/settings/notifications", label: "Notifications", icon: Bell },
     // { href: "/settings/privacy", label: "Privacy", icon: Shield },
