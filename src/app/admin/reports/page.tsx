@@ -34,7 +34,7 @@ export default async function ReportsPage() {
       resolved_at,
       resolution_notes,
       reporter:profiles!reporter_id(id, username, avatar_url),
-      resolver:profiles!resolved_by(username)
+      resolver:profiles!moderator_id(username)
     `)
     .order("created_at", { ascending: false })
     .limit(100);
