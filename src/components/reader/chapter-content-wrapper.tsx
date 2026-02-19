@@ -142,6 +142,7 @@ export function ChapterContentWrapper({ children, headerContent, storyTitle, sto
         className={`container mx-auto px-5 md:px-4 py-8 pb-24 md:pb-8 ${widthClass} ${fontClass} ${lineHeightClass}`}
         style={{ fontSize: `${settings.fontSize}px` }}
         onClick={handleContentTap}
+        data-reading-settings
       >
         {children}
       </article>

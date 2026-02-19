@@ -90,3 +90,24 @@ body.immersive-mode .reader-bottom-nav {
 .reader-bottom-nav {
   transition: transform 0.3s ease, opacity 0.3s ease;
 }
+
+/* Reading settings: override Tailwind Typography prose defaults */
+/* Prose uses rem-based sizes and its own line-height/font-family, */
+/* so reading settings on the parent article don't cascade. Fix with inherit. */
+[data-reading-settings] .prose :where(p, li, blockquote, td, th, dd, dt, figcaption) {
+  font-size: inherit !important;
+  line-height: inherit !important;
+  font-family: inherit !important;
+}
+[data-reading-settings] .prose :where(h1, h2, h3, h4) {
+  font-family: inherit !important;
+}
+/* Reading themes - override prose text colors */
+[data-reading-theme="sepia"] .prose,
+[data-reading-theme="sepia"] .prose :where(p, li, blockquote, h1, h2, h3, h4, a, strong, em, code, td, th) {
+  color: inherit !important;
+}
+[data-reading-theme="night"] .prose,
+[data-reading-theme="night"] .prose :where(p, li, blockquote, h1, h2, h3, h4, a, strong, em, code, td, th) {
+  color: inherit !important;
+}
