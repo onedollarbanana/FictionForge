@@ -55,7 +55,7 @@ export function TiptapRenderer({ content, className = "" }: TiptapRendererProps)
     editable: false,
     editorProps: {
       attributes: {
-        class: `prose prose-lg dark:prose-invert max-w-none ${className}`,
+        class: `tiptap-editor prose dark:prose-invert max-w-none ${className}`,
       },
     },
   });

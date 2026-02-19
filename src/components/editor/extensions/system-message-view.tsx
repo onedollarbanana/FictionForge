@@ -12,7 +12,7 @@ const typeIcons: Record<string, string> = {
   quest: '🎯',
 }
 
-export function SystemMessageNodeView({ node, updateAttributes }: NodeViewProps) {
+export function SystemMessageNodeView({ node, updateAttributes, editor }: NodeViewProps) {
   const type = node.attrs.type || 'info'
 
   return (
@@ -21,18 +21,20 @@ export function SystemMessageNodeView({ node, updateAttributes }: NodeViewProps)
         {typeIcons[type] || '📢'}
       </div>
       <NodeViewContent className="system-message-content" />
-      <select
-        value={type}
-        onChange={(e) => updateAttributes({ type: e.target.value })}
-        className="system-message-type-select"
-        contentEditable={false}
-      >
-        {types.map((t) => (
-          <option key={t} value={t}>
-            {t.charAt(0).toUpperCase() + t.slice(1)}
-          </option>
-        ))}
-      </select>
+      {editor.isEditable && (
+        <select
+          value={type}
+          onChange={(e) => updateAttributes({ type: e.target.value })}
+          className="system-message-type-select"
+          contentEditable={false}
+        >
+          {types.map((t) => (
+            <option key={t} value={t}>
+              {t.charAt(0).toUpperCase() + t.slice(1)}
+            </option>
+          ))}
+        </select>
+      )}
     </NodeViewWrapper>
   )
 }
