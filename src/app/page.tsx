@@ -23,15 +23,11 @@ export default async function Home() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Fetch user's genre preferences (if logged in)
+  // Fetch user's genre order (behavioral weights > stated preferences)
   let userGenrePreferences: string[] = [];
   if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('genre_preferences')
-      .eq('id', user.id)
-      .single();
-    userGenrePreferences = profile?.genre_preferences || [];
+    const { getUserGenreOrder } = await import('@/lib/recommendations');
+    userGenrePreferences = await getUserGenreOrder(user.id, supabase);
   }
 
   // Fetch Continue Reading data for logged-in users

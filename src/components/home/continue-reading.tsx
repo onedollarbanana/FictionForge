@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, BookOpen, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useGenreRecompute } from "@/hooks/use-genre-recompute";
 
 interface ReadingItem {
   story_id: string;
@@ -21,6 +22,7 @@ interface ContinueReadingProps {
 }
 
 export function ContinueReading({ items }: ContinueReadingProps) {
+  useGenreRecompute();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
