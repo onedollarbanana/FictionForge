@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select'
 import { ArrowLeft, Send } from 'lucide-react'
 import { showToast } from '@/components/ui/toast'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { CATEGORY_LABELS, type TicketCategory } from '@/lib/support'
 
 export default function NewTicketPage() {
@@ -48,6 +49,13 @@ export default function NewTicketPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         showToast('You must be signed in to submit a ticket.', 'error')
+        setLoading(false)
+        return
+      }
+
+      const rateCheck = await checkRateLimit(supabase, user.id, 'ticket')
+      if (!rateCheck.allowed) {
+        showToast(rateCheck.message || 'Rate limited', 'error')
         setLoading(false)
         return
       }

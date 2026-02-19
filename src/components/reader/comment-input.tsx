@@ -3,6 +3,8 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { showToast } from "@/components/ui/toast";
 
 interface CommentInputProps {
   chapterId: string;
@@ -101,6 +103,13 @@ export function CommentInput({
     
     setIsSubmitting(true);
     const supabase = createClient();
+
+    const rateCheck = await checkRateLimit(supabase, currentUserId, 'comment');
+    if (!rateCheck.allowed) {
+      showToast(rateCheck.message || 'Rate limited', 'error');
+      setIsSubmitting(false);
+      return;
+    }
     
     const { error } = await supabase.from("comments").insert({
       chapter_id: chapterId,

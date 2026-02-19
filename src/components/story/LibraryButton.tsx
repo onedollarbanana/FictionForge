@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { Button } from "@/components/ui/button";
 import { 
   BookPlus, ChevronDown, Check, BookOpen, CheckCircle, XCircle, 
@@ -106,6 +107,12 @@ export function LibraryButton({ storyId, initialFollowerCount = 0 }: LibraryButt
     const defaultNotify = STATUS_OPTIONS.find(o => o.value === initialStatus)?.defaultNotify ?? false;
 
     try {
+      const rateCheck = await checkRateLimit(supabase, userId, 'follow');
+      if (!rateCheck.allowed) {
+        setActionLoading(false);
+        return;
+      }
+
       const { error } = await supabase
         .from("follows")
         .insert({

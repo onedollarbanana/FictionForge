@@ -5,6 +5,7 @@ import { StarRating } from './star-rating';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { showToast } from '@/components/ui/toast';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 interface StoryRatingSectionProps {
@@ -142,7 +143,14 @@ export function StoryRatingSection({ storyId, authorId }: StoryRatingSectionProp
         if (error) throw error;
         showToast('Rating updated!', 'success');
       } else {
-        // Insert new
+        // Insert new - check rate limit
+        const rateCheck = await checkRateLimit(supabase, userId, 'review');
+        if (!rateCheck.allowed) {
+          showToast(rateCheck.message || 'Rate limited', 'error');
+          setIsSaving(false);
+          return;
+        }
+
         const { error } = await supabase
           .from('story_ratings')
           .insert(ratingData);

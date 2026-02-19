@@ -23,6 +23,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export type ReportContentType = "story" | "chapter" | "comment" | "rating" | "profile";
 
@@ -74,6 +75,12 @@ export function ReportButton({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setError("You must be logged in to report content");
+        return;
+      }
+
+      const rateCheck = await checkRateLimit(supabase, user.id, 'report');
+      if (!rateCheck.allowed) {
+        setError(rateCheck.message || 'Rate limited');
         return;
       }
 
