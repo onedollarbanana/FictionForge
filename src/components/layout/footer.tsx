@@ -131,6 +131,9 @@ export function Footer() {
             <Link href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">
               Terms of Service
             </Link>
+            <Link href="/dmca" className="text-muted-foreground hover:text-foreground transition-colors">
+              DMCA
+            </Link>
           </div>
         </div>
       </div>
