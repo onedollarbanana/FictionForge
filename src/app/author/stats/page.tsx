@@ -347,7 +347,7 @@ export default function WritingStatsPage() {
       {/* Weekly Activity Chart */}
       <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-6">Weekly Activity (Last 4 Weeks)</h2>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {weeklyData.map((week) => (
             <div key={week.label} className="space-y-2">
               <p className="text-xs text-zinc-500 text-center font-medium">{week.label}</p>

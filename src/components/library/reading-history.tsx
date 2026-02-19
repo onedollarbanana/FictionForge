@@ -72,7 +72,7 @@ export function ReadingHistory({ entries, stats }: ReadingHistoryProps) {
   return (
     <div className="space-y-6">
       {/* Stats summary */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="border rounded-lg p-4 text-center">
           <p className="text-2xl font-bold">{stats.totalChapters}</p>
           <p className="text-sm text-muted-foreground">Total Chapters</p>
