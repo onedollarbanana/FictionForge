@@ -7,6 +7,7 @@ import { useUser } from '@/lib/hooks/useUser'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { MobileNav } from '@/components/layout/mobile-nav'
 import { LayoutDashboard, Settings, LogOut, Loader2, User } from 'lucide-react'
+import { NotificationBell } from '@/components/notifications/notification-bell'
 
 export function Header() {
   const { user, profile, loading } = useUser()
@@ -55,6 +56,7 @@ export function Header() {
                     <User className="h-5 w-5" />
                   </Link>
                 )}
+                <NotificationBell />
                 <Link
                   href="/author/dashboard"
                   className="p-2 text-muted-foreground hover:text-foreground transition-colors"

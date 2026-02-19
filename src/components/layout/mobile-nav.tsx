@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useUser } from '@/lib/hooks/useUser'
-import { Menu, X, Home, BookOpen, Pen, LogIn, LogOut, UserPlus, Library, Settings, User } from 'lucide-react'
+import { Menu, X, Home, BookOpen, Bell, Pen, LogIn, LogOut, UserPlus, Library, Settings, User } from 'lucide-react'
+import { getUnreadCount } from '@/lib/notifications'
 
 interface MobileNavProps {
   onLogout: () => void
@@ -16,6 +17,7 @@ export function MobileNav({ onLogout }: MobileNavProps) {
   const { user, profile } = useUser()
   const pathname = usePathname()
   const menuRef = useRef<HTMLDivElement>(null)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   // Close nav when route changes
   useEffect(() => {
@@ -46,6 +48,13 @@ export function MobileNav({ onLogout }: MobileNavProps) {
       document.body.style.overflow = ''
     }
   }, [isOpen])
+
+  // Fetch unread notification count
+  useEffect(() => {
+    if (user) {
+      getUnreadCount().then(setUnreadCount).catch(() => {})
+    }
+  }, [user])
 
   return (
     <div className="relative md:hidden" ref={menuRef}>
@@ -110,6 +119,14 @@ export function MobileNav({ onLogout }: MobileNavProps) {
                       <span>My Profile</span>
                     </Link>
                   )}
+                  <Link
+                    href="/notifications"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-muted transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Bell className="h-5 w-5 text-muted-foreground" />
+                    <span>Notifications{unreadCount > 0 ? ` (${unreadCount})` : ''}</span>
+                  </Link>
                   <Link
                     href="/author/dashboard"
                     className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-muted transition-colors"
