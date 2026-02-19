@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { User, Circle, Bell } from "lucide-react";
+import { User, Circle, Bell, Trash2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +23,7 @@ export default async function SettingsLayout({
     // Future settings pages:
     { href: "/settings/notifications", label: "Notifications", icon: Bell },
     // { href: "/settings/privacy", label: "Privacy", icon: Shield },
+    { href: "/settings/account", label: "Account", icon: Trash2 },
   ];
 
   return (

@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { ToastProvider } from '@/components/ui/toast'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
+import { CookieConsent } from '@/components/cookie-consent'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -51,6 +52,7 @@ export default function RootLayout({
               </main>
               <Footer />
             </div>
+            <CookieConsent />
           </ToastProvider>
         </ThemeProvider>
       </body>
