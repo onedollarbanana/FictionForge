@@ -140,7 +140,10 @@ export function ChapterContentWrapper({ children, headerContent, storyTitle, sto
       {/* Chapter Content with Applied Settings */}
       <article 
         className={`container mx-auto px-5 md:px-4 py-8 pb-24 md:pb-8 ${widthClass} ${fontClass} ${lineHeightClass}`}
-        style={{ fontSize: `${settings.fontSize}px` }}
+        style={{ 
+          fontSize: `${settings.fontSize}px`,
+          filter: settings.brightness !== 100 ? `brightness(${settings.brightness / 100})` : undefined,
+        }}
         onClick={handleContentTap}
         data-reading-settings
       >

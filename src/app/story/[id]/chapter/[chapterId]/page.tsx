@@ -15,6 +15,7 @@ import { AutoLibraryAdd } from "@/components/reader/auto-library-add";
 import { ChapterCompleteCard } from "@/components/reader/chapter-complete-card";
 import { CollapsibleComments } from "@/components/reader/collapsible-comments";
 import { ReadingTimeEstimate, countWordsFromTiptap } from "@/components/reader/reading-time-estimate";
+import { ScrollPositionTracker } from "@/components/reader/scroll-position-tracker";
 import { ChevronLeft } from "lucide-react";
 import { headers } from "next/headers";
 import { ReportButton } from "@/components/moderation/report-button";
@@ -113,6 +114,14 @@ export default async function ChapterReadingPage({ params }: PageProps) {
 
       {/* Track reading progress */}
       <ReadingProgressTracker
+        storyId={storyId}
+        chapterId={chapterId}
+        chapterNumber={chapter.chapter_number}
+        userId={user?.id ?? null}
+      />
+
+      {/* Track scroll position for resume reading */}
+      <ScrollPositionTracker
         storyId={storyId}
         chapterId={chapterId}
         chapterNumber={chapter.chapter_number}

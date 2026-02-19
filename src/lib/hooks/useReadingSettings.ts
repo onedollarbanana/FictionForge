@@ -8,6 +8,7 @@ export interface ReadingSettings {
   lineHeight: 'tight' | 'normal' | 'relaxed'
   theme: 'auto' | 'light' | 'dark' | 'sepia' | 'night'
   width: 'narrow' | 'medium' | 'wide'
+  brightness: number // 50-150, default 100
 }
 
 const DEFAULT_SETTINGS: ReadingSettings = {
@@ -16,6 +17,7 @@ const DEFAULT_SETTINGS: ReadingSettings = {
   lineHeight: 'normal',
   theme: 'auto', // Follows site dark/light mode
   width: 'medium',
+  brightness: 100,
 }
 
 const STORAGE_KEY = 'fictionforge-reading-settings'

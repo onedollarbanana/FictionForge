@@ -152,6 +152,21 @@ function SettingsContent({
         </div>
       </div>
 
+      {/* Brightness */}
+      <div>
+        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2 block">
+          Brightness: {settings.brightness}%
+        </label>
+        <Slider
+          value={[settings.brightness]}
+          onValueChange={([value]) => onUpdateSettings({ brightness: value })}
+          min={50}
+          max={150}
+          step={5}
+          className="w-full"
+        />
+      </div>
+
       {/* Reset Button */}
       <Button
         variant="ghost"
