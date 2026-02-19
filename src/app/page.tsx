@@ -9,6 +9,7 @@ import {
   getStaffPicks 
 } from "@/lib/rankings";
 import { HeroSection } from "@/components/home/hero-section";
+import { AnnouncementBanner } from "@/components/home/announcement-banner";
 import { ContinueReading } from "@/components/home/continue-reading";
 import { GenreLinks } from "@/components/home/genre-links";
 import { StoryCarousel } from "@/components/home/story-carousel";
@@ -129,6 +130,9 @@ export default async function Home() {
   return (
     <div className="bg-background min-h-screen">
       <main className="container mx-auto px-4 py-8">
+        {/* Announcement Banner */}
+        <AnnouncementBanner />
+
         {/* Hero Section - only for logged-out users */}
         <HeroSection isLoggedIn={isLoggedIn} />
 
