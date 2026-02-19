@@ -115,3 +115,49 @@ export async function getBecauseYouRead(
   
   return shelves.filter(Boolean) as { sourceTitle: string; sourceId: string; stories: StoryCardData[] }[];
 }
+
+/**
+ * Get collaborative filtering recommendations.
+ * "Readers like you enjoyed" - finds stories read by users with similar taste.
+ */
+export async function getCollaborativeRecommendations(
+  userId: string,
+  limit: number = 10,
+  supabase?: SupabaseClientType
+): Promise<StoryCardData[]> {
+  const client = supabase || await createClient();
+  
+  const { data, error } = await client.rpc('get_collaborative_recommendations', {
+    target_user_id: userId,
+    limit_count: limit
+  });
+  
+  if (error) {
+    console.error('Error fetching collaborative recommendations:', error);
+    return [];
+  }
+  
+  if (!data?.length) return [];
+  
+  return data.map((row: any) => ({
+    id: row.id,
+    title: row.title,
+    tagline: row.tagline,
+    blurb: row.blurb,
+    cover_url: row.cover_url,
+    genres: row.genres,
+    tags: row.tags,
+    status: row.status,
+    total_views: row.total_views,
+    follower_count: row.follower_count,
+    chapter_count: row.chapter_count,
+    rating_average: row.rating_average,
+    rating_count: row.rating_count,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    profiles: {
+      username: row.author_username,
+      display_name: row.author_display_name,
+    },
+  })) as StoryCardData[];
+}

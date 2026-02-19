@@ -12,7 +12,7 @@ import { AnnouncementBanner } from "@/components/home/announcement-banner";
 import { ContinueReading } from "@/components/home/continue-reading";
 import { GenreLinks } from "@/components/home/genre-links";
 import { StoryCarousel } from "@/components/home/story-carousel";
-import { Rocket, Clock, Heart, Sparkles, Award, Trophy, Sword, Search, Skull, Gamepad2, Scroll, BookOpen } from "lucide-react";
+import { Rocket, Clock, Heart, Sparkles, Award, Trophy, Sword, Search, Skull, Gamepad2, Scroll, BookOpen, Users } from "lucide-react";
 import type { StoryCardData } from "@/components/story/story-card";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +45,9 @@ export default async function Home() {
 
   // "Because you read X" shelves for logged-in users
   let becauseYouReadShelves: { sourceTitle: string; sourceId: string; stories: StoryCardData[] }[] = [];
+
+  // Collaborative filtering recommendations
+  let collabRecommendations: StoryCardData[] = [];
 
   const GENRE_SHELVES = [
     { name: 'Fantasy', icon: <Sword className="h-5 w-5 text-purple-500" />, color: 'text-purple-500' },
@@ -143,9 +146,10 @@ export default async function Home() {
         });
     }
 
-    // Fetch "Because you read" recommendations
-    const { getBecauseYouRead } = await import('@/lib/recommendations');
+    // Fetch "Because you read" and collaborative recommendations
+    const { getBecauseYouRead, getCollaborativeRecommendations } = await import('@/lib/recommendations');
     becauseYouReadShelves = await getBecauseYouRead(user.id, 8, supabase);
+    collabRecommendations = await getCollaborativeRecommendations(user.id, 10, supabase);
   }
 
   // Wait for rankings and genre results to complete
@@ -196,6 +200,16 @@ export default async function Home() {
             viewAllLink={`/story/${shelf.sourceId}`}
           />
         ))}
+
+        {/* Collaborative filtering shelf */}
+        {collabRecommendations.length > 0 && (
+          <StoryCarousel
+            title="Readers like you enjoyed"
+            icon={<Users className="h-5 w-5 text-indigo-500" />}
+            stories={collabRecommendations}
+            viewAllLink="/browse"
+          />
+        )}
 
         {/* Genre Quick Links */}
         <GenreLinks />
