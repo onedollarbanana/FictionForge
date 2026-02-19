@@ -313,9 +313,9 @@ export default function StoryOverviewPage() {
 
       {/* Blurb */}
       {story.blurb && (
-        <div className="mb-8 p-4 rounded-lg border bg-card">
+        <div className="mb-8 p-4 rounded-lg border bg-card overflow-hidden">
           <h2 className="font-semibold mb-2">Description</h2>
-          <p className="text-muted-foreground whitespace-pre-wrap">{story.blurb}</p>
+          <p className="text-muted-foreground whitespace-pre-wrap break-words">{story.blurb}</p>
         </div>
       )}
 

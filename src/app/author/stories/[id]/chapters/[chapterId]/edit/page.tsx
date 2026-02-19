@@ -25,6 +25,21 @@ function debounce<T extends (...args: Parameters<T>) => void>(
   };
 }
 
+// Get browser timezone
+function getBrowserTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return "";
+  }
+}
+
+// Get minimum schedule time (5 minutes from now) as datetime-local value
+function getMinScheduleTime(): string {
+  const min = new Date(Date.now() + 5 * 60 * 1000);
+  return min.toISOString().slice(0, 16);
+}
+
 interface Chapter {
   id: string;
   title: string;
@@ -55,6 +70,7 @@ export default function EditChapterPage() {
   const [scheduledFor, setScheduledFor] = useState<string>("");
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [browserTimezone] = useState(getBrowserTimezone);
   const router = useRouter();
 
   // Word count from Tiptap JSON
@@ -161,6 +177,17 @@ export default function EditChapterPage() {
       setError("Chapter content cannot be empty");
       setSaving(false);
       return;
+    }
+
+    // Validate schedule is at least 5 minutes in the future
+    if (scheduleDate) {
+      const scheduledTime = new Date(scheduleDate).getTime();
+      const minTime = Date.now() + 5 * 60 * 1000;
+      if (scheduledTime < minTime) {
+        setError("Scheduled time must be at least 5 minutes in the future");
+        setSaving(false);
+        return;
+      }
     }
 
     const wasPublished = chapter?.is_published;
@@ -335,9 +362,14 @@ export default function EditChapterPage() {
                 type="datetime-local"
                 value={scheduledFor}
                 onChange={(e) => setScheduledFor(e.target.value)}
-                min={new Date().toISOString().slice(0, 16)}
+                min={getMinScheduleTime()}
                 className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
+              {browserTimezone && (
+                <span className="text-xs text-muted-foreground">
+                  {browserTimezone}
+                </span>
+              )}
               {scheduledFor && (
                 <button
                   type="button"
