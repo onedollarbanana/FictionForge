@@ -354,3 +354,77 @@ export async function getStoriesByGenre(genre: string, limit: number = 10, supab
 
   return (data || []) as unknown as StoryCardData[];
 }
+
+export async function getTrendingThisWeek(limit: number = 10, supabase?: SupabaseClientType): Promise<StoryCardData[]> {
+  const client = supabase || await createClient();
+  
+  const { data, error } = await client.rpc('get_trending_this_week', { limit_count: limit });
+  
+  if (error) {
+    console.error('Error fetching trending this week:', error);
+    // Fallback to popular by views if RPC fails
+    return getPopularThisWeek(limit, client);
+  }
+  
+  if (!data?.length) {
+    // No reading activity data yet, fall back
+    return getPopularThisWeek(limit, client);
+  }
+  
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    title: row.title,
+    tagline: row.tagline,
+    blurb: row.blurb,
+    cover_url: row.cover_url,
+    genres: row.genres,
+    tags: row.tags,
+    status: row.status,
+    total_views: row.total_views,
+    follower_count: row.follower_count,
+    chapter_count: row.chapter_count,
+    rating_average: row.rating_average,
+    rating_count: row.rating_count,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    profiles: {
+      username: row.author_username,
+      display_name: row.author_display_name,
+    },
+  })) as StoryCardData[];
+}
+
+export async function getFastestGrowing(limit: number = 10, supabase?: SupabaseClientType): Promise<StoryCardData[]> {
+  const client = supabase || await createClient();
+  
+  const { data, error } = await client.rpc('get_fastest_growing', { limit_count: limit });
+  
+  if (error) {
+    console.error('Error fetching fastest growing:', error);
+    return [];
+  }
+  
+  if (!data?.length) return [];
+  
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    title: row.title,
+    tagline: row.tagline,
+    blurb: row.blurb,
+    cover_url: row.cover_url,
+    genres: row.genres,
+    tags: row.tags,
+    status: row.status,
+    total_views: row.total_views,
+    follower_count: row.follower_count,
+    chapter_count: row.chapter_count,
+    rating_average: row.rating_average,
+    rating_count: row.rating_count,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    profiles: {
+      username: row.author_username,
+      display_name: row.author_display_name,
+    },
+  })) as StoryCardData[];
+}

@@ -5,14 +5,16 @@ import {
   getLatestUpdates,
   getNewReleases,
   getStaffPicks,
-  getStoriesByGenre 
+  getStoriesByGenre,
+  getTrendingThisWeek,
+  getFastestGrowing 
 } from "@/lib/rankings";
 import { HeroSection } from "@/components/home/hero-section";
 import { AnnouncementBanner } from "@/components/home/announcement-banner";
 import { ContinueReading } from "@/components/home/continue-reading";
 import { GenreLinks } from "@/components/home/genre-links";
 import { StoryCarousel } from "@/components/home/story-carousel";
-import { Rocket, Clock, Heart, Sparkles, Award, Trophy, Sword, Search, Skull, Gamepad2, Scroll, BookOpen, Users } from "lucide-react";
+import { Rocket, Clock, Heart, Sparkles, Award, Trophy, Sword, Search, Skull, Gamepad2, Scroll, BookOpen, Users, TrendingUp, Flame } from "lucide-react";
 import type { StoryCardData } from "@/components/story/story-card";
 
 export const dynamic = "force-dynamic";
@@ -66,6 +68,8 @@ export default async function Home() {
     getNewReleases(10, supabase),
     getStaffPicks(10, supabase),
     getCommunityPicksForHomepage(10, supabase),
+    getTrendingThisWeek(10, supabase),
+    getFastestGrowing(10, supabase),
   ]);
 
   const genrePromise = Promise.all(
@@ -153,7 +157,7 @@ export default async function Home() {
   }
 
   // Wait for rankings and genre results to complete
-  const [risingStars, latestUpdates, newReleases, staffPicks, communityPicks] = await rankingsPromise;
+  const [risingStars, latestUpdates, newReleases, staffPicks, communityPicks, trendingThisWeek, fastestGrowing] = await rankingsPromise;
   const genreResults = await genrePromise;
 
   // Build ordered genre shelves: user's preferred genres first, then the rest
@@ -215,6 +219,15 @@ export default async function Home() {
         <GenreLinks />
 
         {/* Story Carousels */}
+        {trendingThisWeek.length > 0 && (
+          <StoryCarousel
+            title="Trending This Week"
+            icon={<Flame className="h-5 w-5 text-orange-500" />}
+            stories={trendingThisWeek}
+            viewAllLink="/browse"
+            emptyMessage="Check back soon!"
+          />
+        )}
         {staffPicks.length > 0 && (
           <StoryCarousel
             title="Staff Picks"
@@ -297,6 +310,16 @@ export default async function Home() {
           viewAllLink="/rising-stars"
           emptyMessage="New stories coming soon!"
         />
+
+        {fastestGrowing.length > 0 && (
+          <StoryCarousel
+            title="Fastest Growing"
+            icon={<TrendingUp className="h-5 w-5 text-green-500" />}
+            stories={fastestGrowing}
+            viewAllLink="/browse"
+            emptyMessage="Check back soon!"
+          />
+        )}
 
         <StoryCarousel
           title="Latest Updates"
