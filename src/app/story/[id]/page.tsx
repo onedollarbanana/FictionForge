@@ -13,6 +13,8 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { RelatedStories } from "@/components/story/related-stories";
 import { MoreFromAuthor } from "@/components/story/more-from-author";
 import { ReportButton } from "@/components/moderation/report-button";
+import { hasMatureContent } from "@/lib/content-warnings";
+import { ContentWarningGate } from "@/components/story/content-warning-gate";
 import { NominateButton } from "@/components/story/nominate-button";
 import { CommunityPickBadge } from "@/components/story/community-pick-badge";
 import { getCommunityPickBadge } from "@/lib/community-picks";
@@ -110,8 +112,9 @@ export default async function StoryPage({ params }: PageProps) {
   const communityPickData = await getCommunityPickBadge(id, supabase);
 
   const authorName = story.profiles?.display_name || story.profiles?.username || 'Unknown';
+  const isMature = hasMatureContent(story.content_warnings || []);
 
-  return (
+  const pageContent = (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Breadcrumb */}
       <Breadcrumb items={[
@@ -213,6 +216,17 @@ export default async function StoryPage({ params }: PageProps) {
                     {tag}
                   </Badge>
                 </Link>
+              ))}
+            </div>
+          )}
+
+          {/* Content Warnings */}
+          {story.content_warnings && story.content_warnings.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {story.content_warnings.map((warning: string) => (
+                <span key={warning} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                  ⚠️ {warning.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                </span>
               ))}
             </div>
           )}
@@ -348,4 +362,14 @@ export default async function StoryPage({ params }: PageProps) {
       />
     </div>
   );
+
+  if (isMature) {
+    return (
+      <ContentWarningGate warnings={story.content_warnings} storyTitle={story.title}>
+        {pageContent}
+      </ContentWarningGate>
+    );
+  }
+
+  return pageContent;
 }
