@@ -64,3 +64,29 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
+
+/* Reading mode: hides site header/footer when reader is active */
+body.reading-mode > div > div > header,
+body.reading-mode > div > div > footer {
+  display: none !important;
+}
+body.reading-mode > div > div > main {
+  /* Remove any top margin/padding that header would have created */
+  padding-top: 0 !important;
+}
+
+/* Immersive mode: hides reader chrome (sticky header + bottom nav) */
+body.immersive-mode .reader-sticky-header {
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+body.immersive-mode .reader-bottom-nav {
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.reader-sticky-header,
+.reader-bottom-nav {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}

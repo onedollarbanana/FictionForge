@@ -13,6 +13,7 @@ import { MobileChapterNav } from "@/components/reader/mobile-chapter-nav";
 import { ScrollToTop } from "@/components/reader/scroll-to-top";
 import { AutoLibraryAdd } from "@/components/reader/auto-library-add";
 import { ChapterCompleteCard } from "@/components/reader/chapter-complete-card";
+import { CollapsibleComments } from "@/components/reader/collapsible-comments";
 import { ReadingTimeEstimate, countWordsFromTiptap } from "@/components/reader/reading-time-estimate";
 import { ChevronLeft } from "lucide-react";
 import { headers } from "next/headers";
@@ -152,7 +153,7 @@ export default async function ChapterReadingPage({ params }: PageProps) {
                 {chapter.stories?.profiles?.username || "Unknown"}
               </Link>
             </p>
-            <ReadingTimeEstimate wordCount={wordCount} />
+            <ReadingTimeEstimate wordCount={wordCount} variant="full" />
           </div>
         </header>
 
@@ -230,12 +231,14 @@ export default async function ChapterReadingPage({ params }: PageProps) {
           />
         </div>
 
-        {/* Comments */}
-        <CommentList
-          chapterId={chapterId}
-          currentUserId={user?.id ?? null}
-          storyAuthorId={chapter.stories?.author_id ?? ""}
-        />
+        {/* Comments - collapsed on mobile for binge readers */}
+        <CollapsibleComments>
+          <CommentList
+            chapterId={chapterId}
+            currentUserId={user?.id ?? null}
+            storyAuthorId={chapter.stories?.author_id ?? ""}
+          />
+        </CollapsibleComments>
 
         {/* Mobile Bottom Navigation */}
         <MobileChapterNav

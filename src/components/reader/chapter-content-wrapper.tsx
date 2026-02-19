@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode } from 'react'
+import { ReactNode, useEffect, useCallback, useState } from 'react'
 import { ReadingSettingsPanel } from './reading-settings-panel'
 import { ScrollProgressBar } from './scroll-progress-bar'
 import { ScrollToTopButton } from './scroll-to-top-button'
@@ -29,6 +29,45 @@ const themeInlineStyles: Record<'light' | 'dark' | 'sepia' | 'night', { bg: stri
 
 export function ChapterContentWrapper({ children, headerContent, storyTitle, storyUrl }: ChapterContentWrapperProps) {
   const { settings, updateSettings, resetSettings, isLoaded } = useReadingSettings()
+  const [immersive, setImmersive] = useState(false)
+
+  // Add reading-mode class to body on mount, remove on unmount
+  useEffect(() => {
+    document.body.classList.add('reading-mode')
+    return () => {
+      document.body.classList.remove('reading-mode')
+      document.body.classList.remove('immersive-mode')
+    }
+  }, [])
+
+  // Toggle immersive mode on body
+  useEffect(() => {
+    if (immersive) {
+      document.body.classList.add('immersive-mode')
+    } else {
+      document.body.classList.remove('immersive-mode')
+    }
+  }, [immersive])
+
+  // Tap middle of content to toggle immersive mode
+  const handleContentTap = useCallback((e: React.MouseEvent<HTMLElement>) => {
+    // Only on mobile-ish widths
+    if (window.innerWidth > 768) return
+    // Don't trigger on links, buttons, or interactive elements
+    const target = e.target as HTMLElement
+    if (target.closest('a, button, [role="button"], input, textarea, select, [data-interactive]')) return
+    
+    const rect = e.currentTarget.getBoundingClientRect()
+    const tapY = e.clientY - rect.top
+    const zoneHeight = rect.height
+    // Middle 60% of the content area toggles immersive mode
+    const topThreshold = zoneHeight * 0.2
+    const bottomThreshold = zoneHeight * 0.8
+    
+    if (tapY > topThreshold && tapY < bottomThreshold) {
+      setImmersive(prev => !prev)
+    }
+  }, [])
 
   // Don't render until settings are loaded from localStorage
   if (!isLoaded) {
@@ -76,7 +115,7 @@ export function ChapterContentWrapper({ children, headerContent, storyTitle, sto
       
       {/* Compact Header with Settings Button */}
       <div 
-        className={`border-b sticky top-0 z-10 backdrop-blur-sm ${
+        className={`reader-sticky-header border-b sticky top-0 z-10 backdrop-blur-sm ${
           isAutoTheme 
             ? 'bg-white/95 dark:bg-background/95 border-zinc-200 dark:border-zinc-700' 
             : ''
@@ -100,8 +139,9 @@ export function ChapterContentWrapper({ children, headerContent, storyTitle, sto
 
       {/* Chapter Content with Applied Settings */}
       <article 
-        className={`container mx-auto px-4 py-8 pb-24 md:pb-8 ${widthClass} ${fontClass} ${lineHeightClass}`}
+        className={`container mx-auto px-5 md:px-4 py-8 pb-24 md:pb-8 ${widthClass} ${fontClass} ${lineHeightClass}`}
         style={{ fontSize: `${settings.fontSize}px` }}
+        onClick={handleContentTap}
       >
         {children}
       </article>

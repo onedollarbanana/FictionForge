@@ -44,7 +44,7 @@ export function MobileChapterNav({
     <>
       {/* Fixed bottom navigation bar - mobile only */}
       <nav 
-        className={`md:hidden fixed bottom-0 left-0 right-0 z-50 border-t safe-area-bottom ${
+        className={`reader-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-50 border-t safe-area-bottom ${
           isAutoTheme 
             ? 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700' 
             : ''
