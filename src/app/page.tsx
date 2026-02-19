@@ -23,6 +23,17 @@ export default async function Home() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Fetch user's genre preferences (if logged in)
+  let userGenrePreferences: string[] = [];
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('genre_preferences')
+      .eq('id', user.id)
+      .single();
+    userGenrePreferences = profile?.genre_preferences || [];
+  }
+
   // Fetch Continue Reading data for logged-in users
   let continueReadingItems: {
     story_id: string;
@@ -137,6 +148,26 @@ export default async function Home() {
   const [risingStars, latestUpdates, newReleases, staffPicks, communityPicks] = await rankingsPromise;
   const genreResults = await genrePromise;
 
+  // Build ordered genre shelves: user's preferred genres first, then the rest
+  const genreShelvesWithData = GENRE_SHELVES.map((genre, index) => ({
+    ...genre,
+    stories: genreResults[index] || [],
+  })).filter(g => g.stories.length > 0);
+
+  let orderedGenreShelves: typeof genreShelvesWithData;
+
+  if (userGenrePreferences.length > 0) {
+    const preferred = genreShelvesWithData.filter(g => 
+      userGenrePreferences.includes(g.name)
+    );
+    const others = genreShelvesWithData.filter(g => 
+      !userGenrePreferences.includes(g.name)
+    );
+    orderedGenreShelves = [...preferred, ...others];
+  } else {
+    orderedGenreShelves = genreShelvesWithData;
+  }
+
   const isLoggedIn = !!user;
 
   return (
@@ -181,21 +212,54 @@ export default async function Home() {
           emptyMessage="New stories coming soon!"
         />
 
-        {/* Genre Shelves */}
-        {GENRE_SHELVES.map((genre, index) => {
-          const stories = genreResults[index];
-          if (!stories || stories.length === 0) return null;
-          return (
-            <StoryCarousel
-              key={genre.name}
-              title={`Trending in ${genre.name}`}
-              icon={genre.icon}
-              stories={stories}
-              viewAllLink={`/browse?genre=${encodeURIComponent(genre.name)}`}
-              emptyMessage={`No ${genre.name} stories yet`}
-            />
-          );
-        })}
+        {/* Genre Shelves - personalized order for logged-in users */}
+        {userGenrePreferences.length > 0 && orderedGenreShelves.some(g => !userGenrePreferences.includes(g.name)) && (
+          <>
+            {/* Preferred genre shelves */}
+            {orderedGenreShelves
+              .filter(g => userGenrePreferences.includes(g.name))
+              .map((genre) => (
+                <StoryCarousel
+                  key={genre.name}
+                  title={`Trending in ${genre.name}`}
+                  icon={genre.icon}
+                  stories={genre.stories}
+                  viewAllLink={`/browse?genre=${encodeURIComponent(genre.name)}`}
+                />
+              ))}
+            
+            {/* Discover divider */}
+            <div className="flex items-center gap-3 my-4">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-sm font-medium text-muted-foreground">Discover something different</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            
+            {/* Other genre shelves */}
+            {orderedGenreShelves
+              .filter(g => !userGenrePreferences.includes(g.name))
+              .map((genre) => (
+                <StoryCarousel
+                  key={genre.name}
+                  title={`Trending in ${genre.name}`}
+                  icon={genre.icon}
+                  stories={genre.stories}
+                  viewAllLink={`/browse?genre=${encodeURIComponent(genre.name)}`}
+                />
+              ))}
+          </>
+        )}
+
+        {/* No preferences or all genres are preferred - show all in default order */}
+        {(userGenrePreferences.length === 0 || !orderedGenreShelves.some(g => !userGenrePreferences.includes(g.name))) && orderedGenreShelves.map((genre) => (
+          <StoryCarousel
+            key={genre.name}
+            title={`Trending in ${genre.name}`}
+            icon={genre.icon}
+            stories={genre.stories}
+            viewAllLink={`/browse?genre=${encodeURIComponent(genre.name)}`}
+          />
+        ))}
 
         <StoryCarousel
           title="Rising Stars"
