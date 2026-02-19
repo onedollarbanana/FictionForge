@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { StoryCardData } from '@/components/story/story-card';
 
 type SupabaseClientType = SupabaseClient<any, 'public', any>;
 
@@ -50,4 +51,67 @@ export async function recomputeGenreWeights(userId: string, supabase?: SupabaseC
   }
   
   return data as Record<string, number> || {};
+}
+
+/**
+ * Get "Because you read X" recommendations.
+ * Returns up to 3 shelves, each with a source story and similar stories.
+ */
+export async function getBecauseYouRead(
+  userId: string,
+  storiesPerShelf: number = 8,
+  supabase?: SupabaseClientType
+): Promise<{ sourceTitle: string; sourceId: string; stories: StoryCardData[] }[]> {
+  const client = supabase || await createClient();
+  
+  // Get user's 3 most recently read stories
+  const { data: recentReads, error: recentError } = await client.rpc('get_recent_reads', {
+    target_user_id: userId,
+    limit_count: 3
+  });
+  
+  if (recentError || !recentReads?.length) return [];
+  
+  // For each recent read, get similar stories
+  const shelves = await Promise.all(
+    recentReads.map(async (read: any) => {
+      const { data: similar, error } = await client.rpc('get_similar_stories', {
+        source_story_id: read.story_id,
+        limit_count: storiesPerShelf
+      });
+      
+      if (error || !similar?.length) return null;
+      
+      // Map RPC results to StoryCardData format
+      const stories: StoryCardData[] = similar.map((row: any) => ({
+        id: row.id,
+        title: row.title,
+        tagline: row.tagline,
+        blurb: row.blurb,
+        cover_url: row.cover_url,
+        genres: row.genres,
+        tags: row.tags,
+        status: row.status,
+        total_views: row.total_views,
+        follower_count: row.follower_count,
+        chapter_count: row.chapter_count,
+        rating_average: row.rating_average,
+        rating_count: row.rating_count,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        profiles: {
+          username: row.author_username,
+          display_name: row.author_display_name,
+        },
+      }));
+      
+      return {
+        sourceTitle: read.story_title,
+        sourceId: read.story_id,
+        stories,
+      };
+    })
+  );
+  
+  return shelves.filter(Boolean) as { sourceTitle: string; sourceId: string; stories: StoryCardData[] }[];
 }

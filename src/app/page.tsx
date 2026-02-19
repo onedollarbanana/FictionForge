@@ -12,7 +12,8 @@ import { AnnouncementBanner } from "@/components/home/announcement-banner";
 import { ContinueReading } from "@/components/home/continue-reading";
 import { GenreLinks } from "@/components/home/genre-links";
 import { StoryCarousel } from "@/components/home/story-carousel";
-import { Rocket, Clock, Heart, Sparkles, Award, Trophy, Sword, Search, Skull, Gamepad2, Scroll } from "lucide-react";
+import { Rocket, Clock, Heart, Sparkles, Award, Trophy, Sword, Search, Skull, Gamepad2, Scroll, BookOpen } from "lucide-react";
+import type { StoryCardData } from "@/components/story/story-card";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,9 @@ export default async function Home() {
     author_name: string;
     updated_at: string;
   }[] = [];
+
+  // "Because you read X" shelves for logged-in users
+  let becauseYouReadShelves: { sourceTitle: string; sourceId: string; stories: StoryCardData[] }[] = [];
 
   const GENRE_SHELVES = [
     { name: 'Fantasy', icon: <Sword className="h-5 w-5 text-purple-500" />, color: 'text-purple-500' },
@@ -138,6 +142,10 @@ export default async function Home() {
           };
         });
     }
+
+    // Fetch "Because you read" recommendations
+    const { getBecauseYouRead } = await import('@/lib/recommendations');
+    becauseYouReadShelves = await getBecauseYouRead(user.id, 8, supabase);
   }
 
   // Wait for rankings and genre results to complete
@@ -177,6 +185,17 @@ export default async function Home() {
 
         {/* Continue Reading - only for logged-in users */}
         {isLoggedIn && <ContinueReading items={continueReadingItems} />}
+
+        {/* "Because You Read X" personalized shelves */}
+        {becauseYouReadShelves.length > 0 && becauseYouReadShelves.map((shelf) => (
+          <StoryCarousel
+            key={`byr-${shelf.sourceId}`}
+            title={`Because you read ${shelf.sourceTitle}`}
+            icon={<BookOpen className="h-5 w-5 text-violet-500" />}
+            stories={shelf.stories}
+            viewAllLink={`/story/${shelf.sourceId}`}
+          />
+        ))}
 
         {/* Genre Quick Links */}
         <GenreLinks />
