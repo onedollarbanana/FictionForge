@@ -27,6 +27,7 @@ import { AchievementBadge } from '@/components/achievements/achievement-badge'
 import type { FeaturedBadge } from '@/components/achievements/types'
 import { ProfileBorder } from '@/components/profile/profile-border'
 import { ReportButton } from '@/components/moderation/report-button'
+import { PremiumBadge } from '@/components/premium-badge'
 
 // Force dynamic rendering - no static caching
 export const dynamic = 'force-dynamic'
@@ -290,6 +291,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 {experience && (
                   <ExperienceBadge tier={experience.tier} showLabel size="sm" />
                 )}
+                {profile.is_premium && <PremiumBadge />}
               </div>
               <p className="text-muted-foreground mb-2">@{profile.username}</p>
               
