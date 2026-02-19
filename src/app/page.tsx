@@ -2,18 +2,17 @@ import { createClient } from "@/lib/supabase/server";
 import { getCommunityPicksForHomepage } from "@/lib/community-picks";
 import { 
   getRisingStars, 
-  getPopularThisWeek, 
   getLatestUpdates,
-  getMostFollowed,
   getNewReleases,
-  getStaffPicks 
+  getStaffPicks,
+  getStoriesByGenre 
 } from "@/lib/rankings";
 import { HeroSection } from "@/components/home/hero-section";
 import { AnnouncementBanner } from "@/components/home/announcement-banner";
 import { ContinueReading } from "@/components/home/continue-reading";
 import { GenreLinks } from "@/components/home/genre-links";
 import { StoryCarousel } from "@/components/home/story-carousel";
-import { Rocket, Flame, Clock, Heart, Sparkles, Award, Trophy } from "lucide-react";
+import { Rocket, Clock, Heart, Sparkles, Award, Trophy, Sword, Search, Skull, Gamepad2, Scroll } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -36,16 +35,28 @@ export default async function Home() {
     updated_at: string;
   }[] = [];
 
+  const GENRE_SHELVES = [
+    { name: 'Fantasy', icon: <Sword className="h-5 w-5 text-purple-500" />, color: 'text-purple-500' },
+    { name: 'Sci-Fi', icon: <Rocket className="h-5 w-5 text-cyan-500" />, color: 'text-cyan-500' },
+    { name: 'Romance', icon: <Heart className="h-5 w-5 text-pink-500" />, color: 'text-pink-500' },
+    { name: 'Mystery', icon: <Search className="h-5 w-5 text-slate-500" />, color: 'text-slate-500' },
+    { name: 'Horror', icon: <Skull className="h-5 w-5 text-red-500" />, color: 'text-red-500' },
+    { name: 'LitRPG', icon: <Gamepad2 className="h-5 w-5 text-emerald-500" />, color: 'text-emerald-500' },
+    { name: 'Historical', icon: <Scroll className="h-5 w-5 text-amber-500" />, color: 'text-amber-500' },
+  ];
+
   // Start fetching rankings in parallel immediately (don't wait for continue reading)
   const rankingsPromise = Promise.all([
     getRisingStars(10, supabase),
-    getPopularThisWeek(10, supabase),
     getLatestUpdates(10, supabase),
-    getMostFollowed(10, supabase),
     getNewReleases(10, supabase),
     getStaffPicks(10, supabase),
     getCommunityPicksForHomepage(10, supabase),
   ]);
+
+  const genrePromise = Promise.all(
+    GENRE_SHELVES.map(g => getStoriesByGenre(g.name, 10, supabase))
+  );
 
   if (user) {
     // Get reading progress with story details
@@ -122,8 +133,9 @@ export default async function Home() {
     }
   }
 
-  // Wait for rankings to complete
-  const [risingStars, popularThisWeek, latestUpdates, mostFollowed, newReleases, staffPicks, communityPicks] = await rankingsPromise;
+  // Wait for rankings and genre results to complete
+  const [risingStars, latestUpdates, newReleases, staffPicks, communityPicks] = await rankingsPromise;
+  const genreResults = await genrePromise;
 
   const isLoggedIn = !!user;
 
@@ -169,6 +181,22 @@ export default async function Home() {
           emptyMessage="New stories coming soon!"
         />
 
+        {/* Genre Shelves */}
+        {GENRE_SHELVES.map((genre, index) => {
+          const stories = genreResults[index];
+          if (!stories || stories.length === 0) return null;
+          return (
+            <StoryCarousel
+              key={genre.name}
+              title={`Trending in ${genre.name}`}
+              icon={genre.icon}
+              stories={stories}
+              viewAllLink={`/browse?genre=${encodeURIComponent(genre.name)}`}
+              emptyMessage={`No ${genre.name} stories yet`}
+            />
+          );
+        })}
+
         <StoryCarousel
           title="Rising Stars"
           icon={<Rocket className="h-5 w-5 text-orange-500" />}
@@ -178,27 +206,11 @@ export default async function Home() {
         />
 
         <StoryCarousel
-          title="Popular This Week"
-          icon={<Flame className="h-5 w-5 text-red-500" />}
-          stories={popularThisWeek}
-          viewAllLink="/popular"
-          emptyMessage="Check back soon for popular stories"
-        />
-
-        <StoryCarousel
           title="Latest Updates"
           icon={<Clock className="h-5 w-5 text-blue-500" />}
           stories={latestUpdates}
           viewAllLink="/recently-updated"
           emptyMessage="No recent updates"
-        />
-
-        <StoryCarousel
-          title="Most Followed"
-          icon={<Heart className="h-5 w-5 text-pink-500" />}
-          stories={mostFollowed}
-          viewAllLink="/most-followed"
-          emptyMessage="Follow your first story!"
         />
       </main>
     </div>
