@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { RefundButton } from "./refund-button";
 import { HoldButton, ProcessPayoutButton } from "./payout-actions";
 import { ScanButton, ReviewButton } from "./fraud-actions";
+import { FinancialReport } from "./financial-report";
 
 const tabs = [
   { key: 'overview', label: 'Overview' },
@@ -14,6 +15,7 @@ const tabs = [
   { key: 'authors', label: 'Author Accounts' },
   { key: 'payouts', label: 'Payouts' },
   { key: 'fraud', label: 'Fraud Alerts' },
+  { key: 'reports', label: 'Reports' },
 ];
 
 function formatCurrency(cents: number | null): string {
@@ -88,6 +90,7 @@ export default async function AdminPaymentsPage({ searchParams }: { searchParams
       {tab === 'authors' && <AuthorAccountsTab />}
       {tab === 'payouts' && <PayoutsTab />}
       {tab === 'fraud' && <FraudTab />}
+      {tab === 'reports' && <FinancialReport />}
     </div>
   );
 }
