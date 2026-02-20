@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { RefundButton } from "./refund-button";
 import { HoldButton, ProcessPayoutButton } from "./payout-actions";
+import { ScanButton, ReviewButton } from "./fraud-actions";
 
 const tabs = [
   { key: 'overview', label: 'Overview' },
@@ -12,6 +13,7 @@ const tabs = [
   { key: 'subscriptions', label: 'Subscriptions' },
   { key: 'authors', label: 'Author Accounts' },
   { key: 'payouts', label: 'Payouts' },
+  { key: 'fraud', label: 'Fraud Alerts' },
 ];
 
 function formatCurrency(cents: number | null): string {
@@ -85,6 +87,7 @@ export default async function AdminPaymentsPage({ searchParams }: { searchParams
       {tab === 'subscriptions' && <SubscriptionsTab />}
       {tab === 'authors' && <AuthorAccountsTab />}
       {tab === 'payouts' && <PayoutsTab />}
+      {tab === 'fraud' && <FraudTab />}
     </div>
   );
 }
@@ -358,6 +361,94 @@ async function PayoutsTab() {
           )}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+async function FraudTab() {
+  const supabase = await createClient();
+
+  const { data: flags } = await supabase
+    .from('fraud_flags')
+    .select('*, profiles!fraud_flags_user_id_fkey(username)')
+    .order('status', { ascending: true })
+    .order('created_at', { ascending: false });
+
+  const statusColors: Record<string, string> = {
+    open: 'bg-red-100 text-red-800',
+    reviewed: 'bg-green-100 text-green-800',
+    dismissed: 'bg-gray-100 text-gray-800',
+  };
+
+  const typeLabels: Record<string, string> = {
+    rapid_cancel: 'Rapid Cancel',
+    high_volume_subs: 'High Volume Subs',
+    excessive_refunds: 'Excessive Refunds',
+    suspicious_pattern: 'Suspicious Pattern',
+  };
+
+  function formatDetails(details: Record<string, any>): string {
+    return Object.entries(details)
+      .map(([key, value]) => `${key.replace(/_/g, ' ')}: ${value}`)
+      .join(', ');
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Fraud Alerts</h3>
+        <ScanButton />
+      </div>
+
+      <div className="rounded-lg border bg-card overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-muted/50">
+              <th className="text-left p-3 font-medium">Date</th>
+              <th className="text-left p-3 font-medium">User</th>
+              <th className="text-left p-3 font-medium">Type</th>
+              <th className="text-left p-3 font-medium">Details</th>
+              <th className="text-left p-3 font-medium">Status</th>
+              <th className="text-left p-3 font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(!flags || flags.length === 0) ? (
+              <tr>
+                <td colSpan={6} className="p-6 text-center text-muted-foreground">No fraud flags found. Run a scan to check.</td>
+              </tr>
+            ) : (
+              flags.map((flag: any) => (
+                <tr key={flag.id} className="border-b last:border-0 hover:bg-muted/30">
+                  <td className="p-3 whitespace-nowrap">{formatDate(flag.created_at)}</td>
+                  <td className="p-3">{flag.profiles?.username ?? 'Unknown'}</td>
+                  <td className="p-3">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                      {typeLabels[flag.flag_type] ?? flag.flag_type}
+                    </span>
+                  </td>
+                  <td className="p-3 text-xs text-muted-foreground max-w-[300px] truncate">
+                    {formatDetails(flag.details ?? {})}
+                  </td>
+                  <td className="p-3">
+                    <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium', statusColors[flag.status] ?? 'bg-gray-100 text-gray-800')}>
+                      {flag.status}
+                    </span>
+                    {flag.review_notes && (
+                      <span className="block text-xs text-muted-foreground mt-1" title={flag.review_notes}>
+                        {flag.review_notes.substring(0, 50)}{flag.review_notes.length > 50 ? '...' : ''}
+                      </span>
+                    )}
+                  </td>
+                  <td className="p-3">
+                    <ReviewButton flagId={flag.id} currentStatus={flag.status} />
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
