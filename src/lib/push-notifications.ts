@@ -82,7 +82,7 @@ export async function notifyFollowers(
   // Get followers who want chapter notifications
   const { data: followers, error: followError } = await supabase
     .from('follows')
-    .select('follower_id')
+    .select('user_id')
     .eq('story_id', storyId)
     .eq('notify_new_chapters', true);
 
@@ -90,7 +90,7 @@ export async function notifyFollowers(
     return { sent: 0, failed: 0 };
   }
 
-  const followerIds = followers.map((f) => f.follower_id);
+  const followerIds = followers.map((f) => f.user_id);
 
   // Get push subscriptions for these followers
   const { data: subscriptions, error: subError } = await supabase
@@ -107,7 +107,7 @@ export async function notifyFollowers(
     body: `Chapter ${chapterNumber}: ${chapterTitle}`,
     icon: '/icons/icon-192x192.png',
     badge: '/icons/icon-72x72.png',
-    url: `/stories/${storyId}/chapters/${chapterId}`,
+    url: `/story/${storyId}/chapter/${chapterId}`,
   };
 
   let sent = 0;
@@ -132,10 +132,6 @@ export async function notifyFollowers(
 /**
  * Utility to trigger new chapter notification.
  * Call this from the chapter publish flow.
- *
- * Integration point: Look in src/app/author/ for the chapter
- * create/publish action and call this function after a chapter
- * is successfully published.
  */
 export async function triggerNewChapterNotification(opts: {
   storyId: string;
