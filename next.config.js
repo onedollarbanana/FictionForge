@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+const withSerwist = require("@serwist/next").default;
+
+const baseConfig = {
   images: {
     remotePatterns: [
       {
@@ -9,7 +11,13 @@ const nextConfig = {
       },
     ],
   },
-}
+};
+
+const nextConfig = withSerwist({
+  swSrc: "src/app/sw.ts",
+  swDest: "public/sw.js",
+  disable: process.env.NODE_ENV === "development",
+})(baseConfig);
 
 // Only apply Sentry build-time instrumentation when DSN is configured.
 if (process.env.NEXT_PUBLIC_SENTRY_DSN) {

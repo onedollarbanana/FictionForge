@@ -31,3 +31,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Serwist service worker (generated at build time)
+public/sw*
+public/swe-worker*
