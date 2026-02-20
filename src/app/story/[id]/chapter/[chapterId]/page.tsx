@@ -21,6 +21,7 @@ import { headers } from "next/headers";
 import { ReportButton } from "@/components/moderation/report-button";
 import { ChapterLockedOverlay } from "@/components/reader/chapter-locked-overlay";
 import { type TierName } from "@/lib/platform-config";
+import { ChapterOfflineCacher } from "@/components/reader/chapter-offline-cacher";
 
 export const dynamic = "force-dynamic";
 
@@ -143,6 +144,20 @@ export default async function ChapterReadingPage({ params }: PageProps) {
     <>
       {/* Scroll to top on navigation */}
       <ScrollToTop />
+
+      {/* Cache chapter for offline reading */}
+      <ChapterOfflineCacher
+        storyId={storyId}
+        chapterId={chapterId}
+        storyTitle={chapter.stories?.title || ''}
+        chapterTitle={chapter.title}
+        chapterNumber={chapter.chapter_number}
+        authorName={chapter.stories?.profiles?.username || 'Unknown'}
+        content={chapter.content}
+        wordCount={wordCount}
+        prevChapterId={prevChapter?.id}
+        nextChapterId={nextChapter?.id}
+      />
 
       {/* Auto-add to library when reading chapter 2+ */}
       <AutoLibraryAdd 

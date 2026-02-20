@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { CookieConsent } from '@/components/cookie-consent'
 import { GenreOnboardingWrapper } from '@/components/onboarding/genre-onboarding-wrapper'
+import { OfflineIndicator } from '@/components/offline-indicator'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -75,6 +76,7 @@ export default function RootLayout({
             <CookieConsent />
             <GenreOnboardingWrapper />
           </ToastProvider>
+          <OfflineIndicator />
         </ThemeProvider>
       </body>
     </html>
