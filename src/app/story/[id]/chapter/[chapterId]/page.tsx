@@ -19,8 +19,16 @@ import { ScrollPositionTracker } from "@/components/reader/scroll-position-track
 import { ChevronLeft } from "lucide-react";
 import { headers } from "next/headers";
 import { ReportButton } from "@/components/moderation/report-button";
+import { ChapterLockedOverlay } from "@/components/reader/chapter-locked-overlay";
+import { type TierName } from "@/lib/platform-config";
 
 export const dynamic = "force-dynamic";
+
+const TIER_HIERARCHY: Record<string, number> = {
+  supporter: 1,
+  enthusiast: 2,
+  patron: 3,
+};
 
 interface PageProps {
   params: { id: string; chapterId: string };
@@ -60,6 +68,36 @@ export default async function ChapterReadingPage({ params }: PageProps) {
   // Only show published chapters (unless author)
   if (!chapter.is_published && chapter.stories?.author_id !== user?.id) {
     notFound();
+  }
+
+  // Fetch author tiers for gating check
+  const { data: authorTiers } = await supabase
+    .from('author_tiers')
+    .select('tier_name, enabled, description')
+    .eq('author_id', chapter.stories?.author_id)
+    .eq('enabled', true);
+
+  // Check if chapter is gated and user has access
+  let hasAccess = true;
+  const requiredTier = chapter.min_tier_name;
+
+  if (requiredTier && chapter.stories?.author_id !== user?.id) {
+    hasAccess = false;
+
+    if (user) {
+      // Check if user has an active subscription to this author at required tier or higher
+      const { data: sub } = await supabase
+        .from('author_subscriptions')
+        .select('tier_name')
+        .eq('subscriber_id', user.id)
+        .eq('author_id', chapter.stories?.author_id)
+        .eq('status', 'active')
+        .single();
+
+      if (sub && TIER_HIERARCHY[sub.tier_name] >= TIER_HIERARCHY[requiredTier]) {
+        hasAccess = true;
+      }
+    }
   }
 
   // Fetch all chapters for navigation
@@ -166,41 +204,58 @@ export default async function ChapterReadingPage({ params }: PageProps) {
           </div>
         </header>
 
-        {/* Story Default Author's Note (Before) */}
-        {chapter.stories?.default_author_note_before && (
-          <div className="mb-6 p-4 rounded-lg bg-black/5 dark:bg-white/5 border-l-4 border-primary">
-            <p className="text-sm font-medium opacity-70 mb-1">Author&apos;s Note</p>
-            <p className="text-sm whitespace-pre-wrap break-words">{chapter.stories.default_author_note_before}</p>
-          </div>
-        )}
+        {!hasAccess ? (
+          <ChapterLockedOverlay
+            storyId={storyId}
+            authorId={chapter.stories?.author_id || ''}
+            authorName={chapter.stories?.profiles?.username || 'this author'}
+            requiredTier={requiredTier as TierName}
+            availableTiers={(authorTiers || []).map(t => ({
+              tier_name: t.tier_name as TierName,
+              enabled: t.enabled,
+              description: t.description,
+            }))}
+            isLoggedIn={!!user}
+          />
+        ) : (
+          <>
+            {/* Story Default Author's Note (Before) */}
+            {chapter.stories?.default_author_note_before && (
+              <div className="mb-6 p-4 rounded-lg bg-black/5 dark:bg-white/5 border-l-4 border-primary">
+                <p className="text-sm font-medium opacity-70 mb-1">Author&apos;s Note</p>
+                <p className="text-sm whitespace-pre-wrap break-words">{chapter.stories.default_author_note_before}</p>
+              </div>
+            )}
 
-        {/* Chapter-Specific Author's Note (Before) */}
-        {chapter.author_note_before && (
-          <div className="mb-8 p-4 rounded-lg bg-black/5 dark:bg-white/5 border-l-4 border-secondary">
-            <p className="text-sm font-medium opacity-70 mb-1">Chapter Note</p>
-            <p className="text-sm whitespace-pre-wrap break-words">{chapter.author_note_before}</p>
-          </div>
-        )}
+            {/* Chapter-Specific Author's Note (Before) */}
+            {chapter.author_note_before && (
+              <div className="mb-8 p-4 rounded-lg bg-black/5 dark:bg-white/5 border-l-4 border-secondary">
+                <p className="text-sm font-medium opacity-70 mb-1">Chapter Note</p>
+                <p className="text-sm whitespace-pre-wrap break-words">{chapter.author_note_before}</p>
+              </div>
+            )}
 
-        {/* Main Content */}
-        <div className="prose dark:prose-invert max-w-none">
-          <TiptapRenderer content={chapter.content} />
-        </div>
+            {/* Main Content */}
+            <div className="prose dark:prose-invert max-w-none">
+              <TiptapRenderer content={chapter.content} />
+            </div>
 
-        {/* Chapter-Specific Author's Note (After) */}
-        {chapter.author_note_after && (
-          <div className="mt-8 p-4 rounded-lg bg-black/5 dark:bg-white/5 border-l-4 border-secondary">
-            <p className="text-sm font-medium opacity-70 mb-1">Chapter Note</p>
-            <p className="text-sm whitespace-pre-wrap break-words">{chapter.author_note_after}</p>
-          </div>
-        )}
+            {/* Chapter-Specific Author's Note (After) */}
+            {chapter.author_note_after && (
+              <div className="mt-8 p-4 rounded-lg bg-black/5 dark:bg-white/5 border-l-4 border-secondary">
+                <p className="text-sm font-medium opacity-70 mb-1">Chapter Note</p>
+                <p className="text-sm whitespace-pre-wrap break-words">{chapter.author_note_after}</p>
+              </div>
+            )}
 
-        {/* Story Default Author's Note (After) */}
-        {chapter.stories?.default_author_note_after && (
-          <div className="mt-6 p-4 rounded-lg bg-black/5 dark:bg-white/5 border-l-4 border-primary">
-            <p className="text-sm font-medium opacity-70 mb-1">Author&apos;s Note</p>
-            <p className="text-sm whitespace-pre-wrap break-words">{chapter.stories.default_author_note_after}</p>
-          </div>
+            {/* Story Default Author's Note (After) */}
+            {chapter.stories?.default_author_note_after && (
+              <div className="mt-6 p-4 rounded-lg bg-black/5 dark:bg-white/5 border-l-4 border-primary">
+                <p className="text-sm font-medium opacity-70 mb-1">Author&apos;s Note</p>
+                <p className="text-sm whitespace-pre-wrap break-words">{chapter.stories.default_author_note_after}</p>
+              </div>
+            )}
+          </>
         )}
 
         {/* Chapter Complete Card - replaces standalone like/report/nav */}

@@ -13,6 +13,7 @@ import { TiptapEditor, countWordsFromJSON } from "@/components/editor/tiptap-edi
 import { Clock } from "lucide-react";
 import { ScheduleWarning } from "@/components/ScheduleWarning";
 import { showToast } from "@/components/ui/toast";
+import { PLATFORM_CONFIG, type TierName } from "@/lib/platform-config";
 
 // Debounce utility
 function debounce<T extends (...args: Parameters<T>) => void>(
@@ -52,6 +53,7 @@ interface Chapter {
   author_note_after: string | null;
   scheduled_for: string | null;
   story_id: string;
+  min_tier_name: string | null;
 }
 
 export default function EditChapterPage() {
@@ -72,6 +74,8 @@ export default function EditChapterPage() {
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [browserTimezone] = useState(getBrowserTimezone);
+  const [minTierName, setMinTierName] = useState<string | null>(null);
+  const [authorTiers, setAuthorTiers] = useState<Array<{tier_name: string, enabled: boolean}>>([]);
   const router = useRouter();
 
   // Word count from Tiptap JSON
@@ -82,15 +86,22 @@ export default function EditChapterPage() {
     async function loadData() {
       const supabase = createClient();
       
-      // Load story title
+      // Load story title and author_id
       const { data: storyData } = await supabase
         .from("stories")
-        .select("title")
+        .select("title, author_id")
         .eq("id", storyId)
         .single();
       
       if (storyData) {
         setStoryTitle(storyData.title);
+        // Fetch author's enabled tiers
+        const { data: tiersData } = await supabase
+          .from('author_tiers')
+          .select('tier_name, enabled')
+          .eq('author_id', storyData.author_id)
+          .eq('enabled', true);
+        if (tiersData) setAuthorTiers(tiersData);
       }
 
       // Load chapter
@@ -112,6 +123,7 @@ export default function EditChapterPage() {
         setContent(chapterData.content as JSONContent);
         setAuthorNoteBefore(chapterData.author_note_before || "");
         setAuthorNoteAfter(chapterData.author_note_after || "");
+        setMinTierName(chapterData.min_tier_name || null);
         if (chapterData.scheduled_for) {
           // Convert UTC to local time for the datetime-local input
           const d = new Date(chapterData.scheduled_for);
@@ -208,6 +220,7 @@ export default function EditChapterPage() {
         author_note_before: authorNoteBefore || null,
         author_note_after: authorNoteAfter || null,
         scheduled_for: publish ? null : (scheduleDate ? new Date(scheduleDate).toISOString() : null),
+        min_tier_name: minTierName || null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", chapterId);
@@ -356,6 +369,28 @@ export default function EditChapterPage() {
             className="text-sm"
           />
         </div>
+
+        {/* Tier Gating (only if author has tiers enabled) */}
+        {authorTiers.length > 0 && (
+          <div className="space-y-2">
+            <Label>Advance Chapter Access</Label>
+            <select
+              value={minTierName || ''}
+              onChange={(e) => setMinTierName(e.target.value || null)}
+              className="flex h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="">Free (everyone can read)</option>
+              {authorTiers.map(t => (
+                <option key={t.tier_name} value={t.tier_name}>
+                  {PLATFORM_CONFIG.TIER_NAMES[t.tier_name as TierName]} tier or higher
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Restrict this chapter to subscribers of a specific tier or higher
+            </p>
+          </div>
+        )}
 
         {/* Schedule Publishing */}
         {!chapter?.is_published && (

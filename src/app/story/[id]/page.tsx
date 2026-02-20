@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, Check, Clock, Eye, Heart, Pencil, User } from "lucide-react";
+import { BookOpen, Check, Clock, Eye, Heart, Lock, Pencil, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { LibraryButton } from "@/components/story/LibraryButton";
 import { AnnouncementBanner } from "@/components/announcements";
@@ -18,6 +18,8 @@ import { ContentWarningGate } from "@/components/story/content-warning-gate";
 import { NominateButton } from "@/components/story/nominate-button";
 import { CommunityPickBadge } from "@/components/story/community-pick-badge";
 import { getCommunityPickBadge } from "@/lib/community-picks";
+import { AuthorTierCards } from "@/components/story/author-tier-cards";
+import { type TierName } from "@/lib/platform-config";
 
 export const dynamic = "force-dynamic";
 
@@ -56,16 +58,37 @@ export default async function StoryPage({ params }: PageProps) {
     notFound();
   }
 
-  // Fetch published chapters
+  // Fetch published chapters (include min_tier_name for lock icons)
   const { data: chapters } = await supabase
     .from("chapters")
-    .select("id, title, chapter_number, word_count, likes, created_at, is_published")
+    .select("id, title, chapter_number, word_count, likes, created_at, is_published, min_tier_name")
     .eq("story_id", id)
     .eq("is_published", true)
     .order("chapter_number", { ascending: true });
 
   const publishedChapters = chapters || [];
   const totalWords = publishedChapters.reduce((sum, ch) => sum + (ch.word_count || 0), 0);
+
+  // Fetch author tiers
+  const { data: authorTiers } = await supabase
+    .from('author_tiers')
+    .select('tier_name, enabled, description, advance_chapter_count')
+    .eq('author_id', story.author_id)
+    .eq('enabled', true)
+    .order('tier_name');
+
+  // Check user's subscription to this author
+  let userSubscription = null;
+  if (user) {
+    const { data: sub } = await supabase
+      .from('author_subscriptions')
+      .select('tier_name, status')
+      .eq('subscriber_id', user.id)
+      .eq('author_id', story.author_id)
+      .eq('status', 'active')
+      .single();
+    userSubscription = sub;
+  }
 
   // Fetch announcements for this story (last 30 days)
   const thirtyDaysAgo = new Date();
@@ -284,6 +307,26 @@ export default async function StoryPage({ params }: PageProps) {
         </CardContent>
       </Card>
 
+      {/* Author Tier Cards */}
+      {authorTiers && authorTiers.length > 0 && (
+        <div className="mb-6">
+          <AuthorTierCards
+            authorId={story.author_id}
+            authorName={authorName}
+            tiers={authorTiers.map(t => ({
+              tier_name: t.tier_name as TierName,
+              description: t.description,
+              advance_chapter_count: t.advance_chapter_count,
+            }))}
+            currentSubscription={userSubscription ? {
+              tier_name: userSubscription.tier_name as TierName,
+              status: userSubscription.status,
+            } : null}
+            isLoggedIn={!!user}
+          />
+        </div>
+      )}
+
       {/* Ratings Section */}
       <div className="mb-8">
         <StoryRatingSection storyId={id} authorId={story.author_id} />
@@ -320,8 +363,11 @@ export default async function StoryPage({ params }: PageProps) {
                           </div>
                         )}
                         <div>
-                          <span className="font-medium">
+                          <span className="font-medium flex items-center gap-1.5">
                             Chapter {chapter.chapter_number}: {chapter.title}
+                            {chapter.min_tier_name && (
+                              <Lock className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                            )}
                           </span>
                           <div className="flex items-center gap-3 text-sm text-muted-foreground">
                             <span>{(chapter.word_count ?? 0).toLocaleString()} words</span>
