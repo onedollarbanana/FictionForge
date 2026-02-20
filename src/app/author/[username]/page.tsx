@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BookOpen, Users, Calendar, FileText } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { AuthorTierCards } from "@/components/story/author-tier-cards";
+import { type TierName } from "@/lib/platform-config";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +50,28 @@ export default async function AuthorPage({ params }: PageProps) {
     .eq("author_id", author.id)
     .eq("visibility", "published")
     .order("updated_at", { ascending: false });
+
+  // Fetch author's subscription tiers
+  const { data: authorTiers } = await supabase
+    .from('author_tiers')
+    .select('tier_name, enabled, description, advance_chapter_count')
+    .eq('author_id', author.id)
+    .eq('enabled', true)
+    .order('tier_name');
+
+  // Check if current user is subscribed to this author
+  const { data: { user } } = await supabase.auth.getUser();
+  let userSubscription = null;
+  if (user) {
+    const { data: sub } = await supabase
+      .from('author_subscriptions')
+      .select('tier_name, status')
+      .eq('subscriber_id', user.id)
+      .eq('author_id', author.id)
+      .eq('status', 'active')
+      .single();
+    userSubscription = sub;
+  }
 
   const publishedStories = stories || [];
   const totalWords = publishedStories.reduce((sum, s) => sum + (s.word_count || 0), 0);
@@ -101,6 +125,26 @@ export default async function AuthorPage({ params }: PageProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Author Subscription Tiers */}
+      {authorTiers && authorTiers.length > 0 && (
+        <div className="mb-8">
+          <AuthorTierCards
+            authorId={author.id}
+            authorName={author.display_name || author.username}
+            tiers={authorTiers.map(t => ({
+              tier_name: t.tier_name as TierName,
+              description: t.description,
+              advance_chapter_count: t.advance_chapter_count,
+            }))}
+            currentSubscription={userSubscription ? {
+              tier_name: userSubscription.tier_name as TierName,
+              status: userSubscription.status,
+            } : null}
+            isLoggedIn={!!user}
+          />
+        </div>
+      )}
 
       {/* Stories Section */}
       <div>

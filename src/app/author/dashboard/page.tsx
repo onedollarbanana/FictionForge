@@ -10,7 +10,7 @@ import { ViewsChart } from '@/components/author/views-chart'
 import { ChapterEngagementTable } from '@/components/author/chapter-engagement-table'
 import { ActivityFeed } from '@/components/author/activity-feed'
 import { Button } from '@/components/ui/button'
-import { Plus, BookOpen, Eye, Users, Heart, FileText, BarChart3, Library, DollarSign } from 'lucide-react'
+import { Plus, BookOpen, Eye, Users, Heart, FileText, BarChart3, Library, DollarSign, Wallet } from 'lucide-react'
 
 interface Story {
   id: string
@@ -207,6 +207,12 @@ export default function AuthorDashboard() {
             <Button variant="outline" className="gap-2">
               <DollarSign className="w-4 h-4" />
               Monetization
+            </Button>
+          </Link>
+          <Link href="/author/dashboard/earnings">
+            <Button variant="outline" className="gap-2">
+              <Wallet className="w-4 h-4" />
+              Earnings
             </Button>
           </Link>
           <Link href="/author/stories/new">

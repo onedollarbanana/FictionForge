@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { Crown, CreditCard, ExternalLink, Check, Loader2, ArrowUpCircle } from "lucide-react";
 import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { createClient } from "@/lib/supabase/client";
 
 interface Subscription {
   id: string;
@@ -40,6 +43,7 @@ export function BillingClient({
   const [showCanceled, setShowCanceled] = useState(false);
   const [subscription, setSubscription] = useState(initialSubscription);
   const [verifying, setVerifying] = useState(false);
+  const [authorSubs, setAuthorSubs] = useState<any[]>([]);
 
   const verifySession = useCallback(async () => {
     setVerifying(true);
@@ -71,7 +75,33 @@ export function BillingClient({
     if (isSuccess && !initialSubscription) {
       verifySession();
     }
+
+    // Fetch author subscriptions
+    fetchAuthorSubscriptions();
   }, [initialSubscription, verifySession]);
+
+  async function fetchAuthorSubscriptions() {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: authorSubsData } = await supabase
+      .from('author_subscriptions')
+      .select(`
+        id,
+        tier_name,
+        status,
+        amount_cents,
+        current_period_end,
+        cancel_at_period_end,
+        author_id,
+        profiles!author_id(username, display_name)
+      `)
+      .eq('subscriber_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (authorSubsData) setAuthorSubs(authorSubsData);
+  }
 
   const handleSubscribe = async (interval: "monthly" | "annual") => {
     setLoading(interval);
@@ -362,6 +392,37 @@ export function BillingClient({
                   )}
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Author Subscriptions */}
+      {authorSubs.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4">Author Subscriptions</h2>
+          <div className="space-y-3">
+            {authorSubs.map(sub => (
+              <Card key={sub.id}>
+                <CardContent className="py-4 flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">
+                      {sub.profiles?.display_name || sub.profiles?.username || 'Unknown Author'}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {sub.tier_name.charAt(0).toUpperCase() + sub.tier_name.slice(1)} · ${(sub.amount_cents / 100).toFixed(2)}/mo
+                    </p>
+                    {sub.current_period_end && (
+                      <p className="text-xs text-muted-foreground">
+                        {sub.cancel_at_period_end ? 'Cancels' : 'Renews'} {new Date(sub.current_period_end).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                  <Badge variant={sub.status === 'active' ? 'default' : 'secondary'}>
+                    {sub.status}
+                  </Badge>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
