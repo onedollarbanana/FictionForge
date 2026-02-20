@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { PLATFORM_CONFIG } from '@/lib/platform-config';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,19 +47,33 @@ export async function POST(request: NextRequest) {
             session.subscription as string
           );
           await handleSubscriptionCreated(supabase, subscription);
+        } else if (session.metadata?.type === 'author_subscription' && session.subscription) {
+          // Handle author subscription checkout
+          const subscription = await stripe.subscriptions.retrieve(
+            session.subscription as string
+          );
+          await handleAuthorSubscriptionCreated(supabase, subscription);
         }
         break;
       }
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionUpdated(supabase, subscription);
+        if (subscription.metadata.type === 'author_subscription') {
+          await handleAuthorSubscriptionUpdated(supabase, subscription);
+        } else {
+          await handleSubscriptionUpdated(supabase, subscription);
+        }
         break;
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionDeleted(supabase, subscription);
+        if (subscription.metadata.type === 'author_subscription') {
+          await handleAuthorSubscriptionDeleted(supabase, subscription);
+        } else {
+          await handleSubscriptionDeleted(supabase, subscription);
+        }
         break;
       }
 
@@ -71,6 +86,20 @@ export async function POST(request: NextRequest) {
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
         await handlePaymentFailed(supabase, invoice);
+        break;
+      }
+
+      case 'account.updated': {
+        const account = event.data.object as Stripe.Account;
+        // Update our records when Connect account status changes
+        await supabase
+          .from('author_stripe_accounts')
+          .update({
+            onboarding_complete: account.details_submitted || false,
+            payouts_enabled: account.payouts_enabled || false,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('stripe_account_id', account.id);
         break;
       }
     }
@@ -217,6 +246,93 @@ async function handleSubscriptionDeleted(
   }
 }
 
+// --- Author Subscription Handlers ---
+
+async function handleAuthorSubscriptionCreated(
+  supabase: AdminClient,
+  subscription: Stripe.Subscription
+) {
+  const subscriberId = subscription.metadata.subscriber_id;
+  const authorId = subscription.metadata.author_id;
+  const tierName = subscription.metadata.tier_name;
+  if (!subscriberId || !authorId || !tierName) return;
+
+  const item = subscription.items.data[0];
+  const amountCents = item.price.unit_amount || 0;
+  const period = getSubscriptionPeriod(subscription);
+
+  // Upsert author_subscriptions record
+  await supabase.from('author_subscriptions').upsert({
+    subscriber_id: subscriberId,
+    author_id: authorId,
+    tier_name: tierName,
+    stripe_subscription_id: subscription.id,
+    status: 'active',
+    amount_cents: amountCents,
+    current_period_start: period.start,
+    current_period_end: period.end,
+    cancel_at_period_end: subscription.cancel_at_period_end,
+  }, { onConflict: 'subscriber_id,author_id' });
+
+  // Record revenue for author
+  const platformFeeCents = Math.round(amountCents * PLATFORM_CONFIG.PLATFORM_FEE_PERCENT / 100);
+  const netAmountCents = amountCents - platformFeeCents;
+
+  await supabase.from('author_revenue').insert({
+    author_id: authorId,
+    subscription_id: null, // Will be linked after upsert
+    gross_amount_cents: amountCents,
+    platform_fee_cents: platformFeeCents,
+    net_amount_cents: netAmountCents,
+    description: `New ${tierName} subscription`,
+  });
+}
+
+async function handleAuthorSubscriptionUpdated(
+  supabase: AdminClient,
+  subscription: Stripe.Subscription
+) {
+  const subscriberId = subscription.metadata.subscriber_id;
+  const authorId = subscription.metadata.author_id;
+  if (!subscriberId || !authorId) return;
+
+  const mapStatus = (s: string): string => {
+    switch (s) {
+      case 'active': return 'active';
+      case 'past_due': return 'past_due';
+      case 'canceled': return 'canceled';
+      case 'incomplete': return 'incomplete';
+      default: return 'incomplete';
+    }
+  };
+
+  const period = getSubscriptionPeriod(subscription);
+
+  await supabase
+    .from('author_subscriptions')
+    .update({
+      status: mapStatus(subscription.status),
+      cancel_at_period_end: subscription.cancel_at_period_end,
+      current_period_start: period.start,
+      current_period_end: period.end,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('stripe_subscription_id', subscription.id);
+}
+
+async function handleAuthorSubscriptionDeleted(
+  supabase: AdminClient,
+  subscription: Stripe.Subscription
+) {
+  await supabase
+    .from('author_subscriptions')
+    .update({
+      status: 'canceled',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('stripe_subscription_id', subscription.id);
+}
+
 async function handleInvoicePaid(
   supabase: AdminClient,
   invoice: Stripe.Invoice
@@ -224,8 +340,48 @@ async function handleInvoicePaid(
   const inv = getInvoiceFields(invoice);
   if (!inv.subscription) return;
 
-  // Get subscription to find user
+  // Get subscription to find user/metadata
   const sub = await stripe.subscriptions.retrieve(inv.subscription);
+
+  // Check if this is an author subscription payment
+  if (sub.metadata.type === 'author_subscription') {
+    const authorId = sub.metadata.author_id;
+    const tierName = sub.metadata.tier_name;
+    if (!authorId) return;
+
+    const amountPaid = inv.amountPaid;
+    const platformFeeCents = Math.round(amountPaid * PLATFORM_CONFIG.PLATFORM_FEE_PERCENT / 100);
+    const netAmountCents = amountPaid - platformFeeCents;
+
+    // Record revenue
+    await supabase.from('author_revenue').insert({
+      author_id: authorId,
+      gross_amount_cents: amountPaid,
+      platform_fee_cents: platformFeeCents,
+      net_amount_cents: netAmountCents,
+      description: `${tierName} subscription renewal`,
+    });
+
+    // Record transaction
+    await supabase.from('transactions').insert({
+      user_id: sub.metadata.subscriber_id || null,
+      type: 'author_subscription_payment',
+      status: 'succeeded',
+      amount_cents: amountPaid,
+      currency: invoice.currency,
+      author_id: authorId,
+      platform_fee_cents: platformFeeCents,
+      author_earning_cents: netAmountCents,
+      stripe_payment_intent_id: inv.paymentIntent,
+      stripe_invoice_id: invoice.id,
+      stripe_receipt_url: inv.hostedInvoiceUrl,
+      description: `${tierName} subscription to author`,
+    });
+
+    return; // Don't also process as reader premium
+  }
+
+  // Reader premium invoice handling
   const userId = sub.metadata.user_id;
   if (!userId) return;
 
