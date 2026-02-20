@@ -8,6 +8,7 @@ import { Footer } from '@/components/layout/footer'
 import { CookieConsent } from '@/components/cookie-consent'
 import { GenreOnboardingWrapper } from '@/components/onboarding/genre-onboarding-wrapper'
 import { OfflineIndicator } from '@/components/offline-indicator'
+import { PWAInstallPrompt } from '@/components/pwa-install-prompt'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -77,6 +78,7 @@ export default function RootLayout({
             <GenreOnboardingWrapper />
           </ToastProvider>
           <OfflineIndicator />
+          <PWAInstallPrompt />
         </ThemeProvider>
       </body>
     </html>
