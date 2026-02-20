@@ -12,6 +12,13 @@ export default async function BillingPage() {
     redirect("/login");
   }
 
+  // Get user premium status
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_premium")
+    .eq("id", user.id)
+    .single();
+
   // Get active subscription
   const { data: subscription } = await supabase
     .from("subscriptions")
@@ -35,6 +42,7 @@ export default async function BillingPage() {
     <BillingClient
       subscription={subscription}
       transactions={transactions || []}
+      isPremium={profile?.is_premium || false}
     />
   );
 }

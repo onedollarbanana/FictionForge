@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { User, Circle, Bell, Trash2, CreditCard } from "lucide-react";
+import { PremiumUpsellCompact } from "@/components/premium-upsell";
 
 export const dynamic = "force-dynamic";
 
@@ -17,13 +18,20 @@ export default async function SettingsLayout({
     redirect("/login");
   }
 
+  // Check premium status for upsell
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_premium")
+    .eq("id", user.id)
+    .single();
+
+  const isPremium = profile?.is_premium || false;
+
   const navItems = [
     { href: "/settings/profile", label: "Profile", icon: User },
     { href: "/settings/borders", label: "Borders", icon: Circle },
     { href: "/settings/billing", label: "Billing", icon: CreditCard },
-    // Future settings pages:
     { href: "/settings/notifications", label: "Notifications", icon: Bell },
-    // { href: "/settings/privacy", label: "Privacy", icon: Shield },
     { href: "/settings/account", label: "Account", icon: Trash2 },
   ];
 
@@ -33,7 +41,7 @@ export default async function SettingsLayout({
       
       <div className="flex flex-col md:flex-row gap-8">
         {/* Sidebar */}
-        <nav className="md:w-48 shrink-0">
+        <nav className="md:w-48 shrink-0 space-y-4">
           <ul className="space-y-1">
             {navItems.map((item) => (
               <li key={item.href}>
@@ -47,6 +55,13 @@ export default async function SettingsLayout({
               </li>
             ))}
           </ul>
+
+          {/* Premium upsell for non-premium users */}
+          {!isPremium && (
+            <div className="pt-2 border-t">
+              <PremiumUpsellCompact />
+            </div>
+          )}
         </nav>
 
         {/* Content */}
