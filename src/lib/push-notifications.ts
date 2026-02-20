@@ -2,7 +2,8 @@ import { createAdminClient } from '@/lib/supabase-admin';
 
 // Lazy initialization for web-push (same pattern as Stripe)
 let webpushInitialized = false;
-let webpush: typeof import('web-push') | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let webpush: any = null;
 
 function getWebPush() {
   if (!webpushInitialized) {
@@ -17,7 +18,7 @@ function getWebPush() {
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     webpush = require('web-push');
-    webpush!.setVapidDetails(email, publicKey, privateKey);
+    webpush.setVapidDetails(email, publicKey, privateKey);
     webpushInitialized = true;
   }
   return webpush;
@@ -90,7 +91,7 @@ export async function notifyFollowers(
     return { sent: 0, failed: 0 };
   }
 
-  const followerIds = followers.map((f) => f.user_id);
+  const followerIds = followers.map((f: { user_id: string }) => f.user_id);
 
   // Get push subscriptions for these followers
   const { data: subscriptions, error: subError } = await supabase
@@ -115,7 +116,9 @@ export async function notifyFollowers(
 
   // Send notifications in parallel (batched)
   const results = await Promise.allSettled(
-    subscriptions.map((sub) => sendPushNotification(sub, payload))
+    subscriptions.map((sub: { endpoint: string; p256dh: string; auth: string }) =>
+      sendPushNotification(sub, payload)
+    )
   );
 
   for (const result of results) {
