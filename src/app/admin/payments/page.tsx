@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
+import { RefundButton } from "./refund-button";
 
 const tabs = [
   { key: 'overview', label: 'Overview' },
@@ -151,12 +152,13 @@ async function TransactionsTab() {
             <th className="text-right p-3 font-medium">Amount</th>
             <th className="text-left p-3 font-medium">Status</th>
             <th className="text-left p-3 font-medium">Stripe ID</th>
+            <th className="text-left p-3 font-medium">Actions</th>
           </tr>
         </thead>
         <tbody>
           {(!transactions || transactions.length === 0) ? (
             <tr>
-              <td colSpan={6} className="p-6 text-center text-muted-foreground">No transactions found</td>
+              <td colSpan={7} className="p-6 text-center text-muted-foreground">No transactions found</td>
             </tr>
           ) : (
             transactions.map((tx: any) => (
@@ -171,6 +173,11 @@ async function TransactionsTab() {
                 <td className="p-3 text-right font-mono">{formatCurrency(tx.amount_cents)}</td>
                 <td className="p-3"><StatusBadge status={tx.status} /></td>
                 <td className="p-3 font-mono text-xs text-muted-foreground truncate max-w-[200px]">{tx.stripe_payment_intent_id ?? '—'}</td>
+                <td className="p-3">
+                  {tx.status === 'succeeded' && (
+                    <RefundButton transactionId={tx.id} amount={tx.amount_cents} />
+                  )}
+                </td>
               </tr>
             ))
           )}
