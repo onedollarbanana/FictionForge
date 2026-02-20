@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+function getStripe() { return new Stripe(process.env.STRIPE_SECRET_KEY!); }
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     // Create Stripe refund
     let stripeRefund;
     try {
-      stripeRefund = await stripe.refunds.create({
+      stripeRefund = await getStripe().refunds.create({
         payment_intent: transaction.stripe_payment_intent_id,
         reason: 'requested_by_customer',
       });
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
 
         if (subscription?.stripe_subscription_id) {
           try {
-            await stripe.subscriptions.cancel(subscription.stripe_subscription_id);
+            await getStripe().subscriptions.cancel(subscription.stripe_subscription_id);
           } catch (e: any) {
             console.error('Failed to cancel Stripe subscription:', e.message);
           }

@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+function getStripe() { return new Stripe(process.env.STRIPE_SECRET_KEY!); }
 
 export async function POST(request: NextRequest) {
   try {
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     // Create Stripe transfer to connected account
     let transfer;
     try {
-      transfer = await stripe.transfers.create({
+      transfer = await getStripe().transfers.create({
         amount: payoutAmount,
         currency: 'usd',
         destination: account.stripe_account_id,

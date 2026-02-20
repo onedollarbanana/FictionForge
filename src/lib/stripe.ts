@@ -1,7 +1,19 @@
 import Stripe from 'stripe';
 
-// Server-side Stripe client
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+// Server-side Stripe client (lazy init to avoid build-time errors)
+let _stripe: Stripe | null = null;
+export function getStripe(): Stripe {
+  if (!_stripe) {
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+  }
+  return _stripe;
+}
+// Backward compat — some files import { stripe }
+export const stripe = new Proxy({} as Stripe, {
+  get(_, prop) {
+    return (getStripe() as any)[prop];
+  },
+});
 
 // Platform configuration — easy to adjust
 // These values can be overridden via the platform_config table in Supabase

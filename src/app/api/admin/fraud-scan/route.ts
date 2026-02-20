@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         cancelCounts.set(sub.user_id, count);
       }
 
-      for (const [userId, count] of cancelCounts) {
+      for (const [userId, count] of Array.from(cancelCounts.entries())) {
         if (count >= 3) {
           // Check for existing open flag
           const { data: existing } = await supabase
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      for (const [authorId, data] of authorSubCounts) {
+      for (const [authorId, data] of Array.from(authorSubCounts.entries())) {
         if (data.count >= 10) {
           const { data: existing } = await supabase
             .from('fraud_flags')
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
         userTxStats.set(tx.user_id, stats);
       }
 
-      for (const [userId, stats] of userTxStats) {
+      for (const [userId, stats] of Array.from(userTxStats.entries())) {
         if (stats.total >= 4 && stats.refunded / stats.total >= 0.5) {
           const { data: existing } = await supabase
             .from('fraud_flags')
