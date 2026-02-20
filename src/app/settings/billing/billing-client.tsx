@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Crown, CreditCard, ExternalLink, Check, Loader2 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Crown, CreditCard, ExternalLink, Check, Loader2, ArrowUpCircle } from "lucide-react";
+import Link from "next/link";
 
 interface Subscription {
   id: string;
@@ -25,22 +26,52 @@ interface Transaction {
 }
 
 export function BillingClient({
-  subscription,
+  subscription: initialSubscription,
   transactions,
+  isPremium,
 }: {
   subscription: Subscription | null;
   transactions: Transaction[];
+  isPremium: boolean;
 }) {
   const [loading, setLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showCanceled, setShowCanceled] = useState(false);
+  const [subscription, setSubscription] = useState(initialSubscription);
+  const [verifying, setVerifying] = useState(false);
+
+  const verifySession = useCallback(async () => {
+    setVerifying(true);
+    try {
+      const res = await fetch("/api/stripe/verify-session", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.subscription) {
+          setSubscription(data.subscription);
+        }
+        // Reload to get fresh server data
+        window.location.href = "/settings/billing";
+      }
+    } catch {
+      // Webhook will handle it eventually
+    } finally {
+      setVerifying(false);
+    }
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    setShowSuccess(params.get("success") === "true");
-    setShowCanceled(params.get("canceled") === "true");
-  }, []);
+    const isSuccess = params.get("success") === "true";
+    const isCanceled = params.get("canceled") === "true";
+    setShowSuccess(isSuccess);
+    setShowCanceled(isCanceled);
+
+    // If checkout succeeded but we don't have a subscription yet, verify it
+    if (isSuccess && !initialSubscription) {
+      verifySession();
+    }
+  }, [initialSubscription, verifySession]);
 
   const handleSubscribe = async (interval: "monthly" | "annual") => {
     setLoading(interval);
@@ -96,6 +127,10 @@ export function BillingClient({
     });
   };
 
+  const isMonthly = subscription?.billing_interval === "monthly";
+  const isAnnual = subscription?.billing_interval === "annual";
+  const isActive = subscription?.status === "active" || subscription?.status === "trialing";
+
   return (
     <div className="space-y-8">
       <div>
@@ -108,8 +143,22 @@ export function BillingClient({
       {showSuccess && (
         <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 flex items-center gap-3">
           <Check className="h-5 w-5 text-green-500 shrink-0" />
-          <p className="text-sm text-green-400">
-            Welcome to Reader Premium! Your subscription is now active.
+          <div>
+            <p className="text-sm font-medium text-green-400">
+              Welcome to Reader Premium! 🎉
+            </p>
+            <p className="text-xs text-green-400/70 mt-0.5">
+              Your subscription is now active. Enjoy ad-free reading!
+            </p>
+          </div>
+        </div>
+      )}
+
+      {verifying && (
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 flex items-center gap-3">
+          <Loader2 className="h-5 w-5 text-blue-500 animate-spin shrink-0" />
+          <p className="text-sm text-blue-400">
+            Activating your premium subscription...
           </p>
         </div>
       )}
@@ -133,21 +182,21 @@ export function BillingClient({
       )}
 
       {/* Current Subscription */}
-      {subscription ? (
+      {subscription && isActive ? (
         <div className="border rounded-lg p-6">
           <div className="flex items-center gap-2 mb-4">
             <Crown className="h-5 w-5 text-yellow-500" />
             <h3 className="font-semibold">Reader Premium</h3>
             <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-500 font-medium">
-              {subscription.status === "active" ? "Active" : subscription.status}
+              Active
             </span>
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-sm mb-4">
             <div>
-              <p className="text-muted-foreground">Plan</p>
+              <p className="text-muted-foreground">Current Plan</p>
               <p className="font-medium">
-                {formatAmount(subscription.amount_cents, subscription.currency)}/{subscription.billing_interval === "annual" ? "year" : "month"}
+                {formatAmount(subscription.amount_cents, subscription.currency || "usd")}/{isAnnual ? "year" : "month"}
               </p>
             </div>
             <div>
@@ -167,6 +216,26 @@ export function BillingClient({
             </p>
           )}
 
+          {/* Upgrade to Annual if on Monthly */}
+          {isMonthly && !subscription.cancel_at_period_end && (
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <ArrowUpCircle className="h-4 w-4 text-primary" />
+                <p className="text-sm font-medium">Save with Annual</p>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Switch to annual billing and save $6/year ($2.50/mo instead of $3/mo)
+              </p>
+              <button
+                onClick={handleManage}
+                disabled={loading === "manage"}
+                className="text-sm px-3 py-1.5 rounded-md bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                Switch to Annual — $30/year
+              </button>
+            </div>
+          )}
+
           <button
             onClick={handleManage}
             disabled={loading === "manage"}
@@ -181,73 +250,84 @@ export function BillingClient({
           </button>
         </div>
       ) : (
-        /* Upgrade Cards */
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="border rounded-lg p-6 flex flex-col">
-            <h3 className="font-semibold mb-1">Monthly</h3>
-            <p className="text-3xl font-bold mb-1">
-              $3<span className="text-base font-normal text-muted-foreground">/month</span>
+        /* Pricing Cards for non-subscribers */
+        <div>
+          <div className="text-center mb-6">
+            <h3 className="text-lg font-semibold mb-1">Upgrade to Reader Premium</h3>
+            <p className="text-sm text-muted-foreground">
+              Support the platform and enjoy an enhanced reading experience.
+              {" "}
+              <Link href="/premium" className="text-primary hover:underline">
+                See all benefits →
+              </Link>
             </p>
-            <p className="text-sm text-muted-foreground mb-4">Cancel anytime</p>
-            <ul className="text-sm space-y-2 mb-6 flex-1">
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" /> Premium badge on profile
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" /> Ad-free reading
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" /> Support the platform
-              </li>
-            </ul>
-            <button
-              onClick={() => handleSubscribe("monthly")}
-              disabled={loading !== null}
-              className="w-full py-2 px-4 rounded-md bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading === "monthly" ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Crown className="h-4 w-4" />
-              )}
-              Subscribe Monthly
-            </button>
           </div>
 
-          <div className="border-2 border-primary rounded-lg p-6 flex flex-col relative">
-            <div className="absolute -top-3 left-4 px-2 py-0.5 bg-primary text-primary-foreground text-xs font-bold rounded">
-              SAVE $6/YEAR
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="border rounded-lg p-6 flex flex-col">
+              <h3 className="font-semibold mb-1">Monthly</h3>
+              <p className="text-3xl font-bold mb-1">
+                $3<span className="text-base font-normal text-muted-foreground">/month</span>
+              </p>
+              <p className="text-sm text-muted-foreground mb-4">Cancel anytime</p>
+              <ul className="text-sm space-y-2 mb-6 flex-1">
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-500 shrink-0" /> Premium badge on your profile
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-500 shrink-0" /> Ad-free reading experience
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-500 shrink-0" /> Support independent authors
+                </li>
+              </ul>
+              <button
+                onClick={() => handleSubscribe("monthly")}
+                disabled={loading !== null}
+                className="w-full py-2.5 px-4 rounded-md border-2 border-primary text-primary font-medium hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading === "monthly" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : null}
+                Subscribe Monthly
+              </button>
             </div>
-            <h3 className="font-semibold mb-1">Annual</h3>
-            <p className="text-3xl font-bold mb-1">
-              $30<span className="text-base font-normal text-muted-foreground">/year</span>
-            </p>
-            <p className="text-sm text-muted-foreground mb-4">
-              $2.50/month — best value
-            </p>
-            <ul className="text-sm space-y-2 mb-6 flex-1">
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" /> Everything in Monthly
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" /> Save $6 per year
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" /> Lower payment fees
-              </li>
-            </ul>
-            <button
-              onClick={() => handleSubscribe("annual")}
-              disabled={loading !== null}
-              className="w-full py-2 px-4 rounded-md bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading === "annual" ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Crown className="h-4 w-4" />
-              )}
-              Subscribe Annually
-            </button>
+
+            <div className="border-2 border-primary rounded-lg p-6 flex flex-col relative">
+              <div className="absolute -top-3 left-4 px-2 py-0.5 bg-primary text-primary-foreground text-xs font-bold rounded">
+                BEST VALUE
+              </div>
+              <h3 className="font-semibold mb-1">Annual</h3>
+              <p className="text-3xl font-bold mb-1">
+                $30<span className="text-base font-normal text-muted-foreground">/year</span>
+              </p>
+              <p className="text-sm text-muted-foreground mb-4">
+                $2.50/month — save $6/year
+              </p>
+              <ul className="text-sm space-y-2 mb-6 flex-1">
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-500 shrink-0" /> Everything in Monthly
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-500 shrink-0" /> Save $6 per year
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-500 shrink-0" /> Lower payment processing fees
+                </li>
+              </ul>
+              <button
+                onClick={() => handleSubscribe("annual")}
+                disabled={loading !== null}
+                className="w-full py-2.5 px-4 rounded-md bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading === "annual" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Crown className="h-4 w-4" />
+                )}
+                Subscribe Annually
+              </button>
+            </div>
           </div>
         </div>
       )}
