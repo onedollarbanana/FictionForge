@@ -67,9 +67,10 @@ export function NotificationSettings() {
       }
 
       const registration = await navigator.serviceWorker.ready;
+      const keyArray = urlBase64ToUint8Array(vapidPublicKey);
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+        applicationServerKey: keyArray.buffer as ArrayBuffer,
       });
 
       const response = await fetch('/api/push/subscribe', {
