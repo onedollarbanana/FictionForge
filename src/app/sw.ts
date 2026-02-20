@@ -66,10 +66,10 @@ self.addEventListener('notificationclick', ((event: any) => {
   event.waitUntil(
     self.clients
       .matchAll({ type: 'window', includeUncontrolled: true })
-      .then((clientList: readonly WindowClient[]) => {
+      .then((clientList) => {
         for (const client of clientList) {
           if (client.url.includes(url) && 'focus' in client) {
-            return client.focus();
+            return (client as WindowClient).focus();
           }
         }
         if (self.clients.openWindow) {
