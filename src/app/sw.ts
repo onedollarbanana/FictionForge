@@ -2,22 +2,6 @@ import { defaultCache } from '@serwist/next/worker';
 import type { PrecacheEntry, SerwistGlobalConfig } from 'serwist';
 import { Serwist } from 'serwist';
 
-// Manual type declarations for service worker events
-// (webworker lib can't be in tsconfig alongside dom)
-interface PushEventData {
-  json(): unknown;
-  text(): string;
-}
-
-interface PushEventLike extends ExtendableEvent {
-  data: PushEventData | null;
-}
-
-interface NotificationEventLike extends ExtendableEvent {
-  action: string;
-  notification: Notification & { data?: Record<string, unknown> };
-}
-
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
     __SW_MANIFEST: (PrecacheEntry | string)[] | undefined;
@@ -45,52 +29,44 @@ const serwist = new Serwist({
 });
 
 // Handle push notifications
-self.addEventListener('push', ((event: PushEventLike) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+self.addEventListener('push', ((event: any) => {
   if (!event.data) return;
 
   try {
-    const data = event.data.json() as Record<string, string>;
+    const data = event.data.json();
     const { title, body, icon, badge, url } = data;
 
-    const options: Record<string, unknown> = {
-      body: body || 'New chapter available!',
-      icon: icon || '/icons/icon-192x192.png',
-      badge: badge || '/icons/icon-72x72.png',
-      data: { url: url || '/' },
-      vibrate: [100, 50, 100],
-      actions: [
-        { action: 'open', title: 'Read Now' },
-        { action: 'dismiss', title: 'Dismiss' },
-      ],
-    };
-
     event.waitUntil(
-      self.registration.showNotification(
-        title || 'New Chapter',
-        options as NotificationOptions
-      )
+      self.registration.showNotification(title || 'New Chapter', {
+        body: body || 'New chapter available!',
+        icon: icon || '/icons/icon-192x192.png',
+        badge: badge || '/icons/icon-72x72.png',
+        data: { url: url || '/' },
+      } as NotificationOptions)
     );
   } catch {
     event.waitUntil(
       self.registration.showNotification('New Chapter', {
-        body: event.data!.text(),
+        body: event.data.text(),
       })
     );
   }
 }) as EventListener);
 
 // Handle notification click
-self.addEventListener('notificationclick', ((event: NotificationEventLike) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+self.addEventListener('notificationclick', ((event: any) => {
   event.notification.close();
 
   if (event.action === 'dismiss') return;
 
-  const url = (event.notification.data?.url as string) || '/';
+  const url = event.notification.data?.url || '/';
 
   event.waitUntil(
     self.clients
       .matchAll({ type: 'window', includeUncontrolled: true })
-      .then((clientList) => {
+      .then((clientList: readonly WindowClient[]) => {
         for (const client of clientList) {
           if (client.url.includes(url) && 'focus' in client) {
             return client.focus();
