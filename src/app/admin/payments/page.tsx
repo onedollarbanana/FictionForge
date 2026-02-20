@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { RefundButton } from "./refund-button";
+import { HoldButton, ProcessPayoutButton } from "./payout-actions";
 
 const tabs = [
   { key: 'overview', label: 'Overview' },
@@ -260,12 +261,14 @@ async function AuthorAccountsTab() {
             <th className="text-left p-3 font-medium">Payouts Enabled</th>
             <th className="text-right p-3 font-medium">Balance</th>
             <th className="text-right p-3 font-medium">Total Earned</th>
+            <th className="text-left p-3 font-medium">Hold Status</th>
+            <th className="text-left p-3 font-medium">Actions</th>
           </tr>
         </thead>
         <tbody>
           {(!accounts || accounts.length === 0) ? (
             <tr>
-              <td colSpan={6} className="p-6 text-center text-muted-foreground">No author accounts found</td>
+              <td colSpan={8} className="p-6 text-center text-muted-foreground">No author accounts found</td>
             </tr>
           ) : (
             accounts.map((acc: any) => (
@@ -283,6 +286,28 @@ async function AuthorAccountsTab() {
                 </td>
                 <td className="p-3 text-right font-mono">{formatCurrency(acc.balance_cents)}</td>
                 <td className="p-3 text-right font-mono">{formatCurrency(acc.total_earned_cents)}</td>
+                <td className="p-3">
+                  {acc.payout_hold ? (
+                    <span
+                      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 cursor-help"
+                      title={acc.hold_reason || 'No reason provided'}
+                    >
+                      On Hold
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                      Active
+                    </span>
+                  )}
+                </td>
+                <td className="p-3">
+                  <div className="flex items-center gap-2">
+                    <HoldButton authorId={acc.author_id} isHeld={acc.payout_hold} />
+                    {!acc.payout_hold && acc.balance_cents >= 2000 && (
+                      <ProcessPayoutButton authorId={acc.author_id} balanceCents={acc.balance_cents} />
+                    )}
+                  </div>
+                </td>
               </tr>
             ))
           )}

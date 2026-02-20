@@ -20,7 +20,7 @@ export async function POST() {
     // Check Stripe Connect account
     const { data: stripeAccount } = await admin
       .from('author_stripe_accounts')
-      .select('stripe_account_id, onboarding_complete, payouts_enabled')
+      .select('stripe_account_id, onboarding_complete, payouts_enabled, payout_hold')
       .eq('author_id', user.id)
       .maybeSingle()
 
@@ -68,6 +68,14 @@ export async function POST() {
           )} minimum payout threshold`,
         },
         { status: 400 }
+      )
+    }
+
+    // Check if account is on hold
+    if (stripeAccount.payout_hold) {
+      return NextResponse.json(
+        { error: 'Your payouts are currently on hold. Please contact support for more information.' },
+        { status: 403 }
       )
     }
 
