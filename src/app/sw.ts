@@ -66,10 +66,11 @@ self.addEventListener('notificationclick', ((event: any) => {
   event.waitUntil(
     self.clients
       .matchAll({ type: 'window', includeUncontrolled: true })
-      .then((clientList) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .then((clientList: any[]) => {
         for (const client of clientList) {
-          if (client.url.includes(url) && 'focus' in client) {
-            return (client as WindowClient).focus();
+          if (client.url?.includes(url) && 'focus' in client) {
+            return client.focus();
           }
         }
         if (self.clients.openWindow) {
