@@ -9,6 +9,8 @@ import { createClient } from '@/lib/supabase/client'
 import { type TierName } from '@/lib/platform-config'
 import { Loader2 } from 'lucide-react'
 
+const PRELOAD_AHEAD = 2 // Always keep 2 chapters loaded ahead of current position
+
 interface ChapterData {
   id: string
   title: string
@@ -54,29 +56,55 @@ export function ContinuousScrollReader({
   const chapterRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const [activeChapterId, setActiveChapterId] = useState(initialChapter.id)
   const viewedChapters = useRef<Set<string>>(new Set([initialChapter.id]))
+  const loadingRef = useRef(false) // Prevent concurrent fetches
 
-  // Find next chapter ID to load
-  const getNextChapterId = useCallback(() => {
-    const lastLoaded = chapters[chapters.length - 1]
+  // Find next chapter ID to load based on what's already loaded
+  const getNextChapterIdAfter = useCallback((loadedChapters: ChapterData[]) => {
+    const lastLoaded = loadedChapters[loadedChapters.length - 1]
     const currentIdx = allChapterIds.findIndex(ch => ch.id === lastLoaded.id)
     if (currentIdx === -1 || currentIdx >= allChapterIds.length - 1) return null
     return allChapterIds[currentIdx + 1].id
-  }, [chapters, allChapterIds])
+  }, [allChapterIds])
 
-  // Fetch next chapter
+  // Fetch a single chapter by ID
+  const fetchChapter = useCallback(async (chapterId: string): Promise<ChapterData | null> => {
+    try {
+      const response = await fetch(`/api/chapters/${chapterId}/content`)
+      if (!response.ok) throw new Error('Failed to load chapter')
+      return await response.json()
+    } catch (err) {
+      console.error('Error loading chapter:', err)
+      return null
+    }
+  }, [])
+
+  // Load next chapter and keep preloading if needed
   const loadNextChapter = useCallback(async () => {
-    const nextId = getNextChapterId()
-    if (!nextId || isLoading || reachedEnd) return
-
+    if (loadingRef.current || reachedEnd) return
+    loadingRef.current = true
     setIsLoading(true)
     setError(null)
 
     try {
-      const response = await fetch(`/api/chapters/${nextId}/content`)
-      if (!response.ok) {
-        throw new Error('Failed to load chapter')
+      // Get current chapters from state
+      const currentChapters = await new Promise<ChapterData[]>(resolve => {
+        setChapters(prev => {
+          resolve(prev)
+          return prev
+        })
+      })
+
+      const nextId = getNextChapterIdAfter(currentChapters)
+      if (!nextId) {
+        setReachedEnd(true)
+        return
       }
-      const data: ChapterData = await response.json()
+
+      const data = await fetchChapter(nextId)
+      if (!data) {
+        setError('Failed to load next chapter. Scroll up and try again.')
+        return
+      }
 
       setChapters(prev => [...prev, data])
 
@@ -84,13 +112,27 @@ export function ContinuousScrollReader({
       if (!data.hasAccess) {
         setReachedEnd(true)
       }
-    } catch (err) {
-      console.error('Error loading next chapter:', err)
-      setError('Failed to load next chapter. Scroll up and try again.')
     } finally {
+      loadingRef.current = false
       setIsLoading(false)
     }
-  }, [getNextChapterId, isLoading, reachedEnd])
+  }, [reachedEnd, getNextChapterIdAfter, fetchChapter])
+
+  // Preload chapters on mount and whenever chapters change
+  useEffect(() => {
+    const preload = async () => {
+      // Find current active chapter index in loaded chapters
+      const activeIdx = chapters.findIndex(ch => ch.id === activeChapterId)
+      const chaptersAhead = chapters.length - 1 - activeIdx
+
+      // If we don't have enough chapters loaded ahead, load more
+      if (chaptersAhead < PRELOAD_AHEAD && !reachedEnd && !loadingRef.current) {
+        loadNextChapter()
+      }
+    }
+
+    preload()
+  }, [chapters, activeChapterId, reachedEnd, loadNextChapter])
 
   // Check if we've reached the end of published chapters
   useEffect(() => {
@@ -101,23 +143,23 @@ export function ContinuousScrollReader({
     }
   }, [chapters, allChapterIds])
 
-  // IntersectionObserver for lazy loading
+  // IntersectionObserver for lazy loading (backup trigger)
   useEffect(() => {
     const trigger = loadTriggerRef.current
     if (!trigger) return
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !isLoading && !reachedEnd) {
+        if (entry.isIntersecting && !loadingRef.current && !reachedEnd) {
           loadNextChapter()
         }
       },
-      { rootMargin: '500px' } // Start loading 500px before reaching bottom
+      { rootMargin: '1500px' } // Start loading 1500px before reaching bottom
     )
 
     observer.observe(trigger)
     return () => observer.disconnect()
-  }, [isLoading, reachedEnd, loadNextChapter])
+  }, [reachedEnd, loadNextChapter])
 
   // Track which chapter is in the viewport for URL update + progress tracking
   useEffect(() => {
@@ -139,11 +181,10 @@ export function ContinuousScrollReader({
             // Track view for newly visible chapters
             if (!viewedChapters.current.has(chapterId)) {
               viewedChapters.current.add(chapterId)
-              // ViewTracker component handles the actual tracking
             }
           }
         },
-        { threshold: 0.3 } // Consider chapter "active" when 30% visible
+        { threshold: 0.3 }
       )
 
       observer.observe(el)
@@ -228,7 +269,6 @@ export function ContinuousScrollReader({
                   commentCount={chapter.commentCount}
                 />
               )}
-              {/* Show end marker if this is the only/last chapter */}
               {chapters.length === 1 && !isLoading && reachedEnd && (
                 <ChapterSeparator
                   completedChapter={{
