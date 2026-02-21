@@ -144,8 +144,10 @@ export default async function ChapterReadingPage({ params }: PageProps) {
 
   return (
     <>
-      {/* Scroll to top on navigation */}
-      <ScrollToTop />
+      {/* Scroll to top on navigation — disabled in continuous scroll mode */}
+      <PagedModeOnly>
+        <ScrollToTop />
+      </PagedModeOnly>
 
       {/* Cache chapter for offline reading */}
       <ChapterOfflineCacher
