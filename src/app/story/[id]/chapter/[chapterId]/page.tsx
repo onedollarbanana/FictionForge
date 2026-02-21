@@ -23,6 +23,7 @@ import { ChapterLockedOverlay } from "@/components/reader/chapter-locked-overlay
 import { type TierName } from "@/lib/platform-config";
 import { ChapterOfflineCacher } from "@/components/reader/chapter-offline-cacher";
 import { ReadingModeSwitch } from "@/components/reader/reading-mode-switch";
+import { PagedModeOnly } from "@/components/reader/paged-mode-only";
 
 export const dynamic = "force-dynamic";
 
@@ -185,21 +186,19 @@ export default async function ChapterReadingPage({ params }: PageProps) {
       {/* Track views (unique per session/user) */}
       <ViewTracker chapterId={chapterId} storyId={storyId} />
 
-      {/* Keyboard navigation: arrows for prev/next, Escape for story page
-          TODO (CS-3): Disable in continuous mode where natural scrolling takes over */}
-      <KeyboardNavigation
-        storyId={storyId}
-        prevChapterId={prevChapter?.id}
-        nextChapterId={nextChapter?.id}
-      />
-
-      {/* Mobile swipe navigation
-          TODO (CS-3): Disable in continuous mode where natural scrolling takes over */}
-      <SwipeNavigation
-        storyId={storyId}
-        prevChapterId={prevChapter?.id}
-        nextChapterId={nextChapter?.id}
-      />
+      {/* Keyboard/swipe navigation: disabled in continuous scroll mode */}
+      <PagedModeOnly>
+        <KeyboardNavigation
+          storyId={storyId}
+          prevChapterId={prevChapter?.id}
+          nextChapterId={nextChapter?.id}
+        />
+        <SwipeNavigation
+          storyId={storyId}
+          prevChapterId={prevChapter?.id}
+          nextChapterId={nextChapter?.id}
+        />
+      </PagedModeOnly>
 
       <ChapterContentWrapper 
         headerContent={headerContent}

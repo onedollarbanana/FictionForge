@@ -197,17 +197,65 @@ export function ContinuousScrollReader({
 
   return (
     <div className="continuous-scroll-reader">
-      {chapters.map((chapter, index) => (
-        <div key={chapter.id}>
-          {/* Chapter content */}
-          <div
-            ref={(el) => {
-              if (el) chapterRefs.current.set(chapter.id, el)
-            }}
-            data-chapter-id={chapter.id}
-          >
-            {/* Chapter header (skip for first chapter - already shown by page) */}
-            {index > 0 && (
+      {chapters.map((chapter, index) => {
+        // First chapter: content already rendered by server, just show separator
+        if (index === 0) {
+          return (
+            <div key={chapter.id}>
+              <div
+                ref={(el) => {
+                  if (el) chapterRefs.current.set(chapter.id, el)
+                }}
+                data-chapter-id={chapter.id}
+                className="h-0"
+              />
+              {chapters.length > 1 && (
+                <ChapterSeparator
+                  completedChapter={{
+                    id: chapter.id,
+                    title: chapter.title,
+                    chapterNumber: chapter.chapterNumber,
+                  }}
+                  nextChapter={chapters[1] ? {
+                    id: chapters[1].id,
+                    title: chapters[1].title,
+                    chapterNumber: chapters[1].chapterNumber,
+                    wordCount: chapters[1].wordCount,
+                  } : null}
+                  storyId={storyId}
+                  currentUserId={currentUserId}
+                  storyAuthorId={storyAuthorId}
+                  commentCount={chapter.commentCount}
+                />
+              )}
+              {/* Show end marker if this is the only/last chapter */}
+              {chapters.length === 1 && !isLoading && reachedEnd && (
+                <ChapterSeparator
+                  completedChapter={{
+                    id: chapter.id,
+                    title: chapter.title,
+                    chapterNumber: chapter.chapterNumber,
+                  }}
+                  nextChapter={null}
+                  storyId={storyId}
+                  currentUserId={currentUserId}
+                  storyAuthorId={storyAuthorId}
+                  commentCount={chapter.commentCount}
+                />
+              )}
+            </div>
+          )
+        }
+
+        // Subsequent chapters: render full content
+        return (
+          <div key={chapter.id}>
+            <div
+              ref={(el) => {
+                if (el) chapterRefs.current.set(chapter.id, el)
+              }}
+              data-chapter-id={chapter.id}
+            >
               <header className="mb-8">
                 <h1 className="text-2xl md:text-3xl font-bold">{chapter.title}</h1>
                 <div className="flex items-center gap-3 mt-2">
@@ -216,117 +264,98 @@ export function ContinuousScrollReader({
                   </p>
                 </div>
               </header>
-            )}
 
-            {!chapter.hasAccess ? (
-              <ChapterLockedOverlay
+              {!chapter.hasAccess ? (
+                <ChapterLockedOverlay
+                  storyId={storyId}
+                  authorId={storyAuthorId}
+                  authorName={chapter.authorName}
+                  requiredTier={chapter.minTierName as TierName}
+                  availableTiers={(authorTiers || []).map(t => ({
+                    tier_name: t.tier_name as TierName,
+                    enabled: t.enabled,
+                    description: t.description,
+                  }))}
+                  isLoggedIn={!!currentUserId}
+                />
+              ) : (
+                <>
+                  {chapter.defaultAuthorNoteBefore && (
+                    <div className="mb-6 p-4 rounded-lg bg-black/5 dark:bg-white/5 border-l-4 border-primary">
+                      <p className="text-sm font-medium opacity-70 mb-1">Author&apos;s Note</p>
+                      <p className="text-sm whitespace-pre-wrap break-words">{chapter.defaultAuthorNoteBefore}</p>
+                    </div>
+                  )}
+                  {chapter.authorNoteBefore && (
+                    <div className="mb-8 p-4 rounded-lg bg-black/5 dark:bg-white/5 border-l-4 border-secondary">
+                      <p className="text-sm font-medium opacity-70 mb-1">Chapter Note</p>
+                      <p className="text-sm whitespace-pre-wrap break-words">{chapter.authorNoteBefore}</p>
+                    </div>
+                  )}
+
+                  {chapter.content && (
+                    <div className="prose dark:prose-invert max-w-none">
+                      <TiptapRenderer content={chapter.content} />
+                    </div>
+                  )}
+
+                  {chapter.authorNoteAfter && (
+                    <div className="mt-8 p-4 rounded-lg bg-black/5 dark:bg-white/5 border-l-4 border-secondary">
+                      <p className="text-sm font-medium opacity-70 mb-1">Chapter Note</p>
+                      <p className="text-sm whitespace-pre-wrap break-words">{chapter.authorNoteAfter}</p>
+                    </div>
+                  )}
+                  {chapter.defaultAuthorNoteAfter && (
+                    <div className="mt-6 p-4 rounded-lg bg-black/5 dark:bg-white/5 border-l-4 border-primary">
+                      <p className="text-sm font-medium opacity-70 mb-1">Author&apos;s Note</p>
+                      <p className="text-sm whitespace-pre-wrap break-words">{chapter.defaultAuthorNoteAfter}</p>
+                    </div>
+                  )}
+                </>
+              )}
+
+              <ViewTracker chapterId={chapter.id} storyId={storyId} />
+            </div>
+
+            {/* Separator between chapters */}
+            {index < chapters.length - 1 && (
+              <ChapterSeparator
+                completedChapter={{
+                  id: chapter.id,
+                  title: chapter.title,
+                  chapterNumber: chapter.chapterNumber,
+                }}
+                nextChapter={chapters[index + 1] ? {
+                  id: chapters[index + 1].id,
+                  title: chapters[index + 1].title,
+                  chapterNumber: chapters[index + 1].chapterNumber,
+                  wordCount: chapters[index + 1].wordCount,
+                } : null}
                 storyId={storyId}
-                authorId={storyAuthorId}
-                authorName={chapter.authorName}
-                requiredTier={chapter.minTierName as TierName}
-                availableTiers={(authorTiers || []).map(t => ({
-                  tier_name: t.tier_name as TierName,
-                  enabled: t.enabled,
-                  description: t.description,
-                }))}
-                isLoggedIn={!!currentUserId}
+                currentUserId={currentUserId}
+                storyAuthorId={storyAuthorId}
+                commentCount={chapter.commentCount}
               />
-            ) : (
-              <>
-                {/* Author notes before */}
-                {index > 0 && chapter.defaultAuthorNoteBefore && (
-                  <div className="mb-6 p-4 rounded-lg bg-black/5 dark:bg-white/5 border-l-4 border-primary">
-                    <p className="text-sm font-medium opacity-70 mb-1">Author&apos;s Note</p>
-                    <p className="text-sm whitespace-pre-wrap break-words">{chapter.defaultAuthorNoteBefore}</p>
-                  </div>
-                )}
-                {index > 0 && chapter.authorNoteBefore && (
-                  <div className="mb-8 p-4 rounded-lg bg-black/5 dark:bg-white/5 border-l-4 border-secondary">
-                    <p className="text-sm font-medium opacity-70 mb-1">Chapter Note</p>
-                    <p className="text-sm whitespace-pre-wrap break-words">{chapter.authorNoteBefore}</p>
-                  </div>
-                )}
-
-                {/* Main content - skip for first chapter (already rendered by page) */}
-                {index > 0 && chapter.content && (
-                  <div className="prose dark:prose-invert max-w-none">
-                    <TiptapRenderer content={chapter.content} />
-                  </div>
-                )}
-
-                {/* Author notes after */}
-                {index > 0 && chapter.authorNoteAfter && (
-                  <div className="mt-8 p-4 rounded-lg bg-black/5 dark:bg-white/5 border-l-4 border-secondary">
-                    <p className="text-sm font-medium opacity-70 mb-1">Chapter Note</p>
-                    <p className="text-sm whitespace-pre-wrap break-words">{chapter.authorNoteAfter}</p>
-                  </div>
-                )}
-                {index > 0 && chapter.defaultAuthorNoteAfter && (
-                  <div className="mt-6 p-4 rounded-lg bg-black/5 dark:bg-white/5 border-l-4 border-primary">
-                    <p className="text-sm font-medium opacity-70 mb-1">Author&apos;s Note</p>
-                    <p className="text-sm whitespace-pre-wrap break-words">{chapter.defaultAuthorNoteAfter}</p>
-                  </div>
-                )}
-              </>
             )}
 
-            {/* View tracker for loaded chapters (not first - already tracked by page) */}
-            {index > 0 && <ViewTracker chapterId={chapter.id} storyId={storyId} />}
+            {/* Separator after last chapter */}
+            {index === chapters.length - 1 && !isLoading && (
+              <ChapterSeparator
+                completedChapter={{
+                  id: chapter.id,
+                  title: chapter.title,
+                  chapterNumber: chapter.chapterNumber,
+                }}
+                nextChapter={null}
+                storyId={storyId}
+                currentUserId={currentUserId}
+                storyAuthorId={storyAuthorId}
+                commentCount={chapter.commentCount}
+              />
+            )}
           </div>
-
-          {/* Chapter separator (between chapters, not after the last one if loading) */}
-          {index < chapters.length - 1 && (
-            <ChapterSeparator
-              completedChapter={{
-                id: chapter.id,
-                title: chapter.title,
-                chapterNumber: chapter.chapterNumber,
-              }}
-              nextChapter={chapters[index + 1] ? {
-                id: chapters[index + 1].id,
-                title: chapters[index + 1].title,
-                chapterNumber: chapters[index + 1].chapterNumber,
-                wordCount: chapters[index + 1].wordCount,
-              } : null}
-              storyId={storyId}
-              currentUserId={currentUserId}
-              storyAuthorId={storyAuthorId}
-              commentCount={chapter.commentCount}
-            />
-          )}
-
-          {/* Show separator after the LAST chapter too (for its comments + end marker) */}
-          {index === chapters.length - 1 && !isLoading && (
-            <ChapterSeparator
-              completedChapter={{
-                id: chapter.id,
-                title: chapter.title,
-                chapterNumber: chapter.chapterNumber,
-              }}
-              nextChapter={
-                !reachedEnd
-                  ? null
-                  : (() => {
-                      const nextIdx = allChapterIds.findIndex(ch => ch.id === chapter.id) + 1
-                      if (nextIdx < allChapterIds.length) {
-                        return {
-                          id: allChapterIds[nextIdx].id,
-                          title: allChapterIds[nextIdx].title,
-                          chapterNumber: allChapterIds[nextIdx].chapterNumber,
-                          wordCount: 0,
-                        }
-                      }
-                      return null
-                    })()
-              }
-              storyId={storyId}
-              currentUserId={currentUserId}
-              storyAuthorId={storyAuthorId}
-              commentCount={chapter.commentCount}
-            />
-          )}
-        </div>
-      ))}
+        )
+      })}
 
       {/* Loading indicator */}
       {isLoading && (
