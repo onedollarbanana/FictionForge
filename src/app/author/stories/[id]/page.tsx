@@ -289,6 +289,9 @@ export default function StoryOverviewPage() {
           <Link href={`/author/stories/${storyId}/chapters/new`}>
             <Button>+ New Chapter</Button>
           </Link>
+          <Link href={`/author/stories/${storyId}/chapters/import`}>
+            <Button variant="outline">Import Chapters</Button>
+          </Link>
         </div>
       </div>
 
@@ -407,9 +410,14 @@ export default function StoryOverviewPage() {
         {chapters.length === 0 ? (
           <div className="text-center py-8 border rounded-lg bg-card">
             <p className="text-muted-foreground mb-4">No chapters yet</p>
-            <Link href={`/author/stories/${storyId}/chapters/new`}>
-              <Button>Write Your First Chapter</Button>
-            </Link>
+            <div className="flex gap-2 justify-center">
+              <Link href={`/author/stories/${storyId}/chapters/new`}>
+                <Button>Write Your First Chapter</Button>
+              </Link>
+              <Link href={`/author/stories/${storyId}/chapters/import`}>
+                <Button variant="outline">Import Chapters</Button>
+              </Link>
+            </div>
           </div>
         ) : reorderMode ? (
           <DragDropContext onDragEnd={handleDragEnd}>
