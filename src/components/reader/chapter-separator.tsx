@@ -112,8 +112,9 @@ export function ChapterSeparator({
           />
 
           {/* Sticky Collapse Button - appears when scrolled into comments */}
+          {/* bottom-20 on mobile to clear the fixed bottom nav bar, bottom-6 on desktop */}
           {stickyVisible && (
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+            <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[60]">
               <button
                 onClick={() => {
                   setShowComments(false)
