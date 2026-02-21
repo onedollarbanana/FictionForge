@@ -1,6 +1,6 @@
 'use client'
 
-import { Settings, RotateCcw } from 'lucide-react'
+import { Settings, RotateCcw, BookOpen, ScrollText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import {
@@ -53,6 +53,38 @@ function SettingsContent({
 }: Omit<ReadingSettingsPanelProps, 'embedded'>) {
   return (
     <div className="space-y-6">
+      {/* Reading Mode */}
+      <div>
+        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2 block">
+          Reading Mode
+        </label>
+        <div className="flex gap-2">
+          <Button
+            variant={settings.readingMode === 'paged' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => onUpdateSettings({ readingMode: 'paged' })}
+            className="flex-1 gap-2"
+          >
+            <BookOpen className="h-4 w-4" />
+            Paged
+          </Button>
+          <Button
+            variant={settings.readingMode === 'continuous' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => onUpdateSettings({ readingMode: 'continuous' })}
+            className="flex-1 gap-2"
+          >
+            <ScrollText className="h-4 w-4" />
+            Continuous
+          </Button>
+        </div>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+          {settings.readingMode === 'paged' 
+            ? 'Read one chapter at a time' 
+            : 'Scroll through chapters seamlessly'}
+        </p>
+      </div>
+
       {/* Font Family */}
       <div>
         <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2 block">

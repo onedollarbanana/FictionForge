@@ -9,6 +9,7 @@ export interface ReadingSettings {
   theme: 'auto' | 'light' | 'dark' | 'sepia' | 'night'
   width: 'narrow' | 'medium' | 'wide'
   brightness: number // 50-150, default 100
+  readingMode: 'paged' | 'continuous'
 }
 
 const DEFAULT_SETTINGS: ReadingSettings = {
@@ -18,6 +19,7 @@ const DEFAULT_SETTINGS: ReadingSettings = {
   theme: 'auto', // Follows site dark/light mode
   width: 'medium',
   brightness: 100,
+  readingMode: 'paged',
 }
 
 const STORAGE_KEY = 'fictionforge-reading-settings'

@@ -1,6 +1,7 @@
 export { ChapterLikeButton } from './chapter-like-button'
 export { ChapterNav } from './chapter-nav'
 export { ChapterContentWrapper } from './chapter-content-wrapper'
+export { ChapterSeparator } from './chapter-separator'
 export { Comment } from './comment'
 export { CommentInput } from './comment-input'
 export { CommentList } from './comment-list'
