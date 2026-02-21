@@ -22,6 +22,7 @@ import { ReportButton } from "@/components/moderation/report-button";
 import { ChapterLockedOverlay } from "@/components/reader/chapter-locked-overlay";
 import { type TierName } from "@/lib/platform-config";
 import { ChapterOfflineCacher } from "@/components/reader/chapter-offline-cacher";
+import { ReadingModeSwitch } from "@/components/reader/reading-mode-switch";
 
 export const dynamic = "force-dynamic";
 
@@ -184,14 +185,16 @@ export default async function ChapterReadingPage({ params }: PageProps) {
       {/* Track views (unique per session/user) */}
       <ViewTracker chapterId={chapterId} storyId={storyId} />
 
-      {/* Keyboard navigation: arrows for prev/next, Escape for story page */}
+      {/* Keyboard navigation: arrows for prev/next, Escape for story page
+          TODO (CS-3): Disable in continuous mode where natural scrolling takes over */}
       <KeyboardNavigation
         storyId={storyId}
         prevChapterId={prevChapter?.id}
         nextChapterId={nextChapter?.id}
       />
 
-      {/* Mobile swipe navigation */}
+      {/* Mobile swipe navigation
+          TODO (CS-3): Disable in continuous mode where natural scrolling takes over */}
       <SwipeNavigation
         storyId={storyId}
         prevChapterId={prevChapter?.id}
@@ -273,53 +276,77 @@ export default async function ChapterReadingPage({ params }: PageProps) {
           </>
         )}
 
-        {/* Chapter Complete Card - replaces standalone like/report/nav */}
-        <ChapterCompleteCard
-          storyId={storyId}
-          storyTitle={chapter.stories?.title ?? ""}
-          chapterId={chapterId}
-          chapterNumber={chapter.chapter_number}
-          chapterTitle={chapter.title}
-          totalChapters={chapters.length}
-          initialLikes={chapter.likes ?? 0}
-          currentUserId={user?.id ?? null}
-          storyAuthorId={chapter.stories?.author_id ?? ""}
-          prevChapter={prevChapter ? { id: prevChapter.id, title: prevChapter.title } : null}
-          nextChapter={nextChapter ? { id: nextChapter.id, title: nextChapter.title } : null}
-          reportButton={
-            user && user.id !== chapter.stories?.author_id ? (
-              <ReportButton
-                contentType="chapter"
-                contentId={chapterId}
-                contentTitle={`${chapter.stories?.title} - Ch. ${chapter.chapter_number}: ${chapter.title}`}
-                size="sm"
-                variant="ghost"
+        {/* Post-content: different rendering based on reading mode */}
+        <ReadingModeSwitch
+          pagedContent={
+            <>
+              <ChapterCompleteCard
+                storyId={storyId}
+                storyTitle={chapter.stories?.title ?? ""}
+                chapterId={chapterId}
+                chapterNumber={chapter.chapter_number}
+                chapterTitle={chapter.title}
+                totalChapters={chapters.length}
+                initialLikes={chapter.likes ?? 0}
+                currentUserId={user?.id ?? null}
+                storyAuthorId={chapter.stories?.author_id ?? ""}
+                prevChapter={prevChapter ? { id: prevChapter.id, title: prevChapter.title } : null}
+                nextChapter={nextChapter ? { id: nextChapter.id, title: nextChapter.title } : null}
+                reportButton={
+                  user && user.id !== chapter.stories?.author_id ? (
+                    <ReportButton
+                      contentType="chapter"
+                      contentId={chapterId}
+                      contentTitle={`${chapter.stories?.title} - Ch. ${chapter.chapter_number}: ${chapter.title}`}
+                      size="sm"
+                      variant="ghost"
+                    />
+                  ) : undefined
+                }
               />
-            ) : undefined
+
+              {/* Chapter Navigation - Hidden on mobile (bottom nav shows instead) */}
+              <div className="hidden md:block">
+                <ChapterNav
+                  storyId={storyId}
+                  currentChapter={chapter.chapter_number}
+                  totalChapters={chapters.length}
+                  prevChapterId={prevChapter?.id}
+                  nextChapterId={nextChapter?.id}
+                />
+              </div>
+
+              {/* Comments - collapsed on mobile for binge readers */}
+              <CollapsibleComments>
+                <CommentList
+                  chapterId={chapterId}
+                  currentUserId={user?.id ?? null}
+                  storyAuthorId={chapter.stories?.author_id ?? ""}
+                />
+              </CollapsibleComments>
+            </>
           }
+          continuousScrollData={{
+            initialChapterId: chapterId,
+            initialChapterTitle: chapter.title,
+            initialChapterNumber: chapter.chapter_number,
+            initialWordCount: wordCount,
+            initialCommentCount: 0,
+            allChapterIds: chapters.map(ch => ({ id: ch.id, title: ch.title, chapterNumber: ch.chapter_number })),
+            storyId,
+            storyTitle: chapter.stories?.title || '',
+            currentUserId: user?.id ?? null,
+            storyAuthorId: chapter.stories?.author_id ?? '',
+            authorName: (chapter.stories?.profiles as any)?.username || 'Unknown',
+            authorTiers: (authorTiers || []).map(t => ({
+              tier_name: t.tier_name,
+              enabled: t.enabled,
+              description: t.description,
+            })),
+          }}
         />
 
-        {/* Chapter Navigation - Hidden on mobile (bottom nav shows instead) */}
-        <div className="hidden md:block">
-          <ChapterNav
-            storyId={storyId}
-            currentChapter={chapter.chapter_number}
-            totalChapters={chapters.length}
-            prevChapterId={prevChapter?.id}
-            nextChapterId={nextChapter?.id}
-          />
-        </div>
-
-        {/* Comments - collapsed on mobile for binge readers */}
-        <CollapsibleComments>
-          <CommentList
-            chapterId={chapterId}
-            currentUserId={user?.id ?? null}
-            storyAuthorId={chapter.stories?.author_id ?? ""}
-          />
-        </CollapsibleComments>
-
-        {/* Mobile Bottom Navigation */}
+        {/* Mobile Bottom Navigation - always visible for jump-to-chapter */}
         <MobileChapterNav
           storyId={storyId}
           storyTitle={chapter.stories?.title ?? ""}
