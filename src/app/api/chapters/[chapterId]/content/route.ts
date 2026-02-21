@@ -7,6 +7,9 @@ const TIER_HIERARCHY: Record<string, number> = {
   patron: 3,
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type StoryJoin = any
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { chapterId: string } }
@@ -49,6 +52,9 @@ export async function GET(
     return NextResponse.json({ error: 'Chapter not published' }, { status: 404 })
   }
 
+  // Cast stories to single object (Supabase types it as array but .single() ensures one chapter)
+  const story = chapter.stories as StoryJoin
+
   // Get current user for access check
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -56,7 +62,7 @@ export async function GET(
   let hasAccess = true
   const requiredTier = chapter.min_tier_name
 
-  if (requiredTier && chapter.stories?.author_id !== user?.id) {
+  if (requiredTier && story?.author_id !== user?.id) {
     hasAccess = false
 
     if (user) {
@@ -64,7 +70,7 @@ export async function GET(
         .from('author_subscriptions')
         .select('tier_name')
         .eq('subscriber_id', user.id)
-        .eq('author_id', chapter.stories?.author_id)
+        .eq('author_id', story?.author_id)
         .eq('status', 'active')
         .single()
 
@@ -96,16 +102,16 @@ export async function GET(
     content: hasAccess ? chapter.content : null,
     authorNoteBefore: chapter.author_note_before,
     authorNoteAfter: chapter.author_note_after,
-    defaultAuthorNoteBefore: chapter.stories?.default_author_note_before,
-    defaultAuthorNoteAfter: chapter.stories?.default_author_note_after,
+    defaultAuthorNoteBefore: story?.default_author_note_before,
+    defaultAuthorNoteAfter: story?.default_author_note_after,
     minTierName: chapter.min_tier_name,
     likes: chapter.likes ?? 0,
     hasAccess,
     wordCount,
     commentCount: commentCount ?? 0,
-    storyId: chapter.stories?.id,
-    storyTitle: chapter.stories?.title,
-    authorId: chapter.stories?.author_id,
-    authorName: chapter.stories?.profiles?.username || 'Unknown',
+    storyId: story?.id,
+    storyTitle: story?.title,
+    authorId: story?.author_id,
+    authorName: story?.profiles?.username || 'Unknown',
   })
 }
