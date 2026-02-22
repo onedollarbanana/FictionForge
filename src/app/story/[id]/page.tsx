@@ -20,11 +20,71 @@ import { CommunityPickBadge } from "@/components/story/community-pick-badge";
 import { getCommunityPickBadge } from "@/lib/community-picks";
 import { AuthorTierCards } from "@/components/story/author-tier-cards";
 import { type TierName } from "@/lib/platform-config";
+import { ShareButtons } from "@/components/ui/share-buttons";
+import type { Metadata } from "next";
 
 export const revalidate = 120
 
 interface PageProps {
   params: { id: string };
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = params;
+  const supabase = await createClient();
+
+  const { data: story } = await supabase
+    .from("stories")
+    .select(`
+      title,
+      blurb,
+      cover_url,
+      genres,
+      profiles!author_id(
+        username,
+        display_name
+      )
+    `)
+    .eq("id", id)
+    .single();
+
+  if (!story) {
+    return { title: "Story Not Found | Fictionry" };
+  }
+
+  const authorName = (story.profiles as any)?.display_name || (story.profiles as any)?.username || "Unknown";
+  const title = `${story.title} by ${authorName} | Fictionry`;
+  const description = story.blurb
+    ? story.blurb.length > 160
+      ? story.blurb.substring(0, 157) + "..."
+      : story.blurb
+    : `Read ${story.title} by ${authorName} on Fictionry`;
+
+  const ogParams = new URLSearchParams();
+  ogParams.set("title", story.title);
+  ogParams.set("author", authorName);
+  if (story.cover_url) ogParams.set("cover", story.cover_url);
+  if (story.blurb) ogParams.set("description", story.blurb.substring(0, 120));
+  if (story.genres && story.genres.length > 0) ogParams.set("genre", story.genres[0]);
+
+  const ogImageUrl = `/api/og?${ogParams.toString()}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImageUrl],
+    },
+  };
 }
 
 export default async function StoryPage({ params }: PageProps) {
@@ -268,6 +328,11 @@ export default async function StoryPage({ params }: PageProps) {
             <LibraryButton 
               storyId={id} 
               initialFollowerCount={story.follower_count ?? 0} 
+            />
+            <ShareButtons
+              url={`https://fictionry.com/story/${id}`}
+              title={`${story.title} by ${authorName}`}
+              description={story.blurb || undefined}
             />
           </div>
           {/* Report Button - only for logged-in non-owners */}
