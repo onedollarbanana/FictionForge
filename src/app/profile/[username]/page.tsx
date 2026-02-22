@@ -29,8 +29,8 @@ import { ProfileBorder } from '@/components/profile/profile-border'
 import { ReportButton } from '@/components/moderation/report-button'
 import { PremiumBadge } from '@/components/premium-badge'
 
-// Force dynamic rendering - no static caching
-export const dynamic = 'force-dynamic'
+export const revalidate = 120
+
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>

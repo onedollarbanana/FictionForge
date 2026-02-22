@@ -12,13 +12,11 @@ import { PWAInstallPrompt } from '@/components/pwa-install-prompt'
 
 const inter = Inter({ subsets: ['latin'] })
 
-// Force ALL routes to be dynamically rendered (no static generation)
-export const dynamic = 'force-dynamic'
-
 export const metadata: Metadata = {
+  metadataBase: new URL('https://fictionry.com'),
   title: 'Fictionry - The Modern Way to Read and Write Fiction',
-  description: 'A modern platform for web fiction authors and readers. Write, read, and share web fiction with powerful tools for LitRPG, fantasy, and more.',
-  keywords: ['web fiction', 'webnovel', 'litrpg', 'fantasy', 'writing', 'reading', 'stories'],
+  description: 'Discover and share incredible fiction on Fictionry. A modern platform for authors to publish serial fiction and readers to find their next favorite story across every genre.',
+  keywords: ['web fiction', 'online stories', 'read fiction online', 'write fiction', 'serial fiction', 'webnovel', 'free stories', 'fantasy fiction', 'romance fiction', 'mystery fiction', 'sci-fi fiction', 'fiction platform'],
   authors: [{ name: 'Fictionry' }],
   openGraph: {
     title: 'Fictionry - The Modern Way to Read and Write Fiction',

@@ -1,9 +1,8 @@
+export const revalidate = 60
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tag, BookOpen } from "lucide-react";
-
-export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Browse by Tag | Fictionry",

@@ -1,3 +1,4 @@
+export const revalidate = 60
 import { createClient } from '@/lib/supabase/server';
 import { BookOpen } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,8 +7,6 @@ import { BrowseStoryGrid } from '@/components/story/browse-story-grid';
 import { GenreTagSort } from '@/components/browse/genre-tag-sort';
 import { getRisingStars } from '@/lib/rankings';
 import { enrichWithCommunityPicks } from '@/lib/community-picks';
-
-export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Rising Stars | Fictionry',

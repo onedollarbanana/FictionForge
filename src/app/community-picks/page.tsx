@@ -1,3 +1,4 @@
+export const revalidate = 60
 import { createClient } from "@/lib/supabase/server";
 import {
   getCommunityPicksLeaderboard,
@@ -8,8 +9,6 @@ import { BrowseStoryCard } from "@/components/story/browse-story-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Info, Medal } from "lucide-react";
-
-export const dynamic = "force-dynamic";
 
 function formatMonthTitle(dateStr: string): string {
   try {

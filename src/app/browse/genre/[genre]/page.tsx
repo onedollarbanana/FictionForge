@@ -1,3 +1,4 @@
+export const revalidate = 60
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { BookOpen } from 'lucide-react';
@@ -8,8 +9,6 @@ import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { GENRES } from '@/lib/constants';
 import { GenreTagSort } from '@/components/browse/genre-tag-sort';
 import { enrichWithCommunityPicks } from '@/lib/community-picks';
-
-export const dynamic = 'force-dynamic';
 
 interface GenrePageProps {
   params: Promise<{ genre: string }>;

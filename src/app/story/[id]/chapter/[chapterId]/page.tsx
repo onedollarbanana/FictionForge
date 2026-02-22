@@ -25,7 +25,7 @@ import { ChapterOfflineCacher } from "@/components/reader/chapter-offline-cacher
 import { ReadingModeSwitch } from "@/components/reader/reading-mode-switch";
 import { PagedModeOnly } from "@/components/reader/paged-mode-only";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 120
 
 const TIER_HIERARCHY: Record<string, number> = {
   supporter: 1,

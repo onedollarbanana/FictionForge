@@ -1,3 +1,4 @@
+export const revalidate = 60
 import { createClient } from "@/lib/supabase/server";
 import { getCommunityPicksForHomepage } from "@/lib/community-picks";
 import { 
@@ -16,8 +17,6 @@ import { GenreLinks } from "@/components/home/genre-links";
 import { StoryCarousel } from "@/components/home/story-carousel";
 import { Rocket, Clock, Heart, Sparkles, Award, Trophy, Sword, Search, Skull, Gamepad2, Scroll, BookOpen, Users, TrendingUp, Flame } from "lucide-react";
 import type { StoryCardData } from "@/components/story/story-card";
-
-export const dynamic = "force-dynamic";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

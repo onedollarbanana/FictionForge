@@ -1,3 +1,4 @@
+export const revalidate = 60
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen } from "lucide-react";
@@ -7,8 +8,6 @@ import { BrowseFilters } from "@/components/browse/browse-filters";
 import { type StoryCardData } from "@/components/story/story-card";
 import { BrowseStoryGrid } from "@/components/story/browse-story-grid";
 import { enrichWithCommunityPicks } from "@/lib/community-picks";
-
-export const dynamic = "force-dynamic";
 
 interface SearchParams {
   search?: string;

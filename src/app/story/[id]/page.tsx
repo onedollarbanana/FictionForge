@@ -21,7 +21,7 @@ import { getCommunityPickBadge } from "@/lib/community-picks";
 import { AuthorTierCards } from "@/components/story/author-tier-cards";
 import { type TierName } from "@/lib/platform-config";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 120
 
 interface PageProps {
   params: { id: string };

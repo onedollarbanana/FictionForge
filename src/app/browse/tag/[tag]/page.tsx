@@ -1,3 +1,4 @@
+export const revalidate = 60
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { BookOpen, Tag } from 'lucide-react';
@@ -7,8 +8,6 @@ import { BrowseStoryGrid } from '@/components/story/browse-story-grid';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { GenreTagSort } from '@/components/browse/genre-tag-sort';
 import { enrichWithCommunityPicks } from '@/lib/community-picks';
-
-export const dynamic = 'force-dynamic';
 
 interface TagPageProps {
   params: Promise<{ tag: string }>;
