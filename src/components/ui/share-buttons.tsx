@@ -1,10 +1,156 @@
-{
-  "type": "file",
-  "name": "share-buttons.tsx",
-  "path": "src/components/ui/share-buttons.tsx",
-  "size": 3896,
-  "sha": "9f4c799561d9a49d4921c11c893cf6f6dd6e93b1",
-  "content": "\"use client\";\n\nimport React, { useState } from \"react\";\nimport { Facebook, Link2, MessageSquare, Share2, Twitter } from \"lucide-react\";\nimport { Button } from \"@/components/ui/button\";\n\ninterface ShareButtonsProps {\n  url: string;\n  title: string;\n  description?: string;\n}\n\nexport function ShareButtons({ url, title, description }: ShareButtonsProps) {\n  const [copied, setCopied] = useState(false);\n\n  const shareTwitter = () => {\n    window.open(\n      `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,\n      \"_blank\",\n      \"noopener,noreferrer\"\n    );\n  };\n\n  const shareReddit = () => {\n    window.open(\n      `https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`,\n      \"_blank\",\n      \"noopener,noreferrer\"\n    );\n  };\n\n  const shareFacebook = () => {\n    window.open(\n      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,\n      \"_blank\",\n      \"noopener,noreferrer\"\n    );\n  };\n\n  const copyLink = async () => {\n    try {\n      await navigator.clipboard.writeText(url);\n      setCopied(true);\n      setTimeout(() => setCopied(false), 2000);\n    } catch {\n      // Fallback\n      const textarea = document.createElement(\"textarea\");\n      textarea.value = url;\n      document.body.appendChild(textarea);\n      textarea.select();\n      document.execCommand(\"copy\");\n      document.body.removeChild(textarea);\n      setCopied(true);\n      setTimeout(() => setCopied(false), 2000);\n    }\n  };\n\n  const nativeShare = async () => {\n    if (navigator.share) {\n      try {\n        await navigator.share({\n          title,\n          text: description || title,\n          url,\n        });\n      } catch {\n        // User cancelled or error\n      }\n    }\n  };\n\n  return (\n    <div className=\"flex items-center gap-1\">\n      <Button\n        variant=\"ghost\"\n        size=\"icon\"\n        className=\"h-8 w-8\"\n        onClick={shareTwitter}\n        title=\"Share on X/Twitter\"\n      >\n        <Twitter className=\"h-4 w-4\" />\n      </Button>\n      <Button\n        variant=\"ghost\"\n        size=\"icon\"\n        className=\"h-8 w-8\"\n        onClick={shareReddit}\n        title=\"Share on Reddit\"\n      >\n        <MessageSquare className=\"h-4 w-4\" />\n      </Button>\n      <Button\n        variant=\"ghost\"\n        size=\"icon\"\n        className=\"h-8 w-8\"\n        onClick={shareFacebook}\n        title=\"Share on Facebook\"\n      >\n        <Facebook className=\"h-4 w-4\" />\n      </Button>\n      <div className=\"relative\">\n        <Button\n          variant=\"ghost\"\n          size=\"icon\"\n          className=\"h-8 w-8\"\n          onClick={copyLink}\n          title=\"Copy link\"\n        >\n          <Link2 className=\"h-4 w-4\" />\n        </Button>\n        {copied && (\n          <span className=\"absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-xs px-2 py-1 rounded whitespace-nowrap\">\n            Copied!\n          </span>\n        )}\n      </div>\n      {/* Native share — only renders on client, feature-detected */}\n      <NativeShareButton title={title} description={description} url={url} onShare={nativeShare} />\n    </div>\n  );\n}\n\nfunction NativeShareButton({\n  onShare,\n}: {\n  title: string;\n  description?: string;\n  url: string;\n  onShare: () => void;\n}) {\n  const [supportsShare, setSupportsShare] = useState(false);\n\n  // Feature detect on mount using useEffect\n  React.useEffect(() => {\n    if (typeof navigator !== \"undefined\" && typeof navigator.share === \"function\") {\n      const isMobile = \"ontouchstart\" in window || navigator.maxTouchPoints > 0;\n      if (isMobile) {\n        setSupportsShare(true);\n      }\n    }\n  }, []);\n\n  if (!supportsShare) return null;\n\n  return (\n    <Button\n      variant=\"ghost\"\n      size=\"icon\"\n      className=\"h-8 w-8\"\n      onClick={onShare}\n      title=\"Share\"\n    >\n      <Share2 className=\"h-4 w-4\" />\n    </Button>\n  );\n}\n",
-  "encoding": "base64",
-  "downloadUrl": "https://raw.githubusercontent.com/onedollarbanana/FictionForge/feat/social-sharing/src/components/ui/share-buttons.tsx"
+"use client";
+
+import React, { useState } from "react";
+import { Facebook, Link2, MessageSquare, Share2, Twitter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+interface ShareButtonsProps {
+  url: string;
+  title: string;
+  description?: string;
+}
+
+export function ShareButtons({ url, title, description }: ShareButtonsProps) {
+  const [copied, setCopied] = useState(false);
+
+  const shareTwitter = () => {
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
+
+  const shareReddit = () => {
+    window.open(
+      `https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
+
+  const shareFacebook = () => {
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback
+      const textarea = document.createElement("textarea");
+      textarea.value = url;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const nativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          text: description || title,
+          url,
+        });
+      } catch {
+        // User cancelled or error
+      }
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={shareTwitter}
+        title="Share on X/Twitter"
+      >
+        <Twitter className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={shareReddit}
+        title="Share on Reddit"
+      >
+        <MessageSquare className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={shareFacebook}
+        title="Share on Facebook"
+      >
+        <Facebook className="h-4 w-4" />
+      </Button>
+      <div className="relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={copyLink}
+          title="Copy link"
+        >
+          <Link2 className="h-4 w-4" />
+        </Button>
+        {copied && (
+          <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-xs px-2 py-1 rounded whitespace-nowrap">
+            Copied!
+          </span>
+        )}
+      </div>
+      {/* Native share — only renders on client, feature-detected */}
+      <NativeShareButton title={title} description={description} url={url} onShare={nativeShare} />
+    </div>
+  );
+}
+
+function NativeShareButton({
+  onShare,
+}: {
+  title: string;
+  description?: string;
+  url: string;
+  onShare: () => void;
+}) {
+  const [supportsShare, setSupportsShare] = useState(false);
+
+  // Feature detect on mount using useEffect
+  React.useEffect(() => {
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      if (isMobile) {
+        setSupportsShare(true);
+      }
+    }
+  }, []);
+
+  if (!supportsShare) return null;
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8"
+      onClick={onShare}
+      title="Share"
+    >
+      <Share2 className="h-4 w-4" />
+    </Button>
+  );
 }

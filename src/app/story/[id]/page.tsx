@@ -1,10 +1,486 @@
-{
-  "type": "file",
-  "name": "page.tsx",
-  "path": "src/app/story/[id]/page.tsx",
-  "size": 17648,
-  "sha": "78211e4fd866b3858e54090f23e38d640d132462",
-  "content": "import { createClient } from \"@/lib/supabase/server\";\nimport { notFound } from \"next/navigation\";\nimport Link from \"next/link\";\nimport { Button } from \"@/components/ui/button\";\nimport { Badge } from \"@/components/ui/badge\";\nimport { Card, CardContent } from \"@/components/ui/card\";\nimport { BookOpen, Check, Clock, Eye, Heart, Lock, Pencil, User } from \"lucide-react\";\nimport { formatDistanceToNow } from \"date-fns\";\nimport { LibraryButton } from \"@/components/story/LibraryButton\";\nimport { AnnouncementBanner } from \"@/components/announcements\";\nimport { StoryRatingSection } from \"@/components/story/story-rating-section\";\nimport { Breadcrumb } from \"@/components/ui/breadcrumb\";\nimport { RelatedStories } from \"@/components/story/related-stories\";\nimport { MoreFromAuthor } from \"@/components/story/more-from-author\";\nimport { ReportButton } from \"@/components/moderation/report-button\";\nimport { hasMatureContent } from \"@/lib/content-warnings\";\nimport { ContentWarningGate } from \"@/components/story/content-warning-gate\";\nimport { NominateButton } from \"@/components/story/nominate-button\";\nimport { CommunityPickBadge } from \"@/components/story/community-pick-badge\";\nimport { getCommunityPickBadge } from \"@/lib/community-picks\";\nimport { AuthorTierCards } from \"@/components/story/author-tier-cards\";\nimport { type TierName } from \"@/lib/platform-config\";\nimport { ShareButtons } from \"@/components/ui/share-buttons\";\nimport type { Metadata } from \"next\";\n\nexport const revalidate = 120\n\ninterface PageProps {\n  params: { id: string };\n}\n\nexport async function generateMetadata({ params }: PageProps): Promise<Metadata> {\n  const { id } = params;\n  const supabase = await createClient();\n\n  const { data: story } = await supabase\n    .from(\"stories\")\n    .select(`\n      title,\n      blurb,\n      cover_url,\n      genres,\n      profiles!author_id(\n        username,\n        display_name\n      )\n    `)\n    .eq(\"id\", id)\n    .single();\n\n  if (!story) {\n    return { title: \"Story Not Found | Fictionry\" };\n  }\n\n  const authorName = (story.profiles as any)?.display_name || (story.profiles as any)?.username || \"Unknown\";\n  const title = `${story.title} by ${authorName} | Fictionry`;\n  const description = story.blurb\n    ? story.blurb.length > 160\n      ? story.blurb.substring(0, 157) + \"...\"\n      : story.blurb\n    : `Read ${story.title} by ${authorName} on Fictionry`;\n\n  const ogParams = new URLSearchParams();\n  ogParams.set(\"title\", story.title);\n  ogParams.set(\"author\", authorName);\n  if (story.cover_url) ogParams.set(\"cover\", story.cover_url);\n  if (story.blurb) ogParams.set(\"description\", story.blurb.substring(0, 120));\n  if (story.genres && story.genres.length > 0) ogParams.set(\"genre\", story.genres[0]);\n\n  const ogImageUrl = `/api/og?${ogParams.toString()}`;\n\n  return {\n    title,\n    description,\n    openGraph: {\n      title,\n      description,\n      type: \"article\",\n      images: [{ url: ogImageUrl, width: 1200, height: 630 }],\n    },\n    twitter: {\n      card: \"summary_large_image\",\n      title,\n      description,\n      images: [ogImageUrl],\n    },\n  };\n}\n\nexport default async function StoryPage({ params }: PageProps) {\n  const { id } = params;\n  const supabase = await createClient();\n\n  // Fetch story with author info\n  const { data: story, error } = await supabase\n    .from(\"stories\")\n    .select(`\n      *,\n      profiles!author_id(\n        username,\n        display_name,\n        avatar_url\n      )\n    `)\n    .eq(\"id\", id)\n    .single();\n\n  if (error || !story) {\n    notFound();\n  }\n\n  // Get current user to check ownership\n  const { data: { user } } = await supabase.auth.getUser();\n  const isOwner = user && story.author_id === user.id;\n\n  // Check visibility - only owner can see draft/removed stories\n  if ((story.visibility === 'draft' || story.visibility === 'removed') && !isOwner) {\n    notFound();\n  }\n\n  // Fetch published chapters (include min_tier_name for lock icons)\n  const { data: chapters } = await supabase\n    .from(\"chapters\")\n    .select(\"id, title, chapter_number, word_count, likes, created_at, is_published, min_tier_name\")\n    .eq(\"story_id\", id)\n    .eq(\"is_published\", true)\n    .order(\"chapter_number\", { ascending: true });\n\n  const publishedChapters = chapters || [];\n  const totalWords = publishedChapters.reduce((sum, ch) => sum + (ch.word_count || 0), 0);\n\n  // Fetch author tiers\n  const { data: authorTiers } = await supabase\n    .from('author_tiers')\n    .select('tier_name, enabled, description, advance_chapter_count')\n    .eq('author_id', story.author_id)\n    .eq('enabled', true)\n    .order('tier_name');\n\n  // Check user's subscription to this author\n  let userSubscription = null;\n  if (user) {\n    const { data: sub } = await supabase\n      .from('author_subscriptions')\n      .select('tier_name, status')\n      .eq('subscriber_id', user.id)\n      .eq('author_id', story.author_id)\n      .eq('status', 'active')\n      .single();\n    userSubscription = sub;\n  }\n\n  // Fetch announcements for this story (last 30 days)\n  const thirtyDaysAgo = new Date();\n  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);\n  \n  const { data: allAnnouncements } = await supabase\n    .from(\"announcements\")\n    .select(\"*\")\n    .eq(\"story_id\", id)\n    .gte(\"created_at\", thirtyDaysAgo.toISOString())\n    .order(\"created_at\", { ascending: false })\n    .limit(10);\n\n  // Get which announcements user has read\n  let unreadAnnouncements = allAnnouncements || [];\n  \n  if (user && allAnnouncements && allAnnouncements.length > 0) {\n    const announcementIds = allAnnouncements.map(a => a.id);\n    const { data: reads } = await supabase\n      .from(\"announcement_reads\")\n      .select(\"announcement_id\")\n      .eq(\"user_id\", user.id)\n      .in(\"announcement_id\", announcementIds);\n    \n    const readIds = new Set((reads || []).map(r => r.announcement_id));\n    unreadAnnouncements = allAnnouncements.filter(a => !readIds.has(a.id));\n  }\n\n  // Get which chapters user has read\n  let readChapterIds = new Set<string>();\n  \n  if (user && publishedChapters.length > 0) {\n    const chapterIds = publishedChapters.map(c => c.id);\n    const { data: chapterReads } = await supabase\n      .from(\"chapter_reads\")\n      .select(\"chapter_id\")\n      .eq(\"user_id\", user.id)\n      .in(\"chapter_id\", chapterIds);\n    \n    readChapterIds = new Set((chapterReads || []).map(r => r.chapter_id));\n  }\n\n  // Check if this story is a Community Pick\n  const communityPickData = await getCommunityPickBadge(id, supabase);\n\n  const authorName = story.profiles?.display_name || story.profiles?.username || 'Unknown';\n  const isMature = hasMatureContent(story.content_warnings || []);\n\n  const pageContent = (\n    <div className=\"container mx-auto px-4 py-8 max-w-4xl\">\n      {/* Breadcrumb */}\n      <Breadcrumb items={[\n        { label: 'Browse', href: '/browse' },\n        { label: story.title }\n      ]} />\n\n      {/* Story Header */}\n      <div className=\"flex flex-col md:flex-row gap-6 mb-8\">\n        {/* Cover Image - 2:3 aspect ratio */}\n        {story.cover_url ? (\n          <div className=\"relative w-full md:w-48 aspect-[2/3] rounded-lg overflow-hidden shrink-0\">\n            <CommunityPickBadge pickMonth={communityPickData?.pickMonth} />\n            <img\n              src={`${story.cover_url}?t=${new Date(story.updated_at).getTime()}`}\n              alt={`Cover for ${story.title}`}\n              className=\"w-full h-full object-cover\"\n            />\n          </div>\n        ) : (\n          <div className=\"relative w-full md:w-48 aspect-[2/3] bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center shrink-0\">\n            <CommunityPickBadge pickMonth={communityPickData?.pickMonth} />\n            <BookOpen className=\"h-16 w-16 text-primary/40\" />\n          </div>\n        )}\n\n        <div className=\"flex-1\">\n          <div className=\"flex items-start justify-between gap-2 mb-2\">\n            <h1 className=\"text-3xl font-bold\">{story.title}</h1>\n            {isOwner && (\n              <Button variant=\"outline\" size=\"sm\" asChild className=\"shrink-0\">\n                <Link href={`/author/stories/${id}/edit`}>\n                  <Pencil className=\"h-4 w-4 mr-1\" />\n                  Edit\n                </Link>\n              </Button>\n            )}\n          </div>\n          \n          <Link \n            href={`/author/${story.profiles?.username}`}\n            className=\"text-muted-foreground hover:text-primary flex items-center gap-2 mb-4\"\n          >\n            <User className=\"h-4 w-4\" />\n            {authorName}\n          </Link>\n\n          {/* Stats Row */}\n          <div className=\"flex flex-wrap gap-4 text-sm text-muted-foreground mb-4\">\n            <span className=\"flex items-center gap-1\">\n              <BookOpen className=\"h-4 w-4\" />\n              {publishedChapters.length} chapters\n            </span>\n            <span className=\"flex items-center gap-1\">\n              <Clock className=\"h-4 w-4\" />\n              {totalWords.toLocaleString()} words\n            </span>\n            <span className=\"flex items-center gap-1\">\n              <Eye className=\"h-4 w-4\" />\n              {(story.total_views ?? 0).toLocaleString()} views\n            </span>\n            <span className=\"flex items-center gap-1\">\n              <Heart className=\"h-4 w-4\" />\n              {(story.follower_count ?? 0).toLocaleString()} followers\n            </span>\n          </div>\n\n          {/* Status Badge */}\n          <Badge variant=\"secondary\" className=\"mb-4\">\n            {story.status?.charAt(0).toUpperCase() + story.status?.slice(1) || \"Ongoing\"}\n          </Badge>\n\n          {story.release_schedule && (\n            <span className=\"text-sm text-muted-foreground flex items-center gap-1\">\n              📅 {story.release_schedule}\n            </span>\n          )}\n\n          {/* Genres - now clickable */}\n          {story.genres && story.genres.length > 0 && (\n            <div className=\"flex flex-wrap items-center gap-2 mb-3\">\n              {(story.genres || []).map((genre: string) => (\n                <Link key={genre} href={`/browse/genre/${encodeURIComponent(genre)}`}>\n                  <Badge variant=\"default\" className=\"cursor-pointer hover:bg-primary/80\">\n                    {genre}\n                  </Badge>\n                </Link>\n              ))}\n            </div>\n          )}\n          \n          {/* Tags - now clickable */}\n          {story.tags && story.tags.length > 0 && (\n            <div className=\"flex flex-wrap items-center gap-2 mb-4\">\n              <span className=\"text-sm text-muted-foreground\">Tags:</span>\n              {(story.tags || []).map((tag: string) => (\n                <Link key={tag} href={`/browse/tag/${encodeURIComponent(tag)}`}>\n                  <Badge variant=\"secondary\" className=\"cursor-pointer hover:bg-muted\">\n                    {tag}\n                  </Badge>\n                </Link>\n              ))}\n            </div>\n          )}\n\n          {/* Content Warnings */}\n          {story.content_warnings && story.content_warnings.length > 0 && (\n            <div className=\"flex flex-wrap gap-1.5 mb-4\">\n              {story.content_warnings.map((warning: string) => (\n                <span key={warning} className=\"inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300\">\n                  ⚠️ {warning.replace(/_/g, ' ').replace(/\\b\\w/g, c => c.toUpperCase())}\n                </span>\n              ))}\n            </div>\n          )}\n\n          {/* Action Buttons */}\n          <div className=\"flex gap-3\">\n            {publishedChapters.length > 0 ? (\n              <Button asChild>\n                <Link href={`/story/${id}/chapter/${publishedChapters[0].id}`}>\n                  Start Reading\n                </Link>\n              </Button>\n            ) : (\n              <Button disabled>No Chapters Yet</Button>\n            )}\n            <LibraryButton \n              storyId={id} \n              initialFollowerCount={story.follower_count ?? 0} \n            />\n            <ShareButtons\n              url={`https://fictionry.com/story/${id}`}\n              title={`${story.title} by ${authorName}`}\n              description={story.blurb || undefined}\n            />\n          </div>\n          {/* Report Button - only for logged-in non-owners */}\n          {user && !isOwner && (\n            <div className=\"mt-2 flex items-center gap-2\">\n              <ReportButton\n                contentType=\"story\"\n                contentId={id}\n                contentTitle={story.title}\n                size=\"sm\"\n                variant=\"ghost\"\n              />\n              {story.visibility === 'published' && (\n                <NominateButton storyId={id} storyWordCount={totalWords} />\n              )}\n            </div>\n          )}\n        </div>\n      </div>\n\n      {/* Announcements Banner */}\n      {(allAnnouncements && allAnnouncements.length > 0) && (\n        <AnnouncementBanner \n          announcements={allAnnouncements}\n          unreadIds={unreadAnnouncements.map(a => a.id)}\n          userId={user?.id || null}\n        />\n      )}\n\n      {/* Description */}\n      <Card className=\"mb-6\">\n        <CardContent className=\"pt-6 overflow-hidden\">\n          <h2 className=\"text-lg font-semibold mb-3\">Description</h2>\n          <p className=\"text-muted-foreground whitespace-pre-wrap break-words\">\n            {story.blurb || \"No description provided.\"}\n          </p>\n        </CardContent>\n      </Card>\n\n      {/* Author Tier Cards */}\n      {authorTiers && authorTiers.length > 0 && (\n        <div className=\"mb-6\">\n          <AuthorTierCards\n            authorId={story.author_id}\n            authorName={authorName}\n            tiers={authorTiers.map(t => ({\n              tier_name: t.tier_name as TierName,\n              description: t.description,\n              advance_chapter_count: t.advance_chapter_count,\n            }))}\n            currentSubscription={userSubscription ? {\n              tier_name: userSubscription.tier_name as TierName,\n              status: userSubscription.status,\n            } : null}\n            isLoggedIn={!!user}\n          />\n        </div>\n      )}\n\n      {/* Ratings Section */}\n      <div className=\"mb-8\">\n        <StoryRatingSection storyId={id} authorId={story.author_id} />\n      </div>\n\n      {/* Chapter List */}\n      <div className=\"mb-8\">\n        <h2 className=\"text-xl font-semibold mb-4\">\n          Chapters ({publishedChapters.length})\n        </h2>\n        \n        {publishedChapters.length === 0 ? (\n          <Card>\n            <CardContent className=\"py-8 text-center text-muted-foreground\">\n              No chapters published yet. Check back soon!\n            </CardContent>\n          </Card>\n        ) : (\n          <div className=\"space-y-2\">\n            {publishedChapters.map((chapter) => {\n              const isRead = readChapterIds.has(chapter.id);\n              return (\n                <Link\n                  key={chapter.id}\n                  href={`/story/${id}/chapter/${chapter.id}`}\n                  className=\"block\"\n                >\n                  <Card className={`hover:bg-muted/50 transition-colors ${isRead ? \"border-green-500/30 bg-green-500/5\" : \"\"}`}>\n                    <CardContent className=\"py-3 px-4 flex items-center justify-between\">\n                      <div className=\"flex items-center gap-3\">\n                        {isRead && (\n                          <div className=\"flex items-center justify-center w-6 h-6 rounded-full bg-green-500 text-white shrink-0\">\n                            <Check className=\"h-4 w-4\" />\n                          </div>\n                        )}\n                        <div>\n                          <span className=\"font-medium flex items-center gap-1.5\">\n                            Chapter {chapter.chapter_number}: {chapter.title}\n                            {chapter.min_tier_name && (\n                              <Lock className=\"h-3.5 w-3.5 text-amber-500 shrink-0\" />\n                            )}\n                          </span>\n                          <div className=\"flex items-center gap-3 text-sm text-muted-foreground\">\n                            <span>{(chapter.word_count ?? 0).toLocaleString()} words</span>\n                            {(chapter.likes ?? 0) > 0 && (\n                              <span className=\"flex items-center gap-1\">\n                                <Heart className=\"h-3 w-3\" />\n                                {(chapter.likes ?? 0).toLocaleString()}\n                              </span>\n                            )}\n                          </div>\n                        </div>\n                      </div>\n                      <span className=\"text-sm text-muted-foreground\">\n                        {formatDistanceToNow(new Date(chapter.created_at), { addSuffix: true })}\n                      </span>\n                    </CardContent>\n                  </Card>\n                </Link>\n              );\n            })}\n          </div>\n        )}\n      </div>\n\n      {/* More from this Author */}\n      <MoreFromAuthor \n        storyId={id}\n        authorId={story.author_id}\n        authorName={authorName}\n        authorUsername={story.profiles?.username || 'Unknown'}\n      />\n\n      {/* Related Stories */}\n      <RelatedStories \n        storyId={id}\n        genres={story.genres || []}\n        authorId={story.author_id}\n      />\n    </div>\n  );\n\n  if (isMature) {\n    return (\n      <ContentWarningGate warnings={story.content_warnings} storyTitle={story.title}>\n        {pageContent}\n      </ContentWarningGate>\n    );\n  }\n\n  return pageContent;\n}\n",
-  "encoding": "base64",
-  "downloadUrl": "https://raw.githubusercontent.com/onedollarbanana/FictionForge/feat/social-sharing/src/app/story/%5Bid%5D/page.tsx"
+import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { BookOpen, Check, Clock, Eye, Heart, Lock, Pencil, User } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { LibraryButton } from "@/components/story/LibraryButton";
+import { AnnouncementBanner } from "@/components/announcements";
+import { StoryRatingSection } from "@/components/story/story-rating-section";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { RelatedStories } from "@/components/story/related-stories";
+import { MoreFromAuthor } from "@/components/story/more-from-author";
+import { ReportButton } from "@/components/moderation/report-button";
+import { hasMatureContent } from "@/lib/content-warnings";
+import { ContentWarningGate } from "@/components/story/content-warning-gate";
+import { NominateButton } from "@/components/story/nominate-button";
+import { CommunityPickBadge } from "@/components/story/community-pick-badge";
+import { getCommunityPickBadge } from "@/lib/community-picks";
+import { AuthorTierCards } from "@/components/story/author-tier-cards";
+import { type TierName } from "@/lib/platform-config";
+import { ShareButtons } from "@/components/ui/share-buttons";
+import type { Metadata } from "next";
+
+export const revalidate = 120
+
+interface PageProps {
+  params: { id: string };
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = params;
+  const supabase = await createClient();
+
+  const { data: story } = await supabase
+    .from("stories")
+    .select(`
+      title,
+      blurb,
+      cover_url,
+      genres,
+      profiles!author_id(
+        username,
+        display_name
+      )
+    `)
+    .eq("id", id)
+    .single();
+
+  if (!story) {
+    return { title: "Story Not Found | Fictionry" };
+  }
+
+  const authorName = (story.profiles as any)?.display_name || (story.profiles as any)?.username || "Unknown";
+  const title = `${story.title} by ${authorName} | Fictionry`;
+  const description = story.blurb
+    ? story.blurb.length > 160
+      ? story.blurb.substring(0, 157) + "..."
+      : story.blurb
+    : `Read ${story.title} by ${authorName} on Fictionry`;
+
+  const ogParams = new URLSearchParams();
+  ogParams.set("title", story.title);
+  ogParams.set("author", authorName);
+  if (story.cover_url) ogParams.set("cover", story.cover_url);
+  if (story.blurb) ogParams.set("description", story.blurb.substring(0, 120));
+  if (story.genres && story.genres.length > 0) ogParams.set("genre", story.genres[0]);
+
+  const ogImageUrl = `/api/og?${ogParams.toString()}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImageUrl],
+    },
+  };
+}
+
+export default async function StoryPage({ params }: PageProps) {
+  const { id } = params;
+  const supabase = await createClient();
+
+  // Fetch story with author info
+  const { data: story, error } = await supabase
+    .from("stories")
+    .select(`
+      *,
+      profiles!author_id(
+        username,
+        display_name,
+        avatar_url
+      )
+    `)
+    .eq("id", id)
+    .single();
+
+  if (error || !story) {
+    notFound();
+  }
+
+  // Get current user to check ownership
+  const { data: { user } } = await supabase.auth.getUser();
+  const isOwner = user && story.author_id === user.id;
+
+  // Check visibility - only owner can see draft/removed stories
+  if ((story.visibility === 'draft' || story.visibility === 'removed') && !isOwner) {
+    notFound();
+  }
+
+  // Fetch published chapters (include min_tier_name for lock icons)
+  const { data: chapters } = await supabase
+    .from("chapters")
+    .select("id, title, chapter_number, word_count, likes, created_at, is_published, min_tier_name")
+    .eq("story_id", id)
+    .eq("is_published", true)
+    .order("chapter_number", { ascending: true });
+
+  const publishedChapters = chapters || [];
+  const totalWords = publishedChapters.reduce((sum, ch) => sum + (ch.word_count || 0), 0);
+
+  // Fetch author tiers
+  const { data: authorTiers } = await supabase
+    .from('author_tiers')
+    .select('tier_name, enabled, description, advance_chapter_count')
+    .eq('author_id', story.author_id)
+    .eq('enabled', true)
+    .order('tier_name');
+
+  // Check user's subscription to this author
+  let userSubscription = null;
+  if (user) {
+    const { data: sub } = await supabase
+      .from('author_subscriptions')
+      .select('tier_name, status')
+      .eq('subscriber_id', user.id)
+      .eq('author_id', story.author_id)
+      .eq('status', 'active')
+      .single();
+    userSubscription = sub;
+  }
+
+  // Fetch announcements for this story (last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  const { data: allAnnouncements } = await supabase
+    .from("announcements")
+    .select("*")
+    .eq("story_id", id)
+    .gte("created_at", thirtyDaysAgo.toISOString())
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  // Get which announcements user has read
+  let unreadAnnouncements = allAnnouncements || [];
+  
+  if (user && allAnnouncements && allAnnouncements.length > 0) {
+    const announcementIds = allAnnouncements.map(a => a.id);
+    const { data: reads } = await supabase
+      .from("announcement_reads")
+      .select("announcement_id")
+      .eq("user_id", user.id)
+      .in("announcement_id", announcementIds);
+    
+    const readIds = new Set((reads || []).map(r => r.announcement_id));
+    unreadAnnouncements = allAnnouncements.filter(a => !readIds.has(a.id));
+  }
+
+  // Get which chapters user has read
+  let readChapterIds = new Set<string>();
+  
+  if (user && publishedChapters.length > 0) {
+    const chapterIds = publishedChapters.map(c => c.id);
+    const { data: chapterReads } = await supabase
+      .from("chapter_reads")
+      .select("chapter_id")
+      .eq("user_id", user.id)
+      .in("chapter_id", chapterIds);
+    
+    readChapterIds = new Set((chapterReads || []).map(r => r.chapter_id));
+  }
+
+  // Check if this story is a Community Pick
+  const communityPickData = await getCommunityPickBadge(id, supabase);
+
+  const authorName = story.profiles?.display_name || story.profiles?.username || 'Unknown';
+  const isMature = hasMatureContent(story.content_warnings || []);
+
+  const pageContent = (
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      {/* Breadcrumb */}
+      <Breadcrumb items={[
+        { label: 'Browse', href: '/browse' },
+        { label: story.title }
+      ]} />
+
+      {/* Story Header */}
+      <div className="flex flex-col md:flex-row gap-6 mb-8">
+        {/* Cover Image - 2:3 aspect ratio */}
+        {story.cover_url ? (
+          <div className="relative w-full md:w-48 aspect-[2/3] rounded-lg overflow-hidden shrink-0">
+            <CommunityPickBadge pickMonth={communityPickData?.pickMonth} />
+            <img
+              src={`${story.cover_url}?t=${new Date(story.updated_at).getTime()}`}
+              alt={`Cover for ${story.title}`}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ) : (
+          <div className="relative w-full md:w-48 aspect-[2/3] bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center shrink-0">
+            <CommunityPickBadge pickMonth={communityPickData?.pickMonth} />
+            <BookOpen className="h-16 w-16 text-primary/40" />
+          </div>
+        )}
+
+        <div className="flex-1">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <h1 className="text-3xl font-bold">{story.title}</h1>
+            {isOwner && (
+              <Button variant="outline" size="sm" asChild className="shrink-0">
+                <Link href={`/author/stories/${id}/edit`}>
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Edit
+                </Link>
+              </Button>
+            )}
+          </div>
+          
+          <Link 
+            href={`/author/${story.profiles?.username}`}
+            className="text-muted-foreground hover:text-primary flex items-center gap-2 mb-4"
+          >
+            <User className="h-4 w-4" />
+            {authorName}
+          </Link>
+
+          {/* Stats Row */}
+          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4">
+            <span className="flex items-center gap-1">
+              <BookOpen className="h-4 w-4" />
+              {publishedChapters.length} chapters
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="h-4 w-4" />
+              {totalWords.toLocaleString()} words
+            </span>
+            <span className="flex items-center gap-1">
+              <Eye className="h-4 w-4" />
+              {(story.total_views ?? 0).toLocaleString()} views
+            </span>
+            <span className="flex items-center gap-1">
+              <Heart className="h-4 w-4" />
+              {(story.follower_count ?? 0).toLocaleString()} followers
+            </span>
+          </div>
+
+          {/* Status Badge */}
+          <Badge variant="secondary" className="mb-4">
+            {story.status?.charAt(0).toUpperCase() + story.status?.slice(1) || "Ongoing"}
+          </Badge>
+
+          {story.release_schedule && (
+            <span className="text-sm text-muted-foreground flex items-center gap-1">
+              📅 {story.release_schedule}
+            </span>
+          )}
+
+          {/* Genres - now clickable */}
+          {story.genres && story.genres.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              {(story.genres || []).map((genre: string) => (
+                <Link key={genre} href={`/browse/genre/${encodeURIComponent(genre)}`}>
+                  <Badge variant="default" className="cursor-pointer hover:bg-primary/80">
+                    {genre}
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+          )}
+          
+          {/* Tags - now clickable */}
+          {story.tags && story.tags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <span className="text-sm text-muted-foreground">Tags:</span>
+              {(story.tags || []).map((tag: string) => (
+                <Link key={tag} href={`/browse/tag/${encodeURIComponent(tag)}`}>
+                  <Badge variant="secondary" className="cursor-pointer hover:bg-muted">
+                    {tag}
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {/* Content Warnings */}
+          {story.content_warnings && story.content_warnings.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {story.content_warnings.map((warning: string) => (
+                <span key={warning} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                  ⚠️ {warning.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            {publishedChapters.length > 0 ? (
+              <Button asChild>
+                <Link href={`/story/${id}/chapter/${publishedChapters[0].id}`}>
+                  Start Reading
+                </Link>
+              </Button>
+            ) : (
+              <Button disabled>No Chapters Yet</Button>
+            )}
+            <LibraryButton 
+              storyId={id} 
+              initialFollowerCount={story.follower_count ?? 0} 
+            />
+            <ShareButtons
+              url={`https://fictionry.com/story/${id}`}
+              title={`${story.title} by ${authorName}`}
+              description={story.blurb || undefined}
+            />
+          </div>
+          {/* Report Button - only for logged-in non-owners */}
+          {user && !isOwner && (
+            <div className="mt-2 flex items-center gap-2">
+              <ReportButton
+                contentType="story"
+                contentId={id}
+                contentTitle={story.title}
+                size="sm"
+                variant="ghost"
+              />
+              {story.visibility === 'published' && (
+                <NominateButton storyId={id} storyWordCount={totalWords} />
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Announcements Banner */}
+      {(allAnnouncements && allAnnouncements.length > 0) && (
+        <AnnouncementBanner 
+          announcements={allAnnouncements}
+          unreadIds={unreadAnnouncements.map(a => a.id)}
+          userId={user?.id || null}
+        />
+      )}
+
+      {/* Description */}
+      <Card className="mb-6">
+        <CardContent className="pt-6 overflow-hidden">
+          <h2 className="text-lg font-semibold mb-3">Description</h2>
+          <p className="text-muted-foreground whitespace-pre-wrap break-words">
+            {story.blurb || "No description provided."}
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Author Tier Cards */}
+      {authorTiers && authorTiers.length > 0 && (
+        <div className="mb-6">
+          <AuthorTierCards
+            authorId={story.author_id}
+            authorName={authorName}
+            tiers={authorTiers.map(t => ({
+              tier_name: t.tier_name as TierName,
+              description: t.description,
+              advance_chapter_count: t.advance_chapter_count,
+            }))}
+            currentSubscription={userSubscription ? {
+              tier_name: userSubscription.tier_name as TierName,
+              status: userSubscription.status,
+            } : null}
+            isLoggedIn={!!user}
+          />
+        </div>
+      )}
+
+      {/* Ratings Section */}
+      <div className="mb-8">
+        <StoryRatingSection storyId={id} authorId={story.author_id} />
+      </div>
+
+      {/* Chapter List */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4">
+          Chapters ({publishedChapters.length})
+        </h2>
+        
+        {publishedChapters.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              No chapters published yet. Check back soon!
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-2">
+            {publishedChapters.map((chapter) => {
+              const isRead = readChapterIds.has(chapter.id);
+              return (
+                <Link
+                  key={chapter.id}
+                  href={`/story/${id}/chapter/${chapter.id}`}
+                  className="block"
+                >
+                  <Card className={`hover:bg-muted/50 transition-colors ${isRead ? "border-green-500/30 bg-green-500/5" : ""}`}>
+                    <CardContent className="py-3 px-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {isRead && (
+                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 text-white shrink-0">
+                            <Check className="h-4 w-4" />
+                          </div>
+                        )}
+                        <div>
+                          <span className="font-medium flex items-center gap-1.5">
+                            Chapter {chapter.chapter_number}: {chapter.title}
+                            {chapter.min_tier_name && (
+                              <Lock className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                            )}
+                          </span>
+                          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                            <span>{(chapter.word_count ?? 0).toLocaleString()} words</span>
+                            {(chapter.likes ?? 0) > 0 && (
+                              <span className="flex items-center gap-1">
+                                <Heart className="h-3 w-3" />
+                                {(chapter.likes ?? 0).toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {formatDistanceToNow(new Date(chapter.created_at), { addSuffix: true })}
+                      </span>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* More from this Author */}
+      <MoreFromAuthor 
+        storyId={id}
+        authorId={story.author_id}
+        authorName={authorName}
+        authorUsername={story.profiles?.username || 'Unknown'}
+      />
+
+      {/* Related Stories */}
+      <RelatedStories 
+        storyId={id}
+        genres={story.genres || []}
+        authorId={story.author_id}
+      />
+    </div>
+  );
+
+  if (isMature) {
+    return (
+      <ContentWarningGate warnings={story.content_warnings} storyTitle={story.title}>
+        {pageContent}
+      </ContentWarningGate>
+    );
+  }
+
+  return pageContent;
 }
