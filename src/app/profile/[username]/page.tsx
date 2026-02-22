@@ -40,8 +40,8 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
   const { username } = await params
   const decodedUsername = decodeURIComponent(username)
   return {
-    title: `${decodedUsername}'s Profile | FictionForge`,
-    description: `View ${decodedUsername}'s stories, library, and activity on FictionForge`
+    title: `${decodedUsername}'s Profile | Fictionry`,
+    description: `View ${decodedUsername}'s stories, library, and activity on Fictionry`
   }
 }
 

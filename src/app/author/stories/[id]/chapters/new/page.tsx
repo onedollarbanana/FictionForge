@@ -57,7 +57,7 @@ export default function NewChapterPage() {
   const [browserTimezone] = useState(getBrowserTimezone);
   const router = useRouter();
 
-  const DRAFT_KEY = `fictionforge-draft-${storyId}`;
+  const DRAFT_KEY = `fictionry-draft-${storyId}`;
 
   // Auto-save draft to localStorage (debounced)
   const autoSaveDraft = useMemo(

@@ -9,7 +9,7 @@ import { enrichWithCommunityPicks } from '@/lib/community-picks';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Most Followed | FictionForge',
+  title: 'Most Followed | Fictionry',
   description: 'Stories with the most followers',
 };
 

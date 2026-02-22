@@ -9,7 +9,7 @@ import { enrichWithCommunityPicks } from '@/lib/community-picks';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Recently Updated | FictionForge',
+  title: 'Recently Updated | Fictionry',
   description: 'Stories with new chapters',
 };
 

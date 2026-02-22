@@ -19,8 +19,8 @@ export async function generateMetadata({ params }: TagPageProps) {
   const { tag } = await params;
   const decodedTag = decodeURIComponent(tag);
   return {
-    title: `#${decodedTag} Stories | FictionForge`,
-    description: `Discover stories tagged with ${decodedTag} on FictionForge`
+    title: `#${decodedTag} Stories | Fictionry`,
+    description: `Discover stories tagged with ${decodedTag} on Fictionry`
   };
 }
 

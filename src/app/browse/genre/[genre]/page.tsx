@@ -20,8 +20,8 @@ export async function generateMetadata({ params }: GenrePageProps) {
   const { genre } = await params;
   const decodedGenre = decodeURIComponent(genre);
   return {
-    title: `${decodedGenre} Stories | FictionForge`,
-    description: `Discover the best ${decodedGenre} stories on FictionForge`
+    title: `${decodedGenre} Stories | Fictionry`,
+    description: `Discover the best ${decodedGenre} stories on Fictionry`
   };
 }
 

@@ -10,7 +10,7 @@ import { enrichWithCommunityPicks } from '@/lib/community-picks';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Rising Stars | FictionForge',
+  title: 'Rising Stars | Fictionry',
   description: 'Stories gaining traction \u2014 ranked by engagement velocity',
 };
 

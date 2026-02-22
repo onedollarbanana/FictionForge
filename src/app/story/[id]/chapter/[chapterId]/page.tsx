@@ -204,7 +204,7 @@ export default async function ChapterReadingPage({ params }: PageProps) {
 
       <ChapterContentWrapper 
         headerContent={headerContent}
-        storyTitle={chapter.stories?.title || 'FictionForge'}
+        storyTitle={chapter.stories?.title || 'Fictionry'}
         storyUrl={storyUrl}
       >
         <header className="mb-8">
