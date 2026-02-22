@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { TiptapRenderer } from "@/components/reader/tiptap-renderer";
 import { ChapterNav } from "@/components/reader/chapter-nav";
@@ -26,6 +26,7 @@ import { ReadingModeSwitch } from "@/components/reader/reading-mode-switch";
 import { PagedModeOnly } from "@/components/reader/paged-mode-only";
 import { ShareButtons } from "@/components/ui/share-buttons";
 import type { Metadata } from "next";
+import { isLegacyUuid, parseStoryParam, parseChapterParam, getStoryUrl, getChapterUrl, getAbsoluteStoryUrl, getAbsoluteChapterUrl } from "@/lib/url-utils";
 
 export const revalidate = 120
 
@@ -39,28 +40,85 @@ interface PageProps {
   params: { id: string; chapterId: string };
 }
 
+/**
+ * Resolve the URL param to a story UUID.
+ * Handles both legacy UUID params and new slug-shortId params.
+ */
+async function resolveStoryParam(param: string, supabase: any): Promise<{ id: string; slug: string; short_id: string } | null> {
+  if (isLegacyUuid(param)) {
+    const { data } = await supabase.from("stories").select("id, slug, short_id").eq("id", param).single();
+    return data;
+  }
+  const parsed = parseStoryParam(param);
+  if (parsed) {
+    const { data } = await supabase.from("stories").select("id, slug, short_id").eq("short_id", parsed.shortId).single();
+    return data;
+  }
+  return null;
+}
+
+/**
+ * Resolve the chapter URL param to a chapter UUID.
+ * Handles both legacy UUID params and new chapterNumber-slug params.
+ */
+async function resolveChapterParam(
+  param: string,
+  storyId: string,
+  supabase: any
+): Promise<{ id: string; chapter_number: number; slug: string | null } | null> {
+  if (isLegacyUuid(param)) {
+    const { data } = await supabase
+      .from("chapters")
+      .select("id, chapter_number, slug")
+      .eq("id", param)
+      .eq("story_id", storyId)
+      .single();
+    return data;
+  }
+  const parsed = parseChapterParam(param);
+  if (parsed) {
+    const { data } = await supabase
+      .from("chapters")
+      .select("id, chapter_number, slug")
+      .eq("chapter_number", parsed.chapterNumber)
+      .eq("story_id", storyId)
+      .single();
+    return data;
+  }
+  return null;
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { id: storyId, chapterId } = params;
+  const { id: storyIdParam, chapterId: chapterIdParam } = params;
   const { createClient } = await import("@/lib/supabase/server");
   const supabase = await createClient();
+
+  // Resolve story and chapter params
+  const resolvedStory = await resolveStoryParam(storyIdParam, supabase);
+  const resolvedStoryId = resolvedStory?.id || storyIdParam;
+  const resolvedChapter = await resolveChapterParam(chapterIdParam, resolvedStoryId, supabase);
+  const resolvedChapterId = resolvedChapter?.id || chapterIdParam;
 
   const { data: chapter } = await supabase
     .from("chapters")
     .select(`
       title,
       chapter_number,
+      slug,
       stories (
         title,
         cover_url,
         genres,
+        slug,
+        short_id,
         profiles!author_id(
           username,
           display_name
         )
       )
     `)
-    .eq("id", chapterId)
-    .eq("story_id", storyId)
+    .eq("id", resolvedChapterId)
+    .eq("story_id", resolvedStoryId)
     .single();
 
   if (!chapter || !chapter.stories) {
@@ -82,9 +140,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const ogImageUrl = `https://www.fictionry.com/api/og?${ogParams.toString()}`;
 
+  const canonicalUrl = resolvedStory && resolvedChapter
+    ? getAbsoluteChapterUrl(
+        { id: resolvedStory.id, slug: story.slug, short_id: story.short_id },
+        { chapter_number: chapter.chapter_number, slug: chapter.slug }
+      )
+    : undefined;
+
   return {
     title,
     description,
+    ...(canonicalUrl ? { alternates: { canonical: canonicalUrl } } : {}),
     openGraph: {
       title,
       description,
@@ -101,8 +167,42 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ChapterReadingPage({ params }: PageProps) {
-  const { id: storyId, chapterId } = params;
+  const { id: storyIdParam, chapterId: chapterIdParam } = params;
   const supabase = await createClient();
+
+  // Resolve story param
+  const resolvedStory = await resolveStoryParam(storyIdParam, supabase);
+  if (!resolvedStory) {
+    notFound();
+  }
+
+  const storyId = resolvedStory.id;
+
+  // Resolve chapter param
+  const resolvedChapter = await resolveChapterParam(chapterIdParam, storyId, supabase);
+  if (!resolvedChapter) {
+    notFound();
+  }
+
+  const chapterId = resolvedChapter.id;
+
+  // Redirect legacy UUID URLs to SEO-friendly slug URLs
+  const canonicalChapterPath = getChapterUrl(resolvedStory, resolvedChapter);
+  if (isLegacyUuid(storyIdParam) || isLegacyUuid(chapterIdParam)) {
+    redirect(canonicalChapterPath);
+  }
+
+  // Redirect if story slug doesn't match (e.g., story was renamed)
+  const parsedStory = parseStoryParam(storyIdParam);
+  if (parsedStory && parsedStory.slug !== resolvedStory.slug) {
+    redirect(canonicalChapterPath);
+  }
+
+  // Redirect if chapter slug doesn't match
+  const parsedChapter = parseChapterParam(chapterIdParam);
+  if (parsedChapter && parsedChapter.slug && resolvedChapter.slug && parsedChapter.slug !== resolvedChapter.slug) {
+    redirect(canonicalChapterPath);
+  }
 
   // Get current user (may be null if not logged in)
   const { data: { user } } = await supabase.auth.getUser();
@@ -169,7 +269,7 @@ export default async function ChapterReadingPage({ params }: PageProps) {
   // Fetch all chapters for navigation
   const { data: allChapters } = await supabase
     .from("chapters")
-    .select("id, title, chapter_number, is_published")
+    .select("id, title, chapter_number, is_published, slug")
     .eq("story_id", storyId)
     .eq("is_published", true)
     .order("chapter_number", { ascending: true });
@@ -183,16 +283,13 @@ export default async function ChapterReadingPage({ params }: PageProps) {
   const wordCount = countWordsFromTiptap(chapter.content);
 
   // Get the current URL for sharing
-  const headersList = await headers();
-  const host = headersList.get('host') || 'fiction-forge-mu.vercel.app';
-  const protocol = host.includes('localhost') ? 'http' : 'https';
-  const storyUrl = `${protocol}://${host}/story/${storyId}`;
+  const storyUrl = getAbsoluteStoryUrl(resolvedStory);
 
   // Header content for the wrapper
   const headerContent = (
     <>
       <Link
-        href={`/story/${storyId}`}
+        href={getStoryUrl(resolvedStory)}
         className="flex items-center gap-1 text-sm opacity-70 hover:opacity-100"
       >
         <ChevronLeft className="h-4 w-4" />
@@ -284,7 +381,7 @@ export default async function ChapterReadingPage({ params }: PageProps) {
             </p>
             <ReadingTimeEstimate wordCount={wordCount} variant="full" />
             <ShareButtons
-              url={`https://www.fictionry.com/story/${storyId}/chapter/${chapterId}`}
+              url={getAbsoluteChapterUrl(resolvedStory, resolvedChapter)}
               title={`${chapter.title} — ${chapter.stories?.title || "Story"}`}
               description={`Read ${chapter.title} from ${chapter.stories?.title || "a story"} on Fictionry`}
             />

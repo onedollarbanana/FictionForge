@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,7 @@ import { AuthorTierCards } from "@/components/story/author-tier-cards";
 import { type TierName } from "@/lib/platform-config";
 import { ShareButtons } from "@/components/ui/share-buttons";
 import type { Metadata } from "next";
+import { isLegacyUuid, parseStoryParam, getStoryUrl, getAbsoluteStoryUrl, getChapterUrl } from "@/lib/url-utils";
 
 export const revalidate = 120
 
@@ -29,9 +30,39 @@ interface PageProps {
   params: { id: string };
 }
 
+/**
+ * Resolve the URL param to a story UUID.
+ * Handles both legacy UUID params and new slug-shortId params.
+ */
+async function resolveStoryParam(param: string, supabase: any): Promise<{ id: string; slug: string; short_id: string } | null> {
+  if (isLegacyUuid(param)) {
+    const { data } = await supabase
+      .from("stories")
+      .select("id, slug, short_id")
+      .eq("id", param)
+      .single();
+    return data;
+  }
+
+  const parsed = parseStoryParam(param);
+  if (parsed) {
+    const { data } = await supabase
+      .from("stories")
+      .select("id, slug, short_id")
+      .eq("short_id", parsed.shortId)
+      .single();
+    return data;
+  }
+
+  return null;
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = params;
   const supabase = await createClient();
+
+  const resolved = await resolveStoryParam(id, supabase);
+  const storyId = resolved?.id || id;
 
   const { data: story } = await supabase
     .from("stories")
@@ -40,12 +71,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       blurb,
       cover_url,
       genres,
+      slug,
+      short_id,
       profiles!author_id(
         username,
         display_name
       )
     `)
-    .eq("id", id)
+    .eq("id", storyId)
     .single();
 
   if (!story) {
@@ -72,9 +105,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const ogImageUrl = `https://www.fictionry.com/api/og?${ogParams.toString()}`;
 
+  const canonicalUrl = resolved
+    ? getAbsoluteStoryUrl({ id: resolved.id, slug: story.slug, short_id: story.short_id })
+    : undefined;
+
   return {
     title,
     description,
+    ...(canonicalUrl ? { alternates: { canonical: canonicalUrl } } : {}),
     openGraph: {
       title,
       description,
@@ -94,6 +132,26 @@ export default async function StoryPage({ params }: PageProps) {
   const { id } = params;
   const supabase = await createClient();
 
+  // Resolve URL param to story
+  const resolved = await resolveStoryParam(id, supabase);
+  if (!resolved) {
+    notFound();
+  }
+
+  // Redirect legacy UUID URLs to SEO-friendly slug URLs
+  const canonicalPath = getStoryUrl(resolved);
+  if (isLegacyUuid(id)) {
+    redirect(canonicalPath);
+  }
+
+  // Redirect if slug doesn't match (e.g., story was renamed)
+  const parsed = parseStoryParam(id);
+  if (parsed && parsed.slug !== resolved.slug) {
+    redirect(canonicalPath);
+  }
+
+  const storyId = resolved.id;
+
   // Fetch story with author info
   const { data: story, error } = await supabase
     .from("stories")
@@ -105,7 +163,7 @@ export default async function StoryPage({ params }: PageProps) {
         avatar_url
       )
     `)
-    .eq("id", id)
+    .eq("id", storyId)
     .single();
 
   if (error || !story) {
@@ -124,8 +182,8 @@ export default async function StoryPage({ params }: PageProps) {
   // Fetch published chapters (include min_tier_name for lock icons)
   const { data: chapters } = await supabase
     .from("chapters")
-    .select("id, title, chapter_number, word_count, likes, created_at, is_published, min_tier_name")
-    .eq("story_id", id)
+    .select("id, title, chapter_number, word_count, likes, created_at, is_published, min_tier_name, slug")
+    .eq("story_id", storyId)
     .eq("is_published", true)
     .order("chapter_number", { ascending: true });
 
@@ -160,7 +218,7 @@ export default async function StoryPage({ params }: PageProps) {
   const { data: allAnnouncements } = await supabase
     .from("announcements")
     .select("*")
-    .eq("story_id", id)
+    .eq("story_id", storyId)
     .gte("created_at", thirtyDaysAgo.toISOString())
     .order("created_at", { ascending: false })
     .limit(10);
@@ -195,7 +253,7 @@ export default async function StoryPage({ params }: PageProps) {
   }
 
   // Check if this story is a Community Pick
-  const communityPickData = await getCommunityPickBadge(id, supabase);
+  const communityPickData = await getCommunityPickBadge(storyId, supabase);
 
   const authorName = story.profiles?.display_name || story.profiles?.username || 'Unknown';
   const isMature = hasMatureContent(story.content_warnings || []);
@@ -218,7 +276,7 @@ export default async function StoryPage({ params }: PageProps) {
             description: story.blurb || undefined,
             genre: story.genres || undefined,
             image: story.cover_url || undefined,
-            url: `https://www.fictionry.com/story/${id}`,
+            url: getAbsoluteStoryUrl(resolved),
             numberOfPages: publishedChapters.length,
             wordCount: totalWords,
             publisher: {
@@ -270,7 +328,7 @@ export default async function StoryPage({ params }: PageProps) {
             <h1 className="text-3xl font-bold">{story.title}</h1>
             {isOwner && (
               <Button variant="outline" size="sm" asChild className="shrink-0">
-                <Link href={`/author/stories/${id}/edit`}>
+                <Link href={`/author/stories/${storyId}/edit`}>
                   <Pencil className="h-4 w-4 mr-1" />
                   Edit
                 </Link>
@@ -359,7 +417,7 @@ export default async function StoryPage({ params }: PageProps) {
           <div className="flex gap-3">
             {publishedChapters.length > 0 ? (
               <Button asChild>
-                <Link href={`/story/${id}/chapter/${publishedChapters[0].id}`}>
+                <Link href={getChapterUrl(resolved, { chapter_number: publishedChapters[0].chapter_number, slug: publishedChapters[0].slug })}>
                   Start Reading
                 </Link>
               </Button>
@@ -367,11 +425,11 @@ export default async function StoryPage({ params }: PageProps) {
               <Button disabled>No Chapters Yet</Button>
             )}
             <LibraryButton 
-              storyId={id} 
+              storyId={storyId} 
               initialFollowerCount={story.follower_count ?? 0} 
             />
             <ShareButtons
-              url={`https://www.fictionry.com/story/${id}`}
+              url={getAbsoluteStoryUrl(resolved)}
               title={`${story.title} by ${authorName}`}
               description={story.blurb || undefined}
             />
@@ -381,13 +439,13 @@ export default async function StoryPage({ params }: PageProps) {
             <div className="mt-2 flex items-center gap-2">
               <ReportButton
                 contentType="story"
-                contentId={id}
+                contentId={storyId}
                 contentTitle={story.title}
                 size="sm"
                 variant="ghost"
               />
               {story.visibility === 'published' && (
-                <NominateButton storyId={id} storyWordCount={totalWords} />
+                <NominateButton storyId={storyId} storyWordCount={totalWords} />
               )}
             </div>
           )}
@@ -435,7 +493,7 @@ export default async function StoryPage({ params }: PageProps) {
 
       {/* Ratings Section */}
       <div className="mb-8">
-        <StoryRatingSection storyId={id} authorId={story.author_id} />
+        <StoryRatingSection storyId={storyId} authorId={story.author_id} />
       </div>
 
       {/* Chapter List */}
@@ -457,7 +515,7 @@ export default async function StoryPage({ params }: PageProps) {
               return (
                 <Link
                   key={chapter.id}
-                  href={`/story/${id}/chapter/${chapter.id}`}
+                  href={getChapterUrl(resolved, { chapter_number: chapter.chapter_number, slug: chapter.slug })}
                   className="block"
                 >
                   <Card className={`hover:bg-muted/50 transition-colors ${isRead ? "border-green-500/30 bg-green-500/5" : ""}`}>
@@ -500,7 +558,7 @@ export default async function StoryPage({ params }: PageProps) {
 
       {/* More from this Author */}
       <MoreFromAuthor 
-        storyId={id}
+        storyId={storyId}
         authorId={story.author_id}
         authorName={authorName}
         authorUsername={story.profiles?.username || 'Unknown'}
@@ -508,7 +566,7 @@ export default async function StoryPage({ params }: PageProps) {
 
       {/* Related Stories */}
       <RelatedStories 
-        storyId={id}
+        storyId={storyId}
         genres={story.genres || []}
         authorId={story.author_id}
       />
