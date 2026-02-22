@@ -16,6 +16,24 @@ export async function GET(request: NextRequest) {
       ? description.substring(0, 120) + "..."
       : description;
 
+  // Fetch cover image as buffer for Satori compatibility (WebP, CORS, etc.)
+  let coverSrc: string | null = null;
+  if (cover) {
+    try {
+      const res = await fetch(cover, { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        const contentType = res.headers.get("content-type") || "image/png";
+        const buffer = await res.arrayBuffer();
+        const base64 = btoa(
+          new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
+        );
+        coverSrc = `data:${contentType};base64,${base64}`;
+      }
+    } catch {
+      // Fall through to placeholder
+    }
+  }
+
   return new ImageResponse(
     (
       <div
@@ -38,9 +56,9 @@ export async function GET(request: NextRequest) {
             padding: "40px 20px 40px 40px",
           }}
         >
-          {cover ? (
+          {coverSrc ? (
             <img
-              src={cover}
+              src={coverSrc}
               alt=""
               width={280}
               height={420}

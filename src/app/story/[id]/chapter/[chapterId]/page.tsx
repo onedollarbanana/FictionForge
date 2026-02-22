@@ -69,8 +69,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const story = chapter.stories as any;
   const authorName = story.profiles?.display_name || story.profiles?.username || "Unknown";
-  const title = `${chapter.title} — ${story.title} | Fictionry`;
-  const description = `Read ${chapter.title} from ${story.title} by ${authorName} on Fictionry`;
+  const title = `${chapter.title} — ${story.title} by ${authorName} | Fictionry`;
+  const genreLabel = story.genres && story.genres.length > 0 ? ` — ${story.genres[0]} Fiction` : "";
+  const description = `Read Chapter ${chapter.chapter_number}: ${chapter.title} from ${story.title} by ${authorName}${genreLabel} on Fictionry`;
 
   const ogParams = new URLSearchParams();
   ogParams.set("title", `Ch. ${chapter.chapter_number}: ${chapter.title}`);

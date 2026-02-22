@@ -53,7 +53,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const authorName = (story.profiles as any)?.display_name || (story.profiles as any)?.username || "Unknown";
-  const title = `${story.title} by ${authorName} | Fictionry`;
+  const genreLabel = story.genres && story.genres.length > 0 ? story.genres[0] : "";
+  const title = genreLabel
+    ? `Read ${story.title} by ${authorName} — ${genreLabel} Fiction | Fictionry`
+    : `Read ${story.title} by ${authorName} | Fictionry`;
   const description = story.blurb
     ? story.blurb.length > 160
       ? story.blurb.substring(0, 157) + "..."
@@ -199,6 +202,44 @@ export default async function StoryPage({ params }: PageProps) {
 
   const pageContent = (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
+      {/* JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Book",
+            name: story.title,
+            author: {
+              "@type": "Person",
+              name: authorName,
+              url: `https://fictionry.com/author/${story.profiles?.username || ""}`,
+            },
+            description: story.blurb || undefined,
+            genre: story.genres || undefined,
+            image: story.cover_url || undefined,
+            url: `https://fictionry.com/story/${id}`,
+            numberOfPages: publishedChapters.length,
+            wordCount: totalWords,
+            publisher: {
+              "@type": "Organization",
+              name: "Fictionry",
+              url: "https://fictionry.com",
+            },
+            aggregateRating: story.rating_count > 0
+              ? {
+                  "@type": "AggregateRating",
+                  ratingValue: story.average_rating,
+                  ratingCount: story.rating_count,
+                  bestRating: 5,
+                  worstRating: 1,
+                }
+              : undefined,
+            inLanguage: "en",
+          }),
+        }}
+      />
+
       {/* Breadcrumb */}
       <Breadcrumb items={[
         { label: 'Browse', href: '/browse' },
