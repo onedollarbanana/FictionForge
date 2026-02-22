@@ -1,5 +1,5 @@
-// IndexedDB offline cache for FictionForge chapters
-// Database: 'fictionforge-offline', Store: 'chapters'
+// IndexedDB offline cache for Fictionry chapters
+// Database: 'fictionry-offline', Store: 'chapters'
 // No external dependencies — raw IndexedDB API
 
 export interface CachedChapter {
@@ -27,7 +27,7 @@ export interface CachedChapterSummary {
   cachedAt: string;
 }
 
-const DB_NAME = 'fictionforge-offline';
+const DB_NAME = 'fictionry-offline';
 const DB_VERSION = 1;
 const STORE_NAME = 'chapters';
 

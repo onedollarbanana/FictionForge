@@ -142,7 +142,7 @@ export function PWAInstallPrompt() {
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-zinc-900 dark:text-white text-sm">
-                Install FictionForge
+                Install Fictionry
               </h3>
               <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
                 Read stories offline, get notifications &amp; faster loading

@@ -25,7 +25,7 @@ export function Header() {
       <div className="container mx-auto px-4 flex h-14 items-center justify-between">
         <div className="flex items-center gap-6">
           <Link href="/" className="text-xl font-bold text-primary">
-            FictionForge
+            Fictionry
           </Link>
           <nav className="hidden md:flex items-center gap-4">
             <Link href="/browse" className="text-sm text-muted-foreground hover:text-foreground transition-colors">

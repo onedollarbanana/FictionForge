@@ -22,7 +22,7 @@ const DEFAULT_SETTINGS: ReadingSettings = {
   readingMode: 'paged',
 }
 
-const STORAGE_KEY = 'fictionforge-reading-settings'
+const STORAGE_KEY = 'fictionry-reading-settings'
 
 export function useReadingSettings() {
   const [settings, setSettings] = useState<ReadingSettings>(DEFAULT_SETTINGS)

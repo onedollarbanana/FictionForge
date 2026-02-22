@@ -23,10 +23,10 @@ export function ViewTracker({ chapterId, storyId }: ViewTrackerProps) {
       const { data: { user } } = await supabase.auth.getUser();
 
       // Generate a session ID for anonymous users
-      let sessionId = localStorage.getItem("fictionforge_session");
+      let sessionId = localStorage.getItem("fictionry_session");
       if (!sessionId) {
         sessionId = crypto.randomUUID();
-        localStorage.setItem("fictionforge_session", sessionId);
+        localStorage.setItem("fictionry_session", sessionId);
       }
 
       // Try to insert a view (will fail silently if already exists due to unique constraint)

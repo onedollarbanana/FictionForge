@@ -132,7 +132,7 @@ export function ReportButton({
                 Report Submitted
               </DialogTitle>
               <DialogDescription>
-                Thank you for helping keep FictionForge safe. Our moderation team will review your report.
+                Thank you for helping keep Fictionry safe. Our moderation team will review your report.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>

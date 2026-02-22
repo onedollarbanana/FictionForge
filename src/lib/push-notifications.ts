@@ -9,7 +9,7 @@ function getWebPush() {
   if (!webpushInitialized) {
     const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     const privateKey = process.env.VAPID_PRIVATE_KEY;
-    const email = process.env.VAPID_EMAIL || 'mailto:support@fictionforge.com';
+    const email = process.env.VAPID_EMAIL || 'mailto:support@fictionry.com';
 
     if (!publicKey || !privateKey) {
       console.warn('VAPID keys not configured — push notifications disabled');

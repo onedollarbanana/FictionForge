@@ -34,7 +34,7 @@ export const tierConfig: Record<ExperienceTier, {
     icon: Sprout,
     color: 'text-zinc-600 dark:text-zinc-400',
     bgColor: 'bg-zinc-100 dark:bg-zinc-800',
-    description: 'Welcome to FictionForge! Start reading and engaging to level up.'
+    description: 'Welcome to Fictionry! Start reading and engaging to level up.'
   },
   reader: {
     label: 'Reader',

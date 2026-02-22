@@ -12,7 +12,7 @@ export function Footer() {
           <div className="space-y-4">
             <Link href="/" className="flex items-center gap-2 text-xl font-bold">
               <BookOpen className="h-6 w-6 text-violet-600" />
-              <span>FictionForge</span>
+              <span>Fictionry</span>
             </Link>
             <p className="text-sm text-muted-foreground">
               Where stories come alive. A modern platform for web fiction authors and readers.
@@ -67,7 +67,7 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/about" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Why FictionForge?
+                  Why Fictionry?
                 </Link>
               </li>
             </ul>
@@ -85,7 +85,7 @@ export function Footer() {
             </ul>
             <div className="flex gap-4">
               <a
-                href="https://twitter.com/fictionforge"
+                href="https://twitter.com/fictionry"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground transition-colors"
@@ -94,7 +94,7 @@ export function Footer() {
                 <Twitter className="h-5 w-5" />
               </a>
               <a
-                href="https://github.com/fictionforge"
+                href="https://github.com/fictionry"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground transition-colors"
@@ -103,7 +103,7 @@ export function Footer() {
                 <Github className="h-5 w-5" />
               </a>
               <a
-                href="mailto:hello@fictionforge.io"
+                href="mailto:hello@fictionry.io"
                 className="text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Email"
               >
@@ -119,7 +119,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © {currentYear} FictionForge. All rights reserved.
+            © {currentYear} Fictionry. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm">
             <Link href="/about" className="text-muted-foreground hover:text-foreground transition-colors">
