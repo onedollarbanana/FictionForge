@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     const authorName = authorProfile?.display_name || authorProfile?.username || 'Author';
     const authorUsername = authorProfile?.username || authorId;
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://fictionforge-beige.vercel.app';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://fictionry-beige.vercel.app';
 
     // Create Stripe Checkout session with Connect
     const session = await stripe.checkout.sessions.create({

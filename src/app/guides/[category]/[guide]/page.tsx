@@ -20,9 +20,9 @@ export function generateMetadata({
   params: { category: string; guide: string }
 }): Metadata {
   const guide = getGuide(params.category, params.guide)
-  if (!guide) return { title: 'Not Found - FictionForge' }
+  if (!guide) return { title: 'Not Found - Fictionry' }
   return {
-    title: `${guide.title} - FictionForge Guides`,
+    title: `${guide.title} - Fictionry Guides`,
     description: guide.description,
   }
 }

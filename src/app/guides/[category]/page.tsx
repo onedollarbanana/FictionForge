@@ -17,9 +17,9 @@ export function generateStaticParams() {
 
 export function generateMetadata({ params }: { params: { category: string } }): Metadata {
   const category = getCategory(params.category)
-  if (!category) return { title: 'Not Found - FictionForge' }
+  if (!category) return { title: 'Not Found - Fictionry' }
   return {
-    title: `${category.title} Guides - FictionForge`,
+    title: `${category.title} Guides - Fictionry`,
     description: category.description,
   }
 }

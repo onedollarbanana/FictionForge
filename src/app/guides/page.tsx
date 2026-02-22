@@ -5,8 +5,8 @@ import { guideCategories, getAllGuides, popularGuideSlugs, getGuide } from '@/li
 import { GuideSearch } from '@/components/guides/guide-search'
 
 export const metadata: Metadata = {
-  title: 'Guides & How-To - FictionForge',
-  description: 'Learn everything about FictionForge — from publishing your first story to migrating from other platforms. Guides for authors, readers, and community members.',
+  title: 'Guides & How-To - Fictionry',
+  description: 'Learn everything about Fictionry — from publishing your first story to migrating from other platforms. Guides for authors, readers, and community members.',
 }
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -28,7 +28,7 @@ export default function GuidesPage() {
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">Guides & How-To</h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Everything you need to get the most out of FictionForge — whether you&apos;re an author, reader, or just getting started.
+          Everything you need to get the most out of Fictionry — whether you&apos;re an author, reader, or just getting started.
         </p>
       </div>
 
