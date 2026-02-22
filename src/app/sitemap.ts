@@ -6,7 +6,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   const supabase = createClient(supabaseUrl, supabaseKey)
   
-  const baseUrl = 'https://fictionry.com'
+  const baseUrl = 'https://www.fictionry.com'
   
   // Static pages
   const staticPages = [

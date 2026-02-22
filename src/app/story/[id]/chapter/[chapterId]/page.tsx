@@ -80,7 +80,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   ogParams.set("description", `From ${story.title}`);
   if (story.genres && story.genres.length > 0) ogParams.set("genre", story.genres[0]);
 
-  const ogImageUrl = `/api/og?${ogParams.toString()}`;
+  const ogImageUrl = `https://www.fictionry.com/api/og?${ogParams.toString()}`;
 
   return {
     title,
@@ -284,7 +284,7 @@ export default async function ChapterReadingPage({ params }: PageProps) {
             </p>
             <ReadingTimeEstimate wordCount={wordCount} variant="full" />
             <ShareButtons
-              url={`https://fictionry.com/story/${storyId}/chapter/${chapterId}`}
+              url={`https://www.fictionry.com/story/${storyId}/chapter/${chapterId}`}
               title={`${chapter.title} — ${chapter.stories?.title || "Story"}`}
               description={`Read ${chapter.title} from ${chapter.stories?.title || "a story"} on Fictionry`}
             />

@@ -13,7 +13,7 @@ import { PWAInstallPrompt } from '@/components/pwa-install-prompt'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://fictionry.com'),
+  metadataBase: new URL('https://www.fictionry.com'),
   title: 'Fictionry - The Modern Way to Read and Write Fiction',
   description: 'Discover and share incredible fiction on Fictionry. A modern platform for authors to publish serial fiction and readers to find their next favorite story across every genre.',
   keywords: ['web fiction', 'online stories', 'read fiction online', 'write fiction', 'serial fiction', 'webnovel', 'free stories', 'fantasy fiction', 'romance fiction', 'mystery fiction', 'sci-fi fiction', 'fiction platform'],

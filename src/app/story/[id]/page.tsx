@@ -70,7 +70,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (story.blurb) ogParams.set("description", story.blurb.substring(0, 120));
   if (story.genres && story.genres.length > 0) ogParams.set("genre", story.genres[0]);
 
-  const ogImageUrl = `/api/og?${ogParams.toString()}`;
+  const ogImageUrl = `https://www.fictionry.com/api/og?${ogParams.toString()}`;
 
   return {
     title,
@@ -213,18 +213,18 @@ export default async function StoryPage({ params }: PageProps) {
             author: {
               "@type": "Person",
               name: authorName,
-              url: `https://fictionry.com/author/${story.profiles?.username || ""}`,
+              url: `https://www.fictionry.com/author/${story.profiles?.username || ""}`,
             },
             description: story.blurb || undefined,
             genre: story.genres || undefined,
             image: story.cover_url || undefined,
-            url: `https://fictionry.com/story/${id}`,
+            url: `https://www.fictionry.com/story/${id}`,
             numberOfPages: publishedChapters.length,
             wordCount: totalWords,
             publisher: {
               "@type": "Organization",
               name: "Fictionry",
-              url: "https://fictionry.com",
+              url: "https://www.fictionry.com",
             },
             aggregateRating: story.rating_count > 0
               ? {
@@ -371,7 +371,7 @@ export default async function StoryPage({ params }: PageProps) {
               initialFollowerCount={story.follower_count ?? 0} 
             />
             <ShareButtons
-              url={`https://fictionry.com/story/${id}`}
+              url={`https://www.fictionry.com/story/${id}`}
               title={`${story.title} by ${authorName}`}
               description={story.blurb || undefined}
             />

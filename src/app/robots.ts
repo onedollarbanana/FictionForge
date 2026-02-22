@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/admin/', '/settings/', '/api/', '/library/', '/author/', '/support/'],
       },
     ],
-    sitemap: 'https://fictionry.com/sitemap.xml',
+    sitemap: 'https://www.fictionry.com/sitemap.xml',
   }
 }
