@@ -24,6 +24,8 @@ import { type TierName } from "@/lib/platform-config";
 import { ChapterOfflineCacher } from "@/components/reader/chapter-offline-cacher";
 import { ReadingModeSwitch } from "@/components/reader/reading-mode-switch";
 import { PagedModeOnly } from "@/components/reader/paged-mode-only";
+import { ShareButtons } from "@/components/ui/share-buttons";
+import type { Metadata } from "next";
 
 export const revalidate = 120
 
@@ -35,6 +37,66 @@ const TIER_HIERARCHY: Record<string, number> = {
 
 interface PageProps {
   params: { id: string; chapterId: string };
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id: storyId, chapterId } = params;
+  const { createClient } = await import("@/lib/supabase/server");
+  const supabase = await createClient();
+
+  const { data: chapter } = await supabase
+    .from("chapters")
+    .select(`
+      title,
+      chapter_number,
+      stories (
+        title,
+        cover_url,
+        genres,
+        profiles!author_id(
+          username,
+          display_name
+        )
+      )
+    `)
+    .eq("id", chapterId)
+    .eq("story_id", storyId)
+    .single();
+
+  if (!chapter || !chapter.stories) {
+    return { title: "Chapter Not Found | Fictionry" };
+  }
+
+  const story = chapter.stories as any;
+  const authorName = story.profiles?.display_name || story.profiles?.username || "Unknown";
+  const title = `${chapter.title} — ${story.title} | Fictionry`;
+  const description = `Read ${chapter.title} from ${story.title} by ${authorName} on Fictionry`;
+
+  const ogParams = new URLSearchParams();
+  ogParams.set("title", `Ch. ${chapter.chapter_number}: ${chapter.title}`);
+  ogParams.set("author", authorName);
+  if (story.cover_url) ogParams.set("cover", story.cover_url);
+  ogParams.set("description", `From ${story.title}`);
+  if (story.genres && story.genres.length > 0) ogParams.set("genre", story.genres[0]);
+
+  const ogImageUrl = `/api/og?${ogParams.toString()}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImageUrl],
+    },
+  };
 }
 
 export default async function ChapterReadingPage({ params }: PageProps) {
@@ -220,6 +282,11 @@ export default async function ChapterReadingPage({ params }: PageProps) {
               </Link>
             </p>
             <ReadingTimeEstimate wordCount={wordCount} variant="full" />
+            <ShareButtons
+              url={`https://fictionry.com/story/${storyId}/chapter/${chapterId}`}
+              title={`${chapter.title} — ${chapter.stories?.title || "Story"}`}
+              description={`Read ${chapter.title} from ${chapter.stories?.title || "a story"} on Fictionry`}
+            />
           </div>
         </header>
 
