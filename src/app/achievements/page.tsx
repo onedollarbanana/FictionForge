@@ -10,7 +10,7 @@ import type { Achievement, UserAchievement, AchievementCategory } from '@/compon
 import { BadgeSelectorClient } from './badge-selector-client'
 
 export const metadata: Metadata = {
-  title: 'Achievements | FictionForge',
+  title: 'Achievements | Fictionry',
   description: 'View your achievements and select badges to display on your profile'
 }
 

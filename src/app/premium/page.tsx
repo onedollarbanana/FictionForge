@@ -4,7 +4,7 @@ import { Crown, BookOpen, Sparkles, Shield, Heart, Zap } from "lucide-react";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Reader Premium | FictionForge",
+  title: "Reader Premium | Fictionry",
   description: "Upgrade to Reader Premium for ad-free reading, exclusive features, and support independent authors.",
 };
 

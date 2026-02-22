@@ -1,7 +1,7 @@
 {
-  "name": "FictionForge",
-  "short_name": "FictionForge",
-  "description": "Where Stories Come Alive",
+  "name": "Fictionry",
+  "short_name": "Fictionry",
+  "description": "The Modern Way to Read and Write Fiction",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",

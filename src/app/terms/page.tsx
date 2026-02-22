@@ -1,8 +1,8 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Terms of Service - FictionForge',
-  description: 'FictionForge terms of service - rules and guidelines for using our platform.',
+  title: 'Terms of Service - Fictionry',
+  description: 'Fictionry terms of service - rules and guidelines for using our platform.',
 }
 
 export default function TermsPage() {
@@ -15,7 +15,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-xl font-semibold mb-4">1. Acceptance of Terms</h2>
           <p className="text-muted-foreground leading-relaxed">
-            By accessing or using FictionForge, you agree to be bound by these Terms of Service. 
+            By accessing or using Fictionry, you agree to be bound by these Terms of Service. 
             If you do not agree to these terms, please do not use our platform.
           </p>
         </section>
@@ -23,7 +23,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-xl font-semibold mb-4">2. Description of Service</h2>
           <p className="text-muted-foreground leading-relaxed">
-            FictionForge is a platform that allows users to read, write, and share web fiction. 
+            Fictionry is a platform that allows users to read, write, and share web fiction. 
             We provide tools for authors to publish their work and for readers to discover and 
             engage with stories.
           </p>
@@ -32,7 +32,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-xl font-semibold mb-4">3. User Accounts</h2>
           <p className="text-muted-foreground leading-relaxed mb-4">
-            To use certain features of FictionForge, you must create an account. You agree to:
+            To use certain features of Fictionry, you must create an account. You agree to:
           </p>
           <ul className="list-disc pl-6 text-muted-foreground space-y-2">
             <li>Provide accurate and complete information</li>
@@ -45,7 +45,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-xl font-semibold mb-4">4. User Content</h2>
           <p className="text-muted-foreground leading-relaxed mb-4">
-            You retain ownership of content you create and publish on FictionForge. By posting 
+            You retain ownership of content you create and publish on Fictionry. By posting 
             content, you grant us a non-exclusive, worldwide, royalty-free license to display, 
             distribute, and promote your content on our platform.
           </p>
@@ -87,7 +87,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-xl font-semibold mb-4">7. Intellectual Property</h2>
           <p className="text-muted-foreground leading-relaxed">
-            The FictionForge platform, including its design, features, and branding, is owned by 
+            The Fictionry platform, including its design, features, and branding, is owned by 
             us and protected by intellectual property laws. You may not copy, modify, or distribute 
             our platform without permission.
           </p>
@@ -105,7 +105,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-xl font-semibold mb-4">9. Disclaimer of Warranties</h2>
           <p className="text-muted-foreground leading-relaxed">
-            FictionForge is provided "as is" without warranties of any kind. We do not guarantee 
+            Fictionry is provided "as is" without warranties of any kind. We do not guarantee 
             that the service will be uninterrupted, secure, or error-free. We are not responsible 
             for user-generated content or interactions between users.
           </p>
@@ -114,7 +114,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-xl font-semibold mb-4">10. Limitation of Liability</h2>
           <p className="text-muted-foreground leading-relaxed">
-            To the maximum extent permitted by law, FictionForge shall not be liable for any 
+            To the maximum extent permitted by law, Fictionry shall not be liable for any 
             indirect, incidental, special, consequential, or punitive damages arising from your 
             use of the platform.
           </p>
@@ -123,7 +123,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-xl font-semibold mb-4">11. Changes to Terms</h2>
           <p className="text-muted-foreground leading-relaxed">
-            We may update these terms from time to time. Continued use of FictionForge after 
+            We may update these terms from time to time. Continued use of Fictionry after 
             changes constitutes acceptance of the new terms. We will make reasonable efforts to 
             notify users of significant changes.
           </p>
@@ -133,8 +133,8 @@ export default function TermsPage() {
           <h2 className="text-xl font-semibold mb-4">12. Contact</h2>
           <p className="text-muted-foreground leading-relaxed">
             For questions about these Terms of Service, please contact us at{' '}
-            <a href="mailto:legal@fictionforge.io" className="text-violet-600 hover:text-violet-700">
-              legal@fictionforge.io
+            <a href="mailto:legal@fictionry.io" className="text-violet-600 hover:text-violet-700">
+              legal@fictionry.io
             </a>
           </p>
         </section>

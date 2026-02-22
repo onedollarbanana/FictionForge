@@ -16,26 +16,26 @@ const inter = Inter({ subsets: ['latin'] })
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'FictionForge - Where Stories Come Alive',
+  title: 'Fictionry - The Modern Way to Read and Write Fiction',
   description: 'A modern platform for web fiction authors and readers. Write, read, and share web fiction with powerful tools for LitRPG, fantasy, and more.',
   keywords: ['web fiction', 'webnovel', 'litrpg', 'fantasy', 'writing', 'reading', 'stories'],
-  authors: [{ name: 'FictionForge' }],
+  authors: [{ name: 'Fictionry' }],
   openGraph: {
-    title: 'FictionForge - Where Stories Come Alive',
+    title: 'Fictionry - The Modern Way to Read and Write Fiction',
     description: 'A modern platform for web fiction authors and readers',
     type: 'website',
-    siteName: 'FictionForge',
+    siteName: 'Fictionry',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'FictionForge - Where Stories Come Alive',
+    title: 'Fictionry - The Modern Way to Read and Write Fiction',
     description: 'A modern platform for web fiction authors and readers',
   },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'FictionForge',
+    title: 'Fictionry',
   },
 }
 

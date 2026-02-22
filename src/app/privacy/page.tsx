@@ -1,8 +1,8 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy - FictionForge',
-  description: 'FictionForge privacy policy - how we collect, use, and protect your data.',
+  title: 'Privacy Policy - Fictionry',
+  description: 'Fictionry privacy policy - how we collect, use, and protect your data.',
 }
 
 export default function PrivacyPage() {
@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-xl font-semibold mb-4">1. Introduction</h2>
           <p className="text-muted-foreground leading-relaxed">
-            FictionForge ("we", "our", or "us") respects your privacy and is committed to protecting 
+            Fictionry ("we", "our", or "us") respects your privacy and is committed to protecting 
             your personal data. This privacy policy explains how we collect, use, and safeguard your 
             information when you use our platform.
           </p>
@@ -59,7 +59,7 @@ export default function PrivacyPage() {
             <li>With your consent</li>
             <li>To comply with legal obligations</li>
             <li>With service providers who assist in operating our platform (e.g., hosting, analytics)</li>
-            <li>To protect the rights, property, or safety of FictionForge, our users, or others</li>
+            <li>To protect the rights, property, or safety of Fictionry, our users, or others</li>
           </ul>
         </section>
 
@@ -86,8 +86,8 @@ export default function PrivacyPage() {
           </ul>
           <p className="text-muted-foreground leading-relaxed mt-4">
             To exercise these rights, please contact us at{' '}
-            <a href="mailto:privacy@fictionforge.io" className="text-violet-600 hover:text-violet-700">
-              privacy@fictionforge.io
+            <a href="mailto:privacy@fictionry.io" className="text-violet-600 hover:text-violet-700">
+              privacy@fictionry.io
             </a>
           </p>
         </section>
@@ -104,7 +104,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-xl font-semibold mb-4">8. Children's Privacy</h2>
           <p className="text-muted-foreground leading-relaxed">
-            FictionForge is not intended for children under 13 years of age. We do not knowingly 
+            Fictionry is not intended for children under 13 years of age. We do not knowingly 
             collect personal information from children under 13. If you believe we have collected 
             such information, please contact us immediately.
           </p>
@@ -123,8 +123,8 @@ export default function PrivacyPage() {
           <p className="text-muted-foreground leading-relaxed">
             If you have questions about this privacy policy or our privacy practices, please 
             contact us at{' '}
-            <a href="mailto:privacy@fictionforge.io" className="text-violet-600 hover:text-violet-700">
-              privacy@fictionforge.io
+            <a href="mailto:privacy@fictionry.io" className="text-violet-600 hover:text-violet-700">
+              privacy@fictionry.io
             </a>
           </p>
         </section>

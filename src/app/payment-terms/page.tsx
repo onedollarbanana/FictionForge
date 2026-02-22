@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Payment Terms & Refund Policy - FictionForge',
+  title: 'Payment Terms & Refund Policy - Fictionry',
   description: 'Payment terms, refund policy, and subscription information.',
 }
 
@@ -15,7 +15,7 @@ export default function PaymentTermsPage() {
         <section>
           <h2 className="text-xl font-semibold mb-4">1. Billing & Payments</h2>
           <p className="text-muted-foreground leading-relaxed mb-4">
-            All payments on FictionForge are processed securely through Stripe. We offer the
+            All payments on Fictionry are processed securely through Stripe. We offer the
             following subscription options:
           </p>
           <ul className="list-disc pl-6 text-muted-foreground space-y-2">
@@ -31,7 +31,7 @@ export default function PaymentTermsPage() {
         <section>
           <h2 className="text-xl font-semibold mb-4">2. Refund Policy</h2>
           <p className="text-muted-foreground leading-relaxed mb-4">
-            We want you to be satisfied with your experience on FictionForge. Here are our
+            We want you to be satisfied with your experience on Fictionry. Here are our
             refund guidelines:
           </p>
           <ul className="list-disc pl-6 text-muted-foreground space-y-2">
@@ -54,7 +54,7 @@ export default function PaymentTermsPage() {
         <section>
           <h2 className="text-xl font-semibold mb-4">3. Author Payout Terms</h2>
           <p className="text-muted-foreground leading-relaxed mb-4">
-            FictionForge empowers authors to earn from their work. Here&apos;s how payouts work:
+            Fictionry empowers authors to earn from their work. Here&apos;s how payouts work:
           </p>
           <ul className="list-disc pl-6 text-muted-foreground space-y-2">
             <li>Authors receive 85% of subscription revenue (platform retains 15%)</li>
@@ -122,8 +122,8 @@ export default function PaymentTermsPage() {
           <h2 className="text-xl font-semibold mb-4">7. Contact</h2>
           <p className="text-muted-foreground leading-relaxed">
             For questions about payments, refunds, or these terms, please contact us at{' '}
-            <a href="mailto:legal@fictionforge.io" className="text-violet-600 hover:text-violet-700">
-              legal@fictionforge.io
+            <a href="mailto:legal@fictionry.io" className="text-violet-600 hover:text-violet-700">
+              legal@fictionry.io
             </a>
           </p>
         </section>

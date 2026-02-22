@@ -65,7 +65,7 @@ export default function DMCAPage() {
     const contentId = extractContentId(contentUrl, contentType)
     if (!contentId) {
       setError(
-        "Could not extract a valid content ID from the provided URL. Please ensure you paste a valid FictionForge story or chapter URL (e.g. /story/{id} or /story/{id}/chapter/{id})."
+        "Could not extract a valid content ID from the provided URL. Please ensure you paste a valid Fictionry story or chapter URL (e.g. /story/{id} or /story/{id}/chapter/{id})."
       )
       return
     }
@@ -121,7 +121,7 @@ export default function DMCAPage() {
       <div className="space-y-2 mb-8">
         <h1 className="text-3xl font-bold">DMCA Takedown Request</h1>
         <p className="text-muted-foreground">
-          This form is for copyright holders to report content on FictionForge that
+          This form is for copyright holders to report content on Fictionry that
           infringes on their copyrighted work. Please provide accurate and complete
           information to help us process your request.
         </p>
@@ -193,17 +193,17 @@ export default function DMCAPage() {
         {/* Content URL */}
         <div className="space-y-2">
           <Label htmlFor="content-url">
-            FictionForge Content URL <span className="text-red-500">*</span>
+            Fictionry Content URL <span className="text-red-500">*</span>
           </Label>
           <Input
             id="content-url"
-            placeholder="https://fictionforge.io/story/..."
+            placeholder="https://fictionry.io/story/..."
             value={contentUrl}
             onChange={(e) => setContentUrl(e.target.value)}
             required
           />
           <p className="text-xs text-muted-foreground">
-            Paste the full URL of the allegedly infringing content on FictionForge.
+            Paste the full URL of the allegedly infringing content on Fictionry.
           </p>
         </div>
 

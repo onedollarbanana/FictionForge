@@ -6,8 +6,8 @@ import { Tag, BookOpen } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Browse by Tag | FictionForge",
-  description: "Explore stories by content tags on FictionForge",
+  title: "Browse by Tag | Fictionry",
+  description: "Explore stories by content tags on Fictionry",
 };
 
 export default async function TagsPage() {
