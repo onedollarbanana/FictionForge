@@ -20,7 +20,7 @@ export async function POST() {
     // Check Stripe Connect account
     const { data: stripeAccount } = await admin
       .from('author_stripe_accounts')
-      .select('stripe_account_id, onboarding_complete, payouts_enabled, payout_hold')
+      .select('stripe_account_id, status, payouts_enabled, payout_hold')
       .eq('author_id', user.id)
       .maybeSingle()
 

@@ -70,11 +70,11 @@ export async function POST(request: NextRequest) {
     // Look up author's Stripe Connect account
     const { data: authorAccount } = await adminSupabase
       .from('author_stripe_accounts')
-      .select('stripe_account_id, onboarding_complete')
+      .select('stripe_account_id, status')
       .eq('author_id', authorId)
       .maybeSingle();
 
-    if (!authorAccount?.stripe_account_id || !authorAccount.onboarding_complete) {
+    if (!authorAccount?.stripe_account_id || authorAccount.status !== 'active') {
       return NextResponse.json(
         { error: 'This author has not completed payment setup' },
         { status: 400 }

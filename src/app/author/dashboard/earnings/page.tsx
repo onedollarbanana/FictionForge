@@ -51,7 +51,7 @@ interface TierSummary {
 }
 
 interface StripeAccount {
-  onboarding_complete: boolean
+  status: string
   payouts_enabled: boolean
 }
 
@@ -179,7 +179,7 @@ export default function EarningsPage() {
       // 6. Stripe account
       const { data: stripeData } = await supabase
         .from('author_stripe_accounts')
-        .select('onboarding_complete, payouts_enabled')
+        .select('status, payouts_enabled')
         .eq('author_id', user.id)
         .maybeSingle()
 
