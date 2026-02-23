@@ -46,7 +46,7 @@ export default async function LibraryPage() {
   // Fetch ALL library entries with story details
   const { data: follows, error } = await supabase
     .from('follows')
-    .select(\`
+    .select(`
       id,
       status,
       notify_new_chapters,
@@ -71,7 +71,7 @@ export default async function LibraryPage() {
           username
         )
       )
-    \`)
+    `)
     .eq('user_id', user.id)
     .order('updated_at', { ascending: false })
 
