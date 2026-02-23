@@ -191,6 +191,18 @@ export default async function StoryPage({ params }: PageProps) {
   const publishedChapters = chapters || [];
   const totalWords = publishedChapters.reduce((sum, ch) => sum + (ch.word_count || 0), 0);
 
+  // Fetch reading progress for current user
+  let readingProgress: { chapter_id: string; chapter_number: number } | null = null;
+  if (user) {
+    const { data: progress } = await supabase
+      .from('reading_progress')
+      .select('chapter_id, chapter_number')
+      .eq('user_id', user.id)
+      .eq('story_id', storyId)
+      .single();
+    readingProgress = progress;
+  }
+
   // Fetch author tiers
   const { data: authorTiers } = await supabase
     .from('author_tiers')
@@ -423,13 +435,22 @@ export default async function StoryPage({ params }: PageProps) {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-3">
-            {publishedChapters.length > 0 ? (
-              <Button asChild>
-                <Link href={getChapterUrl(resolved, { short_id: publishedChapters[0].short_id, slug: publishedChapters[0].slug })}>
-                  Start Reading
-                </Link>
-              </Button>
-            ) : (
+            {publishedChapters.length > 0 ? (() => {
+              const progressChapter = readingProgress
+                ? publishedChapters.find(ch => ch.id === readingProgress!.chapter_id)
+                : null;
+              const targetChapter = progressChapter || publishedChapters[0];
+              const isContinuing = !!progressChapter && readingProgress!.chapter_number > 1;
+              return (
+                <Button asChild>
+                  <Link href={getChapterUrl(resolved, { short_id: targetChapter.short_id, slug: targetChapter.slug })}>
+                    {isContinuing 
+                      ? `Continue Reading (Ch. ${readingProgress!.chapter_number})`
+                      : 'Start Reading'}
+                  </Link>
+                </Button>
+              );
+            })() : (
               <Button disabled>No Chapters Yet</Button>
             )}
             <LibraryButton 

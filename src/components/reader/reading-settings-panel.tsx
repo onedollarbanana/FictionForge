@@ -21,15 +21,20 @@ interface ReadingSettingsPanelProps {
 
 const fontOptions: { value: ReadingSettings['fontFamily']; label: string }[] = [
   { value: 'default', label: 'Default' },
+  { value: 'merriweather', label: 'Merriweather' },
+  { value: 'lora', label: 'Lora' },
+  { value: 'literata', label: 'Literata' },
+  { value: 'source-sans', label: 'Source Sans' },
   { value: 'serif', label: 'Serif' },
   { value: 'sans', label: 'Sans' },
   { value: 'mono', label: 'Mono' },
 ]
 
 const lineHeightOptions: { value: ReadingSettings['lineHeight']; label: string }[] = [
-  { value: 'tight', label: 'Tight' },
+  { value: 'compact', label: 'Compact' },
   { value: 'normal', label: 'Normal' },
   { value: 'relaxed', label: 'Relaxed' },
+  { value: 'spacious', label: 'Spacious' },
 ]
 
 const themeOptions: { value: ReadingSettings['theme']; label: string; desc: string }[] = [

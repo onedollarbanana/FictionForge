@@ -1,28 +1,82 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 export function ScrollProgressBar() {
   const [progress, setProgress] = useState(0)
   const [isVisible, setIsVisible] = useState(false)
+  const [chapterLabel, setChapterLabel] = useState('')
+
+  const calculateProgress = useCallback(() => {
+    const scrollTop = window.scrollY
+    const viewportHeight = window.innerHeight
+
+    setIsVisible(scrollTop > 100)
+
+    // Find all chapter containers in continuous scroll mode
+    const chapterElements = document.querySelectorAll('[data-chapter-id]')
+    
+    if (chapterElements.length > 1) {
+      // Continuous scroll mode: track progress through current chapter
+      const viewportCenter = scrollTop + viewportHeight / 2
+      
+      let currentChapter: Element | null = null
+      let currentIdx = 0
+
+      for (let i = 0; i < chapterElements.length; i++) {
+        const el = chapterElements[i] as HTMLElement
+        const rect = el.getBoundingClientRect()
+        const elTop = rect.top + scrollTop
+        const elBottom = elTop + rect.height
+
+        if (viewportCenter >= elTop && viewportCenter <= elBottom) {
+          currentChapter = el
+          currentIdx = i
+          break
+        }
+        if (i === chapterElements.length - 1) {
+          currentChapter = el
+          currentIdx = i
+        }
+      }
+
+      if (currentChapter) {
+        const rect = currentChapter.getBoundingClientRect()
+        const elTop = rect.top + scrollTop
+        const elHeight = rect.height
+        
+        const chapterScrolled = Math.max(0, scrollTop - elTop + viewportHeight * 0.3)
+        const chapterProgress = elHeight > 0 
+          ? Math.min(100, Math.max(0, (chapterScrolled / elHeight) * 100))
+          : 0
+
+        setProgress(chapterProgress)
+        setChapterLabel(`Ch. ${currentIdx + 1}`)
+      }
+    } else {
+      // Single chapter (paged mode): track total page progress
+      const docHeight = document.documentElement.scrollHeight - viewportHeight
+      const scrollPercent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0
+      setProgress(Math.min(100, Math.max(0, scrollPercent)))
+      setChapterLabel('')
+    }
+  }, [])
 
   useEffect(() => {
-    const handleScroll = () => {
-      // Calculate scroll progress
-      const scrollTop = window.scrollY
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight
-      const scrollPercent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0
-      
-      setProgress(Math.min(100, Math.max(0, scrollPercent)))
-      setIsVisible(scrollTop > 100) // Show after scrolling 100px
-    }
-
-    // Initial calculation
-    handleScroll()
+    calculateProgress()
+    window.addEventListener('scroll', calculateProgress, { passive: true })
     
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+    // Recalculate when DOM changes (new chapters loaded in continuous mode)
+    const observer = new MutationObserver(() => {
+      calculateProgress()
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+
+    return () => {
+      window.removeEventListener('scroll', calculateProgress)
+      observer.disconnect()
+    }
+  }, [calculateProgress])
 
   if (!isVisible) return null
 
@@ -32,12 +86,11 @@ export function ScrollProgressBar() {
         className="h-full bg-primary transition-all duration-150 ease-out"
         style={{ width: `${progress}%` }}
       />
-      {/* Tooltip showing percentage on hover */}
       <div 
         className="absolute top-1 bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded opacity-0 hover:opacity-100 transition-opacity pointer-events-none"
         style={{ left: `${progress}%`, transform: 'translateX(-50%)' }}
       >
-        {Math.round(progress)}%
+        {chapterLabel ? `${chapterLabel}: ` : ''}{Math.round(progress)}%
       </div>
     </div>
   )

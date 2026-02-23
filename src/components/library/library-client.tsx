@@ -46,12 +46,12 @@ type FilterStatus = 'all' | 'reading' | 'plan_to_read' | 'on_hold' | 'finished' 
 type SortOption = 'updated' | 'title' | 'added' | 'progress'
 
 const statusTabs = [
-  { key: 'all' as const, label: 'All', icon: Library },
   { key: 'reading' as const, label: 'Reading', icon: BookOpen },
   { key: 'plan_to_read' as const, label: 'Plan to Read', icon: Clock },
   { key: 'on_hold' as const, label: 'On Hold', icon: Pause },
   { key: 'finished' as const, label: 'Finished', icon: CheckCircle },
   { key: 'dropped' as const, label: 'Dropped', icon: Archive },
+  { key: 'all' as const, label: 'All', icon: Library },
 ]
 
 const sortOptions = [
@@ -71,7 +71,7 @@ const statusBadgeColors: Record<string, string> = {
 
 export function LibraryClient({ items: initialItems }: LibraryClientProps) {
   const [items, setItems] = useState(initialItems)
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>('reading')
   const [sortBy, setSortBy] = useState<SortOption>('updated')
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false)
 
@@ -220,7 +220,18 @@ export function LibraryClient({ items: initialItems }: LibraryClientProps) {
       {/* Story list */}
       {filteredAndSortedItems.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">No stories in this category</p>
+          {filterStatus === 'reading' ? (
+            <>
+              <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground mb-2">You&apos;re not reading anything right now!</p>
+              <p className="text-sm text-muted-foreground mb-4">Find your next favorite story to dive into.</p>
+              <Link href="/browse">
+                <Button>Browse Stories</Button>
+              </Link>
+            </>
+          ) : (
+            <p className="text-muted-foreground">No stories in this category</p>
+          )}
         </div>
       ) : (
         <div className="grid gap-4">

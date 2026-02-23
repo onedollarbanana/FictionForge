@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback } from 'react'
 
 export interface ReadingSettings {
-  fontFamily: 'default' | 'serif' | 'sans' | 'mono'
+  fontFamily: 'default' | 'serif' | 'sans' | 'mono' | 'merriweather' | 'lora' | 'literata' | 'source-sans'
   fontSize: number // 14-24
-  lineHeight: 'tight' | 'normal' | 'relaxed'
+  lineHeight: 'compact' | 'normal' | 'relaxed' | 'spacious'
   theme: 'auto' | 'light' | 'dark' | 'sepia' | 'night'
   width: 'narrow' | 'medium' | 'wide'
   brightness: number // 50-150, default 100
@@ -45,6 +45,16 @@ export function useReadingSettings() {
     setIsLoaded(true)
   }, [])
 
+  // Sync settings across all hook instances on the same page
+  useEffect(() => {
+    const handleSync = (e: Event) => {
+      const detail = (e as CustomEvent<ReadingSettings>).detail
+      if (detail) setSettings(detail)
+    }
+    window.addEventListener('fictionry-settings-sync', handleSync)
+    return () => window.removeEventListener('fictionry-settings-sync', handleSync)
+  }, [])
+
   // Save to localStorage whenever settings change
   useEffect(() => {
     if (isLoaded) {
@@ -57,7 +67,11 @@ export function useReadingSettings() {
   }, [settings, isLoaded])
 
   const updateSettings = useCallback((updates: Partial<ReadingSettings>) => {
-    setSettings(prev => ({ ...prev, ...updates }))
+    setSettings(prev => {
+      const newSettings = { ...prev, ...updates }
+      window.dispatchEvent(new CustomEvent('fictionry-settings-sync', { detail: newSettings }))
+      return newSettings
+    })
   }, [])
 
   const resetSettings = useCallback(() => {
@@ -84,12 +98,17 @@ export const fontFamilyClasses: Record<ReadingSettings['fontFamily'], string> = 
   serif: 'font-serif',
   sans: 'font-sans',
   mono: 'font-mono',
+  merriweather: 'font-merriweather',
+  lora: 'font-lora',
+  literata: 'font-literata',
+  'source-sans': 'font-source-sans',
 }
 
 export const lineHeightClasses: Record<ReadingSettings['lineHeight'], string> = {
-  tight: 'leading-snug',
-  normal: 'leading-relaxed',
-  relaxed: 'leading-loose',
+  compact: 'leading-snug',
+  normal: 'leading-normal',
+  relaxed: 'leading-relaxed',
+  spacious: 'leading-loose',
 }
 
 export const widthClasses: Record<ReadingSettings['width'], string> = {

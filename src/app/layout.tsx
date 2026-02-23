@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Merriweather, Lora, Literata, Source_Sans_3 } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { ToastProvider } from '@/components/ui/toast'
@@ -11,6 +11,10 @@ import { OfflineIndicator } from '@/components/offline-indicator'
 import { PWAInstallPrompt } from '@/components/pwa-install-prompt'
 
 const inter = Inter({ subsets: ['latin'] })
+const merriweather = Merriweather({ weight: ['300', '400', '700'], subsets: ['latin'], variable: '--font-merriweather' })
+const lora = Lora({ subsets: ['latin'], variable: '--font-lora' })
+const literata = Literata({ subsets: ['latin'], variable: '--font-literata' })
+const sourceSans = Source_Sans_3({ subsets: ['latin'], variable: '--font-source-sans' })
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.fictionry.com'),
@@ -57,7 +61,7 @@ export default function RootLayout({
       <head>
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} ${merriweather.variable} ${lora.variable} ${literata.variable} ${sourceSans.variable}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

@@ -81,7 +81,7 @@ export function CoverLightbox({
           {/* Enlarged image */}
           <div
             className="relative z-10 animate-in zoom-in-95 duration-200"
-            style={{ maxWidth, maxHeight, width: "100%", height: "auto", aspectRatio: "2/3" }}
+            style={{ maxWidth: `min(${maxWidth}px, 90vw)`, maxHeight: `min(${maxHeight}px, 90vh)`, width: "100%", height: "auto", aspectRatio: "2/3" }}
             onClick={(e) => e.stopPropagation()}
           >
             <Image

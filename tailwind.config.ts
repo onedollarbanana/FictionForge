@@ -9,6 +9,12 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        merriweather: ['var(--font-merriweather)', 'serif'],
+        lora: ['var(--font-lora)', 'serif'],
+        literata: ['var(--font-literata)', 'serif'],
+        'source-sans': ['var(--font-source-sans)', 'sans-serif'],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
