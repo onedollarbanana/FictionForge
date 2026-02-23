@@ -61,7 +61,7 @@ export async function getBecauseYouRead(
   userId: string,
   storiesPerShelf: number = 8,
   supabase?: SupabaseClientType
-): Promise<{ sourceTitle: string; sourceId: string; stories: StoryCardData[] }[]> {
+): Promise<{ sourceTitle: string; sourceId: string; sourceSlug?: string; sourceShortId?: string; stories: StoryCardData[] }[]> {
   const client = supabase || await createClient();
   
   // Get user's 3 most recently read stories
@@ -110,12 +110,14 @@ export async function getBecauseYouRead(
       return {
         sourceTitle: read.story_title,
         sourceId: read.story_id,
+        sourceSlug: read.slug || null,
+        sourceShortId: read.short_id || null,
         stories,
       };
     })
   );
   
-  return shelves.filter(Boolean) as { sourceTitle: string; sourceId: string; stories: StoryCardData[] }[];
+  return shelves.filter(Boolean) as { sourceTitle: string; sourceId: string; sourceSlug?: string; sourceShortId?: string; stories: StoryCardData[] }[];
 }
 
 /**

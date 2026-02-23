@@ -17,6 +17,7 @@ import { GenreLinks } from "@/components/home/genre-links";
 import { StoryCarousel } from "@/components/home/story-carousel";
 import { Rocket, Clock, Heart, Sparkles, Award, Trophy, Sword, Search, Skull, Gamepad2, Scroll, BookOpen, Users, TrendingUp, Flame } from "lucide-react";
 import type { StoryCardData } from "@/components/story/story-card";
+import { getStoryUrl } from '@/lib/url-utils'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -49,7 +50,7 @@ export default async function Home() {
   }[] = [];
 
   // "Because you read X" shelves for logged-in users
-  let becauseYouReadShelves: { sourceTitle: string; sourceId: string; stories: StoryCardData[] }[] = [];
+  let becauseYouReadShelves: { sourceTitle: string; sourceId: string; sourceSlug?: string; sourceShortId?: string; stories: StoryCardData[] }[] = [];
 
   // Collaborative filtering recommendations
   let collabRecommendations: StoryCardData[] = [];
@@ -209,7 +210,7 @@ export default async function Home() {
             title={`Because you read ${shelf.sourceTitle}`}
             icon={<BookOpen className="h-5 w-5 text-violet-500" />}
             stories={shelf.stories}
-            viewAllLink={`/story/${shelf.sourceId}`}
+            viewAllLink={getStoryUrl({ id: shelf.sourceId, slug: shelf.sourceSlug || null, short_id: shelf.sourceShortId || null })}
           />
         ))}
 

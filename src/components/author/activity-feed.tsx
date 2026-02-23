@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { getStoryUrl } from '@/lib/url-utils'
 import { createClient } from '@/lib/supabase/client'
 import { Eye, Heart, MessageSquare, UserPlus, Star, Bell, Clock } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
@@ -14,9 +15,13 @@ interface Activity {
   timestamp: string
   story_id: string
   story_title: string
+  story_slug?: string | null
+  story_short_id?: string | null
   chapter_id?: string
   chapter_title?: string
   chapter_number?: number
+  chapter_slug?: string | null
+  chapter_short_id?: string | null
   user_name?: string
   content?: string
   rating?: number
@@ -50,7 +55,7 @@ export function ActivityFeed({ authorId }: ActivityFeedProps) {
     // Get author's stories
     const { data: stories } = await supabase
       .from('stories')
-      .select('id, title')
+      .select('id, title, slug, short_id')
       .eq('author_id', authorId)
 
     if (!stories || stories.length === 0) {
@@ -59,16 +64,16 @@ export function ActivityFeed({ authorId }: ActivityFeedProps) {
     }
 
     const storyIds = stories.map(s => s.id)
-    const storyMap = new Map(stories.map(s => [s.id, s.title]))
+    const storyMap = new Map(stories.map(s => [s.id, { title: s.title, slug: s.slug, short_id: s.short_id }]))
 
     // Get chapters for these stories
     const { data: chapters } = await supabase
       .from('chapters')
-      .select('id, story_id, title, chapter_number')
+      .select('id, story_id, title, chapter_number, slug, short_id')
       .in('story_id', storyIds)
       .eq('is_published', true)
 
-    const chapterMap = new Map(chapters?.map(c => [c.id, { title: c.title, number: c.chapter_number, story_id: c.story_id }]) || [])
+    const chapterMap = new Map(chapters?.map(c => [c.id, { title: c.title, number: c.chapter_number, story_id: c.story_id, slug: c.slug, short_id: c.short_id }]) || [])
     const chapterIds = chapters?.map(c => c.id) || []
 
     // Fetch recent likes (last 7 days)
@@ -88,8 +93,12 @@ export function ActivityFeed({ authorId }: ActivityFeedProps) {
           type: 'like',
           timestamp: like.created_at,
           story_id: chapter.story_id,
-          story_title: storyMap.get(chapter.story_id) || 'Unknown',
+          story_title: storyMap.get(chapter.story_id)?.title || 'Unknown',
+          story_slug: storyMap.get(chapter.story_id)?.slug || null,
+          story_short_id: storyMap.get(chapter.story_id)?.short_id || null,
           chapter_id: like.chapter_id,
+          chapter_slug: chapter.slug || null,
+          chapter_short_id: chapter.short_id || null,
           chapter_title: chapter.title,
           chapter_number: chapter.number,
           user_name: (like.profiles as any)?.username
@@ -114,8 +123,12 @@ export function ActivityFeed({ authorId }: ActivityFeedProps) {
           type: 'comment',
           timestamp: comment.created_at,
           story_id: chapter.story_id,
-          story_title: storyMap.get(chapter.story_id) || 'Unknown',
+          story_title: storyMap.get(chapter.story_id)?.title || 'Unknown',
+          story_slug: storyMap.get(chapter.story_id)?.slug || null,
+          story_short_id: storyMap.get(chapter.story_id)?.short_id || null,
           chapter_id: comment.chapter_id,
+          chapter_slug: chapter.slug || null,
+          chapter_short_id: chapter.short_id || null,
           chapter_title: chapter.title,
           chapter_number: chapter.number,
           user_name: (comment.profiles as any)?.username,
@@ -139,7 +152,9 @@ export function ActivityFeed({ authorId }: ActivityFeedProps) {
         type: 'follow',
         timestamp: follow.created_at,
         story_id: follow.story_id,
-        story_title: storyMap.get(follow.story_id) || 'Unknown',
+        story_title: storyMap.get(follow.story_id)?.title || 'Unknown',
+        story_slug: storyMap.get(follow.story_id)?.slug || null,
+        story_short_id: storyMap.get(follow.story_id)?.short_id || null,
         user_name: (follow.profiles as any)?.username
       })
     })
@@ -159,7 +174,9 @@ export function ActivityFeed({ authorId }: ActivityFeedProps) {
         type: 'rating',
         timestamp: rating.created_at,
         story_id: rating.story_id,
-        story_title: storyMap.get(rating.story_id) || 'Unknown',
+        story_title: storyMap.get(rating.story_id)?.title || 'Unknown',
+        story_slug: storyMap.get(rating.story_id)?.slug || null,
+        story_short_id: storyMap.get(rating.story_id)?.short_id || null,
         user_name: (rating.profiles as any)?.username,
         rating: rating.overall_rating
       })
@@ -194,14 +211,14 @@ export function ActivityFeed({ authorId }: ActivityFeedProps) {
     )
 
     const storyLink = (
-      <Link href={`/story/${activity.story_id}`} className="font-medium text-amber-600 dark:text-amber-400 hover:underline">
+      <Link href={getStoryUrl({ id: activity.story_id, slug: activity.story_slug || null, short_id: activity.story_short_id || null })} className="font-medium text-amber-600 dark:text-amber-400 hover:underline">
         {activity.story_title}
       </Link>
     )
 
     const chapterLink = activity.chapter_id ? (
       <Link 
-        href={`/story/${activity.story_id}/chapter/${activity.chapter_id}`} 
+        href={`${getStoryUrl({ id: activity.story_id, slug: activity.story_slug || null, short_id: activity.story_short_id || null })}/chapter/${activity.chapter_slug && activity.chapter_short_id ? `${activity.chapter_slug}-${activity.chapter_short_id}` : activity.chapter_id}`} 
         className="text-zinc-600 dark:text-zinc-400 hover:underline"
       >
         Ch. {activity.chapter_number}

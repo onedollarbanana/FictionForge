@@ -15,6 +15,8 @@ import { HelpLink } from '@/components/ui/help-link'
 
 interface Story {
   id: string
+  slug: string | null
+  short_id: string | null
   title: string
   tagline: string | null
   blurb: string
@@ -134,7 +136,7 @@ export default function AuthorDashboard() {
     // Fetch stories
     const { data: storiesData } = await supabase
       .from('stories')
-      .select('id, title, tagline, blurb, cover_url, status, visibility, created_at, updated_at, chapter_count, word_count, follower_count, total_views, total_likes, rating_average, rating_count')
+      .select('id, slug, short_id, title, tagline, blurb, cover_url, status, visibility, created_at, updated_at, chapter_count, word_count, follower_count, total_views, total_likes, rating_average, rating_count')
       .eq('author_id', user!.id)
       .order('updated_at', { ascending: false })
 

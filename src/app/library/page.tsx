@@ -15,6 +15,8 @@ interface FollowWithStory {
   updated_at: string
   story: {
     id: string
+    slug: string | null
+    short_id: string | null
     title: string
     tagline: string | null
     cover_url: string | null
@@ -52,6 +54,8 @@ export default async function LibraryPage() {
       updated_at,
       story:stories (
         id,
+        slug,
+        short_id,
         title,
         tagline,
         cover_url,
@@ -139,6 +143,8 @@ export default async function LibraryPage() {
       updatedAt: f.updated_at,
       story: {
         id: f.story!.id,
+        slug: f.story!.slug,
+        short_id: f.story!.short_id,
         title: f.story!.title,
         tagline: f.story!.tagline,
         coverUrl: f.story!.cover_url,
