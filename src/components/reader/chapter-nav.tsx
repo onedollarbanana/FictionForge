@@ -5,29 +5,29 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, List } from "lucide-react";
 
 interface ChapterNavProps {
-  storyId: string;
+  storyUrl: string;
   currentChapter: number;
   totalChapters: number;
-  prevChapterId?: string;
-  nextChapterId?: string;
+  prevChapterUrl?: string;
+  nextChapterUrl?: string;
 }
 
 export function ChapterNav({
-  storyId,
+  storyUrl,
   currentChapter,
   totalChapters,
-  prevChapterId,
-  nextChapterId,
+  prevChapterUrl,
+  nextChapterUrl,
 }: ChapterNavProps) {
   return (
     <div className="flex items-center justify-between py-4 border-t border-b">
       <Button
         variant="outline"
         asChild
-        disabled={!prevChapterId}
-        className={!prevChapterId ? "opacity-50 pointer-events-none" : ""}
+        disabled={!prevChapterUrl}
+        className={!prevChapterUrl ? "opacity-50 pointer-events-none" : ""}
       >
-        <Link href={prevChapterId ? `/story/${storyId}/chapter/${prevChapterId}` : "#"}>
+        <Link href={prevChapterUrl || "#"}>
           <ChevronLeft className="h-4 w-4 mr-1" />
           Previous
         </Link>
@@ -35,7 +35,7 @@ export function ChapterNav({
 
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild>
-          <Link href={`/story/${storyId}`}>
+          <Link href={storyUrl}>
             <List className="h-4 w-4 mr-1" />
             Chapter {currentChapter} of {totalChapters}
           </Link>
@@ -45,10 +45,10 @@ export function ChapterNav({
       <Button
         variant="outline"
         asChild
-        disabled={!nextChapterId}
-        className={!nextChapterId ? "opacity-50 pointer-events-none" : ""}
+        disabled={!nextChapterUrl}
+        className={!nextChapterUrl ? "opacity-50 pointer-events-none" : ""}
       >
-        <Link href={nextChapterId ? `/story/${storyId}/chapter/${nextChapterId}` : "#"}>
+        <Link href={nextChapterUrl || "#"}>
           Next
           <ChevronRight className="h-4 w-4 ml-1" />
         </Link>

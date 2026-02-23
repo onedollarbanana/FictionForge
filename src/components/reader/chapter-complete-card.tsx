@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ChapterLikeButton } from './chapter-like-button'
 
 interface ChapterCompleteCardProps {
-  storyId: string
+  storyUrl: string
   storyTitle: string
   chapterId: string
   chapterNumber: number
@@ -15,13 +15,13 @@ interface ChapterCompleteCardProps {
   initialLikes: number
   currentUserId: string | null
   storyAuthorId: string
-  prevChapter: { id: string; title: string } | null
-  nextChapter: { id: string; title: string } | null
+  prevChapter: { url: string; title: string } | null
+  nextChapter: { url: string; title: string } | null
   reportButton?: React.ReactNode
 }
 
 export function ChapterCompleteCard({
-  storyId,
+  storyUrl,
   storyTitle,
   chapterId,
   chapterNumber,
@@ -56,7 +56,7 @@ export function ChapterCompleteCard({
 
       {/* Next Chapter CTA - the star of the show */}
       {nextChapter ? (
-        <Link href={`/story/${storyId}/chapter/${nextChapter.id}`} className="block">
+        <Link href={nextChapter.url} className="block">
           <div className="w-full p-4 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
@@ -86,7 +86,7 @@ export function ChapterCompleteCard({
       {/* Secondary navigation row */}
       <div className="flex items-center justify-between mt-3 gap-2">
         {prevChapter ? (
-          <Link href={`/story/${storyId}/chapter/${prevChapter.id}`}>
+          <Link href={prevChapter.url}>
             <Button variant="ghost" size="sm" className="flex items-center gap-1 text-xs opacity-70 hover:opacity-100">
               <ChevronLeft className="h-3.5 w-3.5" />
               Previous
@@ -96,7 +96,7 @@ export function ChapterCompleteCard({
           <div />
         )}
 
-        <Link href={`/story/${storyId}`}>
+        <Link href={storyUrl}>
           <Button variant="ghost" size="sm" className="flex items-center gap-1 text-xs opacity-70 hover:opacity-100">
             <List className="h-3.5 w-3.5" />
             Table of Contents

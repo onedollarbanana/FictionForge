@@ -4,12 +4,12 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface KeyboardNavigationProps {
-  storyId: string
-  prevChapterId?: string | null
-  nextChapterId?: string | null
+  storyUrl: string
+  prevChapterUrl?: string | null
+  nextChapterUrl?: string | null
 }
 
-export function KeyboardNavigation({ storyId, prevChapterId, nextChapterId }: KeyboardNavigationProps) {
+export function KeyboardNavigation({ storyUrl, prevChapterUrl, nextChapterUrl }: KeyboardNavigationProps) {
   const router = useRouter()
 
   useEffect(() => {
@@ -25,27 +25,27 @@ export function KeyboardNavigation({ storyId, prevChapterId, nextChapterId }: Ke
 
       switch (e.key) {
         case 'ArrowLeft':
-          if (prevChapterId) {
+          if (prevChapterUrl) {
             e.preventDefault()
-            router.push(`/story/${storyId}/chapter/${prevChapterId}`)
+            router.push(prevChapterUrl)
           }
           break
         case 'ArrowRight':
-          if (nextChapterId) {
+          if (nextChapterUrl) {
             e.preventDefault()
-            router.push(`/story/${storyId}/chapter/${nextChapterId}`)
+            router.push(nextChapterUrl)
           }
           break
         case 'Escape':
           e.preventDefault()
-          router.push(`/story/${storyId}`)
+          router.push(storyUrl)
           break
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [router, storyId, prevChapterId, nextChapterId])
+  }, [router, storyUrl, prevChapterUrl, nextChapterUrl])
 
   // This component doesn't render anything visible
   return null

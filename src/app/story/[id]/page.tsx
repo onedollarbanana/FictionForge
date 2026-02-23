@@ -182,7 +182,7 @@ export default async function StoryPage({ params }: PageProps) {
   // Fetch published chapters (include min_tier_name for lock icons)
   const { data: chapters } = await supabase
     .from("chapters")
-    .select("id, title, chapter_number, word_count, likes, created_at, is_published, min_tier_name, slug")
+    .select("id, title, chapter_number, word_count, likes, created_at, is_published, min_tier_name, slug, short_id")
     .eq("story_id", storyId)
     .eq("is_published", true)
     .order("chapter_number", { ascending: true });
@@ -417,7 +417,7 @@ export default async function StoryPage({ params }: PageProps) {
           <div className="flex gap-3">
             {publishedChapters.length > 0 ? (
               <Button asChild>
-                <Link href={getChapterUrl(resolved, { chapter_number: publishedChapters[0].chapter_number, slug: publishedChapters[0].slug })}>
+                <Link href={getChapterUrl(resolved, { short_id: publishedChapters[0].short_id, slug: publishedChapters[0].slug })}>
                   Start Reading
                 </Link>
               </Button>
@@ -515,7 +515,7 @@ export default async function StoryPage({ params }: PageProps) {
               return (
                 <Link
                   key={chapter.id}
-                  href={getChapterUrl(resolved, { chapter_number: chapter.chapter_number, slug: chapter.slug })}
+                  href={getChapterUrl(resolved, { short_id: chapter.short_id, slug: chapter.slug })}
                   className="block"
                 >
                   <Card className={`hover:bg-muted/50 transition-colors ${isRead ? "border-green-500/30 bg-green-500/5" : ""}`}>

@@ -15,6 +15,8 @@ interface ChapterData {
   id: string
   title: string
   chapterNumber: number
+  slug: string
+  shortId: string
   content: string | object | null
   authorNoteBefore: string | null
   authorNoteAfter: string | null
@@ -33,8 +35,10 @@ interface ChapterData {
 
 interface ContinuousScrollReaderProps {
   initialChapter: ChapterData
-  allChapterIds: { id: string; title: string; chapterNumber: number }[]
+  allChapterIds: { id: string; title: string; chapterNumber: number; slug: string; shortId: string }[]
   storyId: string
+  storySlug: string
+  storyShortId: string
   currentUserId: string | null
   storyAuthorId: string
   authorTiers?: { tier_name: string; enabled: boolean; description: string | null }[]
@@ -44,6 +48,8 @@ export function ContinuousScrollReader({
   initialChapter,
   allChapterIds,
   storyId,
+  storySlug,
+  storyShortId,
   currentUserId,
   storyAuthorId,
   authorTiers,
@@ -174,7 +180,10 @@ export function ContinuousScrollReader({
             // Update URL without navigation
             const chapter = chapters.find(ch => ch.id === chapterId)
             if (chapter) {
-              const newUrl = `/story/${storyId}/chapter/${chapterId}`
+              const storyBase = `/story/${storySlug}-${storyShortId}`
+              const newUrl = chapter.slug
+                ? `${storyBase}/chapter/${chapter.slug}-${chapter.shortId}`
+                : `${storyBase}/chapter/${chapter.shortId}`
               window.history.replaceState(null, '', newUrl)
             }
 
@@ -192,7 +201,7 @@ export function ContinuousScrollReader({
     })
 
     return () => observers.forEach(obs => obs.disconnect())
-  }, [chapters, storyId])
+  }, [chapters, storySlug, storyShortId])
 
   // Update reading progress when active chapter changes
   useEffect(() => {

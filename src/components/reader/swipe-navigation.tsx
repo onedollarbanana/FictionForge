@@ -4,15 +4,13 @@ import { useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface SwipeNavigationProps {
-  storyId: string
-  prevChapterId?: string
-  nextChapterId?: string
+  prevChapterUrl?: string
+  nextChapterUrl?: string
 }
 
 export function SwipeNavigation({ 
-  storyId, 
-  prevChapterId, 
-  nextChapterId 
+  prevChapterUrl, 
+  nextChapterUrl 
 }: SwipeNavigationProps) {
   const router = useRouter()
   const touchStartX = useRef<number | null>(null)
@@ -20,12 +18,12 @@ export function SwipeNavigation({
   const touchStartTime = useRef<number | null>(null)
 
   const handleNavigation = useCallback((direction: 'prev' | 'next') => {
-    if (direction === 'prev' && prevChapterId) {
-      router.push(`/story/${storyId}/chapter/${prevChapterId}`)
-    } else if (direction === 'next' && nextChapterId) {
-      router.push(`/story/${storyId}/chapter/${nextChapterId}`)
+    if (direction === 'prev' && prevChapterUrl) {
+      router.push(prevChapterUrl)
+    } else if (direction === 'next' && nextChapterUrl) {
+      router.push(nextChapterUrl)
     }
-  }, [router, storyId, prevChapterId, nextChapterId])
+  }, [router, prevChapterUrl, nextChapterUrl])
 
   useEffect(() => {
     const handleTouchStart = (e: TouchEvent) => {

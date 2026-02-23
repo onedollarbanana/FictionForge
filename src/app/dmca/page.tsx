@@ -17,15 +17,25 @@ import { AlertTriangle, CheckCircle2 } from "lucide-react"
 
 function extractContentId(url: string, contentType: string): string | null {
   const uuidPattern = "[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}"
+  // Slug-shortId pattern: one or more slug segments followed by a short identifier
+  const slugPattern = "[a-z0-9-]+"
 
   if (contentType === "chapter") {
-    const chapterMatch = url.match(new RegExp(`/chapter/(${uuidPattern})`))
-    if (chapterMatch) return chapterMatch[1]
+    // Try legacy UUID format first
+    const chapterUuidMatch = url.match(new RegExp(`/chapter/(${uuidPattern})`))
+    if (chapterUuidMatch) return chapterUuidMatch[1]
+    // Try new slug-shortId format (extract the full slug param)
+    const chapterSlugMatch = url.match(/\/chapter\/([a-z0-9][a-z0-9-]*[a-z0-9])/)
+    if (chapterSlugMatch) return chapterSlugMatch[1]
   }
 
   if (contentType === "story") {
-    const storyMatch = url.match(new RegExp(`/story/(${uuidPattern})`))
-    if (storyMatch) return storyMatch[1]
+    // Try legacy UUID format first
+    const storyUuidMatch = url.match(new RegExp(`/story/(${uuidPattern})`))
+    if (storyUuidMatch) return storyUuidMatch[1]
+    // Try new slug-shortId format
+    const storySlugMatch = url.match(/\/story\/([a-z0-9][a-z0-9-]*[a-z0-9])/)
+    if (storySlugMatch) return storySlugMatch[1]
   }
 
   // Fallback: try to find any UUID in the URL

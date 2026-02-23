@@ -59,17 +59,17 @@ async function resolveStoryParam(param: string, supabase: any): Promise<{ id: st
 
 /**
  * Resolve the chapter URL param to a chapter UUID.
- * Handles both legacy UUID params and new chapterNumber-slug params.
+ * Handles both legacy UUID params and new slug-shortId params.
  */
 async function resolveChapterParam(
   param: string,
   storyId: string,
   supabase: any
-): Promise<{ id: string; chapter_number: number; slug: string | null } | null> {
+): Promise<{ id: string; chapter_number: number; slug: string | null; short_id: string } | null> {
   if (isLegacyUuid(param)) {
     const { data } = await supabase
       .from("chapters")
-      .select("id, chapter_number, slug")
+      .select("id, chapter_number, slug, short_id")
       .eq("id", param)
       .eq("story_id", storyId)
       .single();
@@ -79,8 +79,8 @@ async function resolveChapterParam(
   if (parsed) {
     const { data } = await supabase
       .from("chapters")
-      .select("id, chapter_number, slug")
-      .eq("chapter_number", parsed.chapterNumber)
+      .select("id, chapter_number, slug, short_id")
+      .eq("short_id", parsed.shortId)
       .eq("story_id", storyId)
       .single();
     return data;
@@ -143,7 +143,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const canonicalUrl = resolvedStory && resolvedChapter
     ? getAbsoluteChapterUrl(
         { id: resolvedStory.id, slug: story.slug, short_id: story.short_id },
-        { chapter_number: chapter.chapter_number, slug: chapter.slug }
+        { slug: chapter.slug, short_id: resolvedChapter.short_id }
       )
     : undefined;
 
@@ -198,9 +198,9 @@ export default async function ChapterReadingPage({ params }: PageProps) {
     redirect(canonicalChapterPath);
   }
 
-  // Redirect if chapter slug doesn't match
+  // Redirect if chapter slug doesn't match (e.g., chapter was renamed)
   const parsedChapter = parseChapterParam(chapterIdParam);
-  if (parsedChapter && parsedChapter.slug && resolvedChapter.slug && parsedChapter.slug !== resolvedChapter.slug) {
+  if (parsedChapter && resolvedChapter.slug && parsedChapter.slug !== resolvedChapter.slug) {
     redirect(canonicalChapterPath);
   }
 
@@ -269,7 +269,7 @@ export default async function ChapterReadingPage({ params }: PageProps) {
   // Fetch all chapters for navigation
   const { data: allChapters } = await supabase
     .from("chapters")
-    .select("id, title, chapter_number, is_published, slug")
+    .select("id, title, chapter_number, is_published, slug, short_id")
     .eq("story_id", storyId)
     .eq("is_published", true)
     .order("chapter_number", { ascending: true });
@@ -281,6 +281,11 @@ export default async function ChapterReadingPage({ params }: PageProps) {
 
   // Calculate word count for reading time
   const wordCount = countWordsFromTiptap(chapter.content);
+
+  // Compute URLs for prev/next chapters
+  const prevChapterUrl = prevChapter ? getChapterUrl(resolvedStory, { slug: prevChapter.slug, short_id: prevChapter.short_id }) : undefined;
+  const nextChapterUrl = nextChapter ? getChapterUrl(resolvedStory, { slug: nextChapter.slug, short_id: nextChapter.short_id }) : undefined;
+  const storyUrlPath = getStoryUrl(resolvedStory);
 
   // Get the current URL for sharing
   const storyUrl = getAbsoluteStoryUrl(resolvedStory);
@@ -351,14 +356,13 @@ export default async function ChapterReadingPage({ params }: PageProps) {
       {/* Keyboard/swipe navigation: disabled in continuous scroll mode */}
       <PagedModeOnly>
         <KeyboardNavigation
-          storyId={storyId}
-          prevChapterId={prevChapter?.id}
-          nextChapterId={nextChapter?.id}
+          storyUrl={storyUrlPath}
+          prevChapterUrl={prevChapterUrl}
+          nextChapterUrl={nextChapterUrl}
         />
         <SwipeNavigation
-          storyId={storyId}
-          prevChapterId={prevChapter?.id}
-          nextChapterId={nextChapter?.id}
+          prevChapterUrl={prevChapterUrl}
+          nextChapterUrl={nextChapterUrl}
         />
       </PagedModeOnly>
 
@@ -381,7 +385,7 @@ export default async function ChapterReadingPage({ params }: PageProps) {
             </p>
             <ReadingTimeEstimate wordCount={wordCount} variant="full" />
             <ShareButtons
-              url={getAbsoluteChapterUrl(resolvedStory, resolvedChapter)}
+              url={getAbsoluteChapterUrl(resolvedStory, { slug: resolvedChapter.slug, short_id: resolvedChapter.short_id })}
               title={`${chapter.title} — ${chapter.stories?.title || "Story"}`}
               description={`Read ${chapter.title} from ${chapter.stories?.title || "a story"} on Fictionry`}
             />
@@ -447,7 +451,7 @@ export default async function ChapterReadingPage({ params }: PageProps) {
           pagedContent={
             <>
               <ChapterCompleteCard
-                storyId={storyId}
+                storyUrl={storyUrlPath}
                 storyTitle={chapter.stories?.title ?? ""}
                 chapterId={chapterId}
                 chapterNumber={chapter.chapter_number}
@@ -456,8 +460,8 @@ export default async function ChapterReadingPage({ params }: PageProps) {
                 initialLikes={chapter.likes ?? 0}
                 currentUserId={user?.id ?? null}
                 storyAuthorId={chapter.stories?.author_id ?? ""}
-                prevChapter={prevChapter ? { id: prevChapter.id, title: prevChapter.title } : null}
-                nextChapter={nextChapter ? { id: nextChapter.id, title: nextChapter.title } : null}
+                prevChapter={prevChapterUrl && prevChapter ? { url: prevChapterUrl, title: prevChapter.title } : null}
+                nextChapter={nextChapterUrl && nextChapter ? { url: nextChapterUrl, title: nextChapter.title } : null}
                 reportButton={
                   user && user.id !== chapter.stories?.author_id ? (
                     <ReportButton
@@ -474,11 +478,11 @@ export default async function ChapterReadingPage({ params }: PageProps) {
               {/* Chapter Navigation - Hidden on mobile (bottom nav shows instead) */}
               <div className="hidden md:block">
                 <ChapterNav
-                  storyId={storyId}
+                  storyUrl={storyUrlPath}
                   currentChapter={chapter.chapter_number}
                   totalChapters={chapters.length}
-                  prevChapterId={prevChapter?.id}
-                  nextChapterId={nextChapter?.id}
+                  prevChapterUrl={prevChapterUrl}
+                  nextChapterUrl={nextChapterUrl}
                 />
               </div>
 
@@ -498,8 +502,10 @@ export default async function ChapterReadingPage({ params }: PageProps) {
             initialChapterNumber: chapter.chapter_number,
             initialWordCount: wordCount,
             initialCommentCount: 0,
-            allChapterIds: chapters.map(ch => ({ id: ch.id, title: ch.title, chapterNumber: ch.chapter_number })),
+            allChapterIds: chapters.map(ch => ({ id: ch.id, title: ch.title, chapterNumber: ch.chapter_number, slug: ch.slug, shortId: ch.short_id })),
             storyId,
+            storySlug: resolvedStory.slug,
+            storyShortId: resolvedStory.short_id,
             storyTitle: chapter.stories?.title || '',
             currentUserId: user?.id ?? null,
             storyAuthorId: chapter.stories?.author_id ?? '',
@@ -514,10 +520,10 @@ export default async function ChapterReadingPage({ params }: PageProps) {
 
         {/* Mobile Bottom Navigation - always visible for jump-to-chapter */}
         <MobileChapterNav
-          storyId={storyId}
+          storyUrl={storyUrlPath}
           storyTitle={chapter.stories?.title ?? ""}
-          prevChapter={prevChapter ? { id: prevChapter.id, title: prevChapter.title } : null}
-          nextChapter={nextChapter ? { id: nextChapter.id, title: nextChapter.title } : null}
+          prevChapter={prevChapterUrl && prevChapter ? { url: prevChapterUrl, title: prevChapter.title } : null}
+          nextChapter={nextChapterUrl && nextChapter ? { url: nextChapterUrl, title: nextChapter.title } : null}
           currentChapterNumber={chapter.chapter_number}
           totalChapters={chapters.length}
         />

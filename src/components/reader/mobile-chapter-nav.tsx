@@ -9,10 +9,10 @@ import { ReadingSettingsPanel } from './reading-settings-panel'
 import { useReadingSettings, widthClasses } from '@/lib/hooks/useReadingSettings'
 
 interface MobileChapterNavProps {
-  storyId: string
+  storyUrl: string
   storyTitle: string
-  prevChapter: { id: string; title: string } | null
-  nextChapter: { id: string; title: string } | null
+  prevChapter: { url: string; title: string } | null
+  nextChapter: { url: string; title: string } | null
   currentChapterNumber: number
   totalChapters: number
 }
@@ -26,7 +26,7 @@ const themeInlineStyles: Record<'light' | 'dark' | 'sepia' | 'night', { bg: stri
 }
 
 export function MobileChapterNav({
-  storyId,
+  storyUrl,
   storyTitle,
   prevChapter,
   nextChapter,
@@ -59,7 +59,7 @@ export function MobileChapterNav({
           <div className="flex items-center justify-between py-1.5">
             {/* Previous Chapter */}
             {prevChapter ? (
-              <Link href={`/story/${storyId}/chapter/${prevChapter.id}`}>
+              <Link href={prevChapter.url}>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -83,7 +83,7 @@ export function MobileChapterNav({
 
             {/* Chapter indicator & TOC link */}
             <Link 
-              href={`/story/${storyId}`}
+              href={storyUrl}
               className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md transition-colors ${
                 isAutoTheme 
                   ? 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400' 
@@ -130,7 +130,7 @@ export function MobileChapterNav({
 
             {/* Next Chapter */}
             {nextChapter ? (
-              <Link href={`/story/${storyId}/chapter/${nextChapter.id}`}>
+              <Link href={nextChapter.url}>
                 <Button 
                   variant="outline" 
                   size="sm" 

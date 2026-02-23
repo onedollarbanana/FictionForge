@@ -2,7 +2,7 @@
  * URL utilities for SEO-friendly story and chapter URLs.
  *
  * Story URL format:  /story/{slug}-{shortId}
- * Chapter URL format: /story/{slug}-{shortId}/chapter/{chapterNumber}-{chapterSlug}
+ * Chapter URL format: /story/{slug}-{shortId}/chapter/{chapterSlug}-{chapterShortId}
  *
  * The shortId (7-char base64-derived identifier) is the source of truth.
  * Slugs are cosmetic — mismatches trigger 301 redirects.
@@ -19,8 +19,8 @@ export interface StoryUrlData {
 }
 
 export interface ChapterUrlData {
-  chapter_number: number;
   slug?: string | null;
+  short_id: string;
 }
 
 /**
@@ -39,9 +39,9 @@ export function getStoryUrl(story: StoryUrlData): string {
 export function getChapterUrl(story: StoryUrlData, chapter: ChapterUrlData): string {
   const storyBase = getStoryUrl(story);
   if (chapter.slug) {
-    return `${storyBase}/chapter/${chapter.chapter_number}-${chapter.slug}`;
+    return `${storyBase}/chapter/${chapter.slug}-${chapter.short_id}`;
   }
-  return `${storyBase}/chapter/${chapter.chapter_number}`;
+  return `${storyBase}/chapter/${chapter.short_id}`;
 }
 
 /**
@@ -90,19 +90,19 @@ export function parseStoryParam(param: string): { slug: string; shortId: string 
 }
 
 /**
- * Parse a chapter URL param (e.g., "3-the-awakening") into its parts.
- * The chapter number is the first segment before the first hyphen.
+ * Parse a chapter URL param (e.g., "the-awakening-abc1234") into its parts.
+ * The shortId is the last segment after the final hyphen (same as parseStoryParam).
  */
-export function parseChapterParam(param: string): { chapterNumber: number; slug: string | null } | null {
-  // Could be just a number: "3"
-  const num = parseInt(param, 10);
-  if (isNaN(num) || num < 1) return null;
+export function parseChapterParam(param: string): { slug: string; shortId: string } | null {
+  const lastDash = param.lastIndexOf('-');
+  if (lastDash === -1 || lastDash === param.length - 1) return null;
 
-  const firstDash = param.indexOf('-');
-  if (firstDash === -1) {
-    return { chapterNumber: num, slug: null };
-  }
+  const slug = param.substring(0, lastDash);
+  const shortId = param.substring(lastDash + 1);
 
-  const slug = param.substring(firstDash + 1);
-  return { chapterNumber: num, slug: slug || null };
+  // shortId should be ~7 chars
+  if (shortId.length < 4 || shortId.length > 12) return null;
+  if (!slug) return null;
+
+  return { slug, shortId };
 }

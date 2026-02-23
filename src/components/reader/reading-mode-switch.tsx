@@ -10,8 +10,10 @@ interface ContinuousScrollData {
   initialChapterNumber: number
   initialWordCount: number
   initialCommentCount: number
-  allChapterIds: { id: string; title: string; chapterNumber: number }[]
+  allChapterIds: { id: string; title: string; chapterNumber: number; slug: string; shortId: string }[]
   storyId: string
+  storySlug: string
+  storyShortId: string
   storyTitle: string
   currentUserId: string | null
   storyAuthorId: string
@@ -36,9 +38,12 @@ export function ReadingModeSwitch({ pagedContent, continuousScrollData }: Readin
   const {
     initialChapterId, initialChapterTitle, initialChapterNumber,
     initialWordCount, initialCommentCount,
-    allChapterIds, storyId, storyTitle, currentUserId, storyAuthorId,
+    allChapterIds, storyId, storySlug, storyShortId, storyTitle, currentUserId, storyAuthorId,
     authorName, authorTiers,
   } = continuousScrollData
+
+  // Find initial chapter's slug/shortId from allChapterIds
+  const initialChapterMeta = allChapterIds.find(ch => ch.id === initialChapterId)
 
   return (
     <ContinuousScrollReader
@@ -60,9 +65,13 @@ export function ReadingModeSwitch({ pagedContent, continuousScrollData }: Readin
         storyTitle,
         authorId: storyAuthorId,
         authorName,
+        slug: initialChapterMeta?.slug || '',
+        shortId: initialChapterMeta?.shortId || '',
       }}
       allChapterIds={allChapterIds}
       storyId={storyId}
+      storySlug={storySlug}
+      storyShortId={storyShortId}
       currentUserId={currentUserId}
       storyAuthorId={storyAuthorId}
       authorTiers={authorTiers}
