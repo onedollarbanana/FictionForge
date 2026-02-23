@@ -68,6 +68,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
  * Detect if a URL param is a legacy full UUID.
  */
 export function isLegacyUuid(param: string): boolean {
+  if (!param) return false;
   return UUID_REGEX.test(param);
 }
 
@@ -76,6 +77,7 @@ export function isLegacyUuid(param: string): boolean {
  * The shortId is the last segment after the final hyphen.
  */
 export function parseStoryParam(param: string): { slug: string; shortId: string } | null {
+  if (!param) return null;
   const lastDash = param.lastIndexOf('-');
   if (lastDash === -1 || lastDash === param.length - 1) return null;
 
@@ -94,6 +96,7 @@ export function parseStoryParam(param: string): { slug: string; shortId: string 
  * The shortId is the last segment after the final hyphen (same as parseStoryParam).
  */
 export function parseChapterParam(param: string): { slug: string; shortId: string } | null {
+  if (!param) return null;
   const lastDash = param.lastIndexOf('-');
   if (lastDash === -1 || lastDash === param.length - 1) return null;
 

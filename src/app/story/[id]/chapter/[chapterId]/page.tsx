@@ -89,6 +89,7 @@ async function resolveChapterParam(
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id: storyIdParam, chapterId: chapterIdParam } = params;
+  if (!storyIdParam || !chapterIdParam) return { title: "Chapter Not Found | Fictionry" };
   const { createClient } = await import("@/lib/supabase/server");
   const supabase = await createClient();
 

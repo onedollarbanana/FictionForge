@@ -61,6 +61,7 @@ async function resolveStoryParam(param: string, supabase: any): Promise<{ id: st
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = params;
+  if (!id) return { title: "Story Not Found | Fictionry" };
   const supabase = await createClient();
 
   const resolved = await resolveStoryParam(id, supabase);
