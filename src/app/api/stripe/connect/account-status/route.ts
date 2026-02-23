@@ -17,7 +17,7 @@ export async function GET() {
     // Look up author's Stripe Connect account
     const { data: accountRecord } = await adminSupabase
       .from('author_stripe_accounts')
-      .select('stripe_account_id, onboarding_complete, payouts_enabled')
+      .select('stripe_account_id, status, charges_enabled, payouts_enabled')
       .eq('author_id', user.id)
       .maybeSingle();
 
@@ -46,8 +46,10 @@ export async function GET() {
     await adminSupabase
       .from('author_stripe_accounts')
       .update({
-        onboarding_complete: status.details_submitted,
+        status: status.details_submitted ? 'active' as const : 'pending' as const,
+        charges_enabled: status.charges_enabled,
         payouts_enabled: status.payouts_enabled,
+        onboarded_at: status.details_submitted ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
       })
       .eq('author_id', user.id);

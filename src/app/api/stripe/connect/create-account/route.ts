@@ -17,7 +17,7 @@ export async function POST() {
     // Check if author already has a Stripe Connect account
     const { data: existing } = await adminSupabase
       .from('author_stripe_accounts')
-      .select('stripe_account_id, onboarding_complete')
+      .select('stripe_account_id, status')
       .eq('author_id', user.id)
       .maybeSingle();
 
@@ -36,13 +36,17 @@ export async function POST() {
       stripeAccountId = account.id;
 
       // Save to database
-      await adminSupabase.from('author_stripe_accounts').upsert({
+      const { error: upsertError } = await adminSupabase.from('author_stripe_accounts').upsert({
         author_id: user.id,
         stripe_account_id: account.id,
-        onboarding_complete: false,
+        status: 'pending' as const,
+        charges_enabled: false,
         payouts_enabled: false,
         updated_at: new Date().toISOString(),
-      });
+      }, { onConflict: 'author_id' });
+      if (upsertError) {
+        console.error('Failed to save Connect account to DB:', upsertError);
+      }
     }
 
     // Create onboarding link

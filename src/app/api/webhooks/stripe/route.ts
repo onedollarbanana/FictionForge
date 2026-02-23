@@ -103,8 +103,10 @@ export async function POST(request: NextRequest) {
           await supabase
             .from('author_stripe_accounts')
             .update({
-              onboarding_complete: account.details_submitted || false,
+              status: account.details_submitted ? 'active' as const : 'pending' as const,
+              charges_enabled: account.charges_enabled || false,
               payouts_enabled: account.payouts_enabled || false,
+              onboarded_at: account.details_submitted ? new Date().toISOString() : null,
               updated_at: new Date().toISOString(),
             })
             .eq('stripe_account_id', account.id);
@@ -115,8 +117,10 @@ export async function POST(request: NextRequest) {
             .upsert({
               author_id: authorId,
               stripe_account_id: account.id,
-              onboarding_complete: account.details_submitted || false,
+              status: account.details_submitted ? 'active' as const : 'pending' as const,
+              charges_enabled: account.charges_enabled || false,
               payouts_enabled: account.payouts_enabled || false,
+              onboarded_at: account.details_submitted ? new Date().toISOString() : null,
               updated_at: new Date().toISOString(),
             }, { onConflict: 'author_id' });
         }
