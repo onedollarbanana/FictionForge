@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 
 export interface ReadingSettings {
-  fontFamily: 'default' | 'serif' | 'sans' | 'mono' | 'merriweather' | 'lora' | 'literata' | 'source-sans'
+  fontFamily: 'default' | 'merriweather' | 'lora' | 'source-sans' | 'mono' | 'merriweather' | 'lora' | 'literata' | 'source-sans'
   fontSize: number // 14-24
   lineHeight: 'compact' | 'normal' | 'relaxed' | 'spacious'
   theme: 'auto' | 'light' | 'dark' | 'sepia' | 'night'

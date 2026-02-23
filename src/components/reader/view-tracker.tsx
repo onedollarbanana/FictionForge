@@ -30,28 +30,26 @@ export function ViewTracker({ chapterId, storyId }: ViewTrackerProps) {
       }
 
       // Try to insert a view (will fail silently if already exists due to unique constraint)
-      const { error: viewError } = await supabase.from("chapter_views").insert({
+      const { error: viewError } = await supabase.from("chapter_views").upsert({
         chapter_id: chapterId,
         story_id: storyId,
         user_id: user?.id || null,
         session_id: user ? null : sessionId,
-      });
+      }, { onConflict: user ? 'chapter_id,user_id' : 'chapter_id,session_id' });
 
-      // Ignore unique constraint violations - that's expected
-      if (viewError && !viewError.code?.includes("23505")) {
+      if (viewError) {
         console.error("Error tracking view:", viewError);
       }
 
       // Auto-mark as read for logged-in users (Royal Road style)
       if (user) {
-        const { error: readError } = await supabase.from("chapter_reads").insert({
+        const { error: readError } = await supabase.from("chapter_reads").upsert({
           chapter_id: chapterId,
           story_id: storyId,
           user_id: user.id,
-        });
+        }, { onConflict: 'user_id,chapter_id' });
 
-        // Ignore unique constraint violations - already marked as read
-        if (readError && !readError.code?.includes("23505")) {
+        if (readError) {
           console.error("Error marking as read:", readError);
         }
       }
