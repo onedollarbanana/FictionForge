@@ -17,6 +17,7 @@ import { hasMatureContent } from "@/lib/content-warnings";
 import { ContentWarningGate } from "@/components/story/content-warning-gate";
 import { NominateButton } from "@/components/story/nominate-button";
 import { CommunityPickBadge } from "@/components/story/community-pick-badge";
+import { CoverLightbox } from "@/components/ui/cover-lightbox";
 import { getCommunityPickBadge } from "@/lib/community-picks";
 import { AuthorTierCards } from "@/components/story/author-tier-cards";
 import { type TierName } from "@/lib/platform-config";
@@ -310,10 +311,9 @@ export default async function StoryPage({ params }: PageProps) {
         {story.cover_url ? (
           <div className="relative w-full md:w-48 aspect-[2/3] rounded-lg overflow-hidden shrink-0">
             <CommunityPickBadge pickMonth={communityPickData?.pickMonth} />
-            <img
+            <CoverLightbox
               src={`${story.cover_url}?t=${new Date(story.updated_at).getTime()}`}
               alt={`Cover for ${story.title}`}
-              className="w-full h-full object-cover"
             />
           </div>
         ) : (
@@ -327,12 +327,20 @@ export default async function StoryPage({ params }: PageProps) {
           <div className="flex items-start justify-between gap-2 mb-2">
             <h1 className="text-3xl font-bold">{story.title}</h1>
             {isOwner && (
-              <Button variant="outline" size="sm" asChild className="shrink-0">
-                <Link href={`/author/stories/${storyId}/edit`}>
-                  <Pencil className="h-4 w-4 mr-1" />
-                  Edit
-                </Link>
-              </Button>
+              <div className="flex gap-2 shrink-0">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/author/stories/${storyId}/edit`}>
+                    <Pencil className="h-4 w-4 mr-1" />
+                    Edit Story
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/author/stories/${storyId}`}>
+                    <BookOpen className="h-4 w-4 mr-1" />
+                    Edit Chapters
+                  </Link>
+                </Button>
+              </div>
             )}
           </div>
           

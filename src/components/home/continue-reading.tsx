@@ -4,15 +4,20 @@ import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, BookOpen, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getStoryUrl, getChapterUrl } from "@/lib/url-utils";
 import { useGenreRecompute } from "@/hooks/use-genre-recompute";
 
 interface ReadingItem {
   story_id: string;
+  story_slug: string | null;
+  story_short_id: string | null;
   title: string;
   cover_url: string | null;
   chapter_number: number;
   total_chapters: number;
   next_chapter_id: string | null;
+  next_chapter_slug: string | null;
+  next_chapter_short_id: string | null;
   author_name: string;
   updated_at: string;
 }
@@ -145,7 +150,7 @@ export function ContinueReading({ items }: ContinueReadingProps) {
                 <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
                   <div>
                     <Link
-                      href={`/story/${item.story_id}`}
+                      href={getStoryUrl({ id: item.story_id, slug: item.story_slug, short_id: item.story_short_id })}
                       className="font-medium text-sm line-clamp-1 hover:text-primary"
                     >
                       {item.title}
@@ -191,9 +196,12 @@ export function ContinueReading({ items }: ContinueReadingProps) {
                   {/* Continue button */}
                   <Link
                     href={
-                      item.next_chapter_id
-                        ? `/story/${item.story_id}/chapter/${item.next_chapter_id}`
-                        : `/story/${item.story_id}`
+                      item.next_chapter_id && item.next_chapter_short_id
+                        ? getChapterUrl(
+                            { id: item.story_id, slug: item.story_slug, short_id: item.story_short_id },
+                            { slug: item.next_chapter_slug, short_id: item.next_chapter_short_id }
+                          )
+                        : getStoryUrl({ id: item.story_id, slug: item.story_slug, short_id: item.story_short_id })
                     }
                     className="mt-2"
                   >

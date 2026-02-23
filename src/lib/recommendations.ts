@@ -85,6 +85,8 @@ export async function getBecauseYouRead(
       // Map RPC results to StoryCardData format
       const stories: StoryCardData[] = similar.map((row: any) => ({
         id: row.id,
+        slug: row.slug,
+        short_id: row.short_id,
         title: row.title,
         tagline: row.tagline,
         blurb: row.blurb,
@@ -141,6 +143,8 @@ export async function getCollaborativeRecommendations(
   
   return data.map((row: any) => ({
     id: row.id,
+    slug: row.slug,
+    short_id: row.short_id,
     title: row.title,
     tagline: row.tagline,
     blurb: row.blurb,

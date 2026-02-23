@@ -35,11 +35,15 @@ export default async function Home() {
   // Fetch Continue Reading data for logged-in users
   let continueReadingItems: {
     story_id: string;
+    story_slug: string | null;
+    story_short_id: string | null;
     title: string;
     cover_url: string | null;
     chapter_number: number;
     total_chapters: number;
     next_chapter_id: string | null;
+    next_chapter_slug: string | null;
+    next_chapter_short_id: string | null;
     author_name: string;
     updated_at: string;
   }[] = [];
@@ -85,6 +89,8 @@ export default async function Home() {
         stories (
           id,
           title,
+          slug,
+          short_id,
           cover_url,
           chapter_count,
           updated_at,
@@ -105,18 +111,18 @@ export default async function Home() {
       // Fetch next chapters
       const { data: nextChapters } = await supabase
         .from("chapters")
-        .select("id, story_id, chapter_number")
+        .select("id, story_id, chapter_number, slug, short_id")
         .in("story_id", storyIds)
         .eq("is_published", true)
         .order("chapter_number", { ascending: true });
 
       // Create a map of story_id + chapter_number -> chapter_id
-      const nextChapterMap = new Map<string, string>();
+      const nextChapterMap = new Map<string, { id: string; slug: string; short_id: string }>();
       if (nextChapters) {
         nextChapters.forEach((ch: any) => {
           const key = `${ch.story_id}-${ch.chapter_number}`;
           if (!nextChapterMap.has(key)) {
-            nextChapterMap.set(key, ch.id);
+            nextChapterMap.set(key, { id: ch.id, slug: ch.slug, short_id: ch.short_id });
           }
         });
       }
@@ -134,15 +140,18 @@ export default async function Home() {
           const profile = story?.profiles;
           const authorName = Array.isArray(profile) ? profile[0]?.username : profile?.username;
           const nextChapterNum = p.chapter_number + 1;
-          const nextChapterId = nextChapterMap.get(`${p.story_id}-${nextChapterNum}`) || null;
-
+          const nextChapterInfo = nextChapterMap.get(`${p.story_id}-${nextChapterNum}`) || null;
           return {
             story_id: p.story_id,
+            story_slug: story?.slug || null,
+            story_short_id: story?.short_id || null,
             title: story?.title || "Unknown",
             cover_url: story?.cover_url || null,
             chapter_number: p.chapter_number,
             total_chapters: story?.chapter_count || 0,
-            next_chapter_id: nextChapterId,
+            next_chapter_id: nextChapterInfo?.id || null,
+            next_chapter_slug: nextChapterInfo?.slug || null,
+            next_chapter_short_id: nextChapterInfo?.short_id || null,
             author_name: authorName || "Unknown",
             updated_at: story?.updated_at || new Date().toISOString(),
           };
