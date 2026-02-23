@@ -138,7 +138,7 @@ export default async function LibraryPage() {
       .from('chapters')
       .select('story_id, chapter_number, title, published_at, short_id, slug')
       .in('story_id', storyIds)
-      .eq('status', 'published')
+      .eq('is_published', true)
       .order('chapter_number', { ascending: false })
 
     if (latestChapters) {
