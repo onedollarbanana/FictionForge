@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { TiptapEditor, countWordsFromJSON } from "@/components/editor/tiptap-editor";
-import { Clock } from "lucide-react";
+import { Clock, Lock } from "lucide-react";
 import { ScheduleWarning } from "@/components/ScheduleWarning";
 import { showToast } from "@/components/ui/toast";
 import { PLATFORM_CONFIG, type TierName } from "@/lib/platform-config";
@@ -75,7 +75,6 @@ export default function EditChapterPage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [browserTimezone] = useState(getBrowserTimezone);
   const [minTierName, setMinTierName] = useState<string | null>(null);
-  const [authorTiers, setAuthorTiers] = useState<Array<{tier_name: string, enabled: boolean}>>([]);
   const router = useRouter();
 
   // Word count from Tiptap JSON
@@ -95,13 +94,7 @@ export default function EditChapterPage() {
       
       if (storyData) {
         setStoryTitle(storyData.title);
-        // Fetch author's enabled tiers
-        const { data: tiersData } = await supabase
-          .from('author_tiers')
-          .select('tier_name, enabled')
-          .eq('author_id', storyData.author_id)
-          .eq('enabled', true);
-        if (tiersData) setAuthorTiers(tiersData);
+
       }
 
       // Load chapter
@@ -220,7 +213,6 @@ export default function EditChapterPage() {
         author_note_before: authorNoteBefore || null,
         author_note_after: authorNoteAfter || null,
         scheduled_for: publish ? null : (scheduleDate ? new Date(scheduleDate).toISOString() : null),
-        min_tier_name: minTierName || null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", chapterId);
@@ -370,24 +362,14 @@ export default function EditChapterPage() {
           />
         </div>
 
-        {/* Tier Gating (only if author has tiers enabled) */}
-        {authorTiers.length > 0 && (
-          <div className="space-y-2">
-            <Label>Advance Chapter Access</Label>
-            <select
-              value={minTierName || ''}
-              onChange={(e) => setMinTierName(e.target.value || null)}
-              className="flex h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <option value="">Free (everyone can read)</option>
-              {authorTiers.map(t => (
-                <option key={t.tier_name} value={t.tier_name}>
-                  {PLATFORM_CONFIG.TIER_NAMES[t.tier_name as TierName]} tier or higher
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-muted-foreground">
-              Restrict this chapter to subscribers of a specific tier or higher
+        {/* Tier Gating Info */}
+        {minTierName && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800">
+            <Lock className="w-4 h-4 text-orange-600 dark:text-orange-400 flex-shrink-0" />
+            <p className="text-sm text-orange-800 dark:text-orange-200">
+              This chapter requires <span className="font-medium">{PLATFORM_CONFIG.TIER_NAMES[minTierName as TierName] || minTierName}</span> tier or higher.
+              Gating is managed automatically from your{' '}
+              <a href={`/author/stories/${storyId}`} className="underline hover:no-underline">story overview</a>.
             </p>
           </div>
         )}
