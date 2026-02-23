@@ -51,23 +51,37 @@ export function ChapterLockedOverlay({
   isLoggedIn,
 }: ChapterLockedOverlayProps) {
   const [loadingTier, setLoadingTier] = useState<string | null>(null)
-  const [markedRead, setMarkedRead] = useState(false)
-  const [markingRead, setMarkingRead] = useState(false)
+  const [isRead, setIsRead] = useState(false)
+  const [toggling, setToggling] = useState(false)
 
-  const handleMarkAsRead = async () => {
-    setMarkingRead(true)
+  const handleToggleRead = async () => {
+    setToggling(true)
     try {
       const supabase = createClient()
-      await supabase.from('chapter_reads').upsert({
-        chapter_id: chapterId,
-        story_id: storyId,
-        user_id: (await supabase.auth.getUser()).data.user?.id,
-      }, { onConflict: 'user_id,chapter_id' })
-      setMarkedRead(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      if (isRead) {
+        // Mark as unread
+        await supabase
+          .from('chapter_reads')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('chapter_id', chapterId)
+        setIsRead(false)
+      } else {
+        // Mark as read
+        await supabase.from('chapter_reads').upsert({
+          chapter_id: chapterId,
+          story_id: storyId,
+          user_id: user.id,
+        }, { onConflict: 'user_id,chapter_id' })
+        setIsRead(true)
+      }
     } catch (err) {
-      console.error('Error marking as read:', err)
+      console.error('Error toggling read status:', err)
     } finally {
-      setMarkingRead(false)
+      setToggling(false)
     }
   }
 
@@ -134,23 +148,16 @@ export function ChapterLockedOverlay({
 
           {isLoggedIn && (
             <div>
-              {markedRead ? (
-                <p className="text-sm text-green-600 dark:text-green-400 flex items-center justify-center gap-1.5">
-                  <BookCheck className="h-4 w-4" />
-                  Marked as read
-                </p>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleMarkAsRead}
-                  disabled={markingRead}
-                  className="text-muted-foreground"
-                >
-                  <BookCheck className="h-4 w-4 mr-1.5" />
-                  {markingRead ? 'Marking...' : 'Mark as read'}
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleToggleRead}
+                disabled={toggling}
+                className="text-muted-foreground"
+              >
+                <BookCheck className="h-4 w-4 mr-1.5" />
+                {toggling ? 'Updating...' : isRead ? 'Mark as unread' : 'Mark as read'}
+              </Button>
             </div>
           )}
 

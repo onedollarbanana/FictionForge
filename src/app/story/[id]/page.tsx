@@ -4,7 +4,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, Check, Clock, Eye, Heart, Lock, Pencil, User } from "lucide-react";
+import { BookOpen, Clock, Eye, Heart, Lock, Pencil, User } from "lucide-react";
+import { ChapterReadToggle } from "@/components/story/chapter-read-toggle";
 import { formatDistanceToNow } from "date-fns";
 import { LibraryButton } from "@/components/story/LibraryButton";
 import { AnnouncementBanner } from "@/components/announcements";
@@ -503,7 +504,7 @@ export default async function StoryPage({ params }: PageProps) {
       </Card>
 
       {/* Author Tier Cards */}
-      {authorTiers && authorTiers.length > 0 && (
+      {authorTiers && authorTiers.length > 0 && !isOwner && (
         <div className="mb-6">
           <AuthorTierCards
             authorId={story.author_id}
@@ -544,20 +545,20 @@ export default async function StoryPage({ params }: PageProps) {
             {publishedChapters.map((chapter) => {
               const isRead = readChapterIds.has(chapter.id);
               return (
-                <Link
-                  key={chapter.id}
-                  href={getChapterUrl(resolved, { short_id: chapter.short_id, slug: chapter.slug })}
-                  className="block"
-                >
-                  <Card className={`hover:bg-muted/50 transition-colors ${isRead ? "border-green-500/30 bg-green-500/5" : ""}`}>
-                    <CardContent className="py-3 px-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {isRead && (
-                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 text-white shrink-0">
-                            <Check className="h-4 w-4" />
-                          </div>
-                        )}
-                        <div>
+                <div key={chapter.id} className="flex items-center gap-2">
+                  <ChapterReadToggle
+                    chapterId={chapter.id}
+                    storyId={storyId}
+                    initialIsRead={isRead}
+                  />
+                  <Link
+                    href={getChapterUrl(resolved, { short_id: chapter.short_id, slug: chapter.slug })}
+                    className="block flex-1"
+                  >
+                    <Card className={`hover:bg-muted/50 transition-colors ${isRead ? "border-green-500/30 bg-green-500/5" : ""}`}>
+                      <CardContent className="py-3 px-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div>
                           <span className="font-medium flex items-center gap-1.5">
                             Chapter {chapter.chapter_number}: {chapter.title}
                             {chapter.min_tier_name && (
@@ -584,6 +585,7 @@ export default async function StoryPage({ params }: PageProps) {
                     </CardContent>
                   </Card>
                 </Link>
+                </div>
               );
             })}
           </div>

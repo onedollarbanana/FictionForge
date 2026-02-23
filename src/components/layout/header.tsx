@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { MobileNav } from '@/components/layout/mobile-nav'
-import { LayoutDashboard, Settings, LogOut, Loader2, User } from 'lucide-react'
+import { Pen, Settings, LogOut, Loader2, User } from 'lucide-react'
 import { NotificationBell } from '@/components/notifications/notification-bell'
 
 export function Header() {
@@ -14,6 +14,7 @@ export function Header() {
   const router = useRouter()
 
   const handleLogout = async () => {
+    if (!confirm('Are you sure you want to sign out?')) return
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/')
@@ -60,9 +61,9 @@ export function Header() {
                 <Link
                   href="/author/dashboard"
                   className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-                  title="Dashboard"
+                  title="Author Dashboard"
                 >
-                  <LayoutDashboard className="h-5 w-5" />
+                  <Pen className="h-5 w-5" />
                 </Link>
                 <Link
                   href="/settings"
