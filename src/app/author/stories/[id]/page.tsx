@@ -10,6 +10,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import { GripVertical, Check, Trash2, Eye, EyeOff, X, Lock } from "lucide-react";
 import { showToast } from "@/components/ui/toast";
 import { ExportEpubButton } from "@/components/author/export-epub-button"
+import { ChapterGatingConfig } from "@/components/author/chapter-gating-config"
 
 interface Story {
   id: string;
@@ -258,6 +259,7 @@ export default function StoryOverviewPage() {
   }
 
   const hasSelection = selectedChapters.size > 0;
+  const publishedChapterCount = chapters.filter(c => c.is_published).length;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -324,6 +326,11 @@ export default function StoryOverviewPage() {
         <p className="text-sm text-muted-foreground mt-2">
           Post updates without cluttering your chapter list. Followers see these on your story page.
         </p>
+      </div>
+
+      {/* Chapter Gating */}
+      <div className="mb-8">
+        <ChapterGatingConfig storyId={storyId} publishedChapterCount={publishedChapterCount} />
       </div>
 
       {/* Blurb */}
