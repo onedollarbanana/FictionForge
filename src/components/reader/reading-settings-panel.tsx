@@ -25,8 +25,6 @@ const fontOptions: { value: ReadingSettings['fontFamily']; label: string }[] = [
   { value: 'lora', label: 'Lora' },
   { value: 'literata', label: 'Literata' },
   { value: 'source-sans', label: 'Source Sans' },
-  { value: 'serif', label: 'Serif' },
-  { value: 'sans', label: 'Sans' },
   { value: 'mono', label: 'Mono' },
 ]
 

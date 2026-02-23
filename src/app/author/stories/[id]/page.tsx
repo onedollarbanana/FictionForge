@@ -35,7 +35,7 @@ interface Chapter {
   published_at: string | null;
   scheduled_for: string | null;
   created_at: string;
-  min_tier: string | null;
+  min_tier_name: string | null;
 }
 
 export default function StoryOverviewPage() {
@@ -71,7 +71,7 @@ export default function StoryOverviewPage() {
     // Load chapters
     const { data: chaptersData, error: chaptersError } = await supabase
       .from("chapters")
-      .select("id, title, chapter_number, word_count, is_published, published_at, scheduled_for, created_at, min_tier")
+      .select("id, title, chapter_number, word_count, is_published, published_at, scheduled_for, created_at, min_tier_name")
       .eq("story_id", storyId)
       .order("chapter_number", { ascending: true });
 
@@ -449,10 +449,10 @@ export default function StoryOverviewPage() {
                             </span>
                             <span className="font-medium">{chapter.title}</span>
                           </div>
-                          {chapter.min_tier && (
+                          {chapter.min_tier_name && (
                             <span className="px-2 py-0.5 rounded text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 flex items-center gap-1">
                               <Lock className="w-3 h-3" />
-                              {getTierLabel(chapter.min_tier)}
+                              {getTierLabel(chapter.min_tier_name)}
                             </span>
                           )}
                           {chapter.is_published ? (
@@ -509,10 +509,10 @@ export default function StoryOverviewPage() {
                   </div>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <span>{(chapter.word_count ?? 0).toLocaleString()} words</span>
-                    {chapter.min_tier && (
+                    {chapter.min_tier_name && (
                       <span className="px-2 py-0.5 rounded text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 flex items-center gap-1">
                         <Lock className="w-3 h-3" />
-                        {getTierLabel(chapter.min_tier)}
+                        {getTierLabel(chapter.min_tier_name)}
                       </span>
                     )}
                     {chapter.is_published ? (

@@ -14,10 +14,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const merriweather = Merriweather({ subsets: ['latin'], weight: ['300', '400', '700'], variable: '--font-merriweather' })
 const lora = Lora({ subsets: ['latin'], variable: '--font-lora' })
 const sourceSans = Source_Sans_3({ subsets: ['latin'], variable: '--font-source-sans' })
-const merriweather = Merriweather({ weight: ['300', '400', '700'], subsets: ['latin'], variable: '--font-merriweather' })
-const lora = Lora({ subsets: ['latin'], variable: '--font-lora' })
 const literata = Literata({ subsets: ['latin'], variable: '--font-literata' })
-const sourceSans = Source_Sans_3({ subsets: ['latin'], variable: '--font-source-sans' })
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.fictionry.com'),
