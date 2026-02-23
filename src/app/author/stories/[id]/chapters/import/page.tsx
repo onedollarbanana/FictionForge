@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { showToast } from "@/components/ui/toast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Upload } from "lucide-react"
+import { HelpLink } from '@/components/ui/help-link'
 import { htmlToTiptapJSON } from "@/lib/html-to-tiptap"
 import { countWordsFromJSON } from "@/components/editor/tiptap-editor"
 import { parseEpub } from "@/components/author/import/epub-parser"
@@ -217,7 +218,7 @@ export default function ImportChaptersPage() {
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold mb-6">Import Chapters</h1>
+      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">Import Chapters <HelpLink href="/guides/authors/importing" label="Import guide" /></h1>
 
       <PlatformGuides />
 

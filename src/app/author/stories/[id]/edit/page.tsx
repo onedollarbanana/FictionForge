@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { CoverUpload } from "@/components/story/cover-upload";
 import { CONTENT_WARNINGS } from "@/lib/content-warnings";
+import { HelpLink } from "@/components/ui/help-link";
 
 const GENRES = [
   "Fantasy",
@@ -139,7 +140,7 @@ export default function EditStoryPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <h1 className="text-3xl font-bold mb-6">Edit Story</h1>
+      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">Edit Story <HelpLink href="/guides/authors/formatting" label="Formatting guide" /></h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (

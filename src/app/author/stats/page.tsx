@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ArrowLeft, Flame, Target, PenLine, Calendar, TrendingUp } from 'lucide-react'
+import { HelpLink } from '@/components/ui/help-link'
 
 interface DailyLog {
   id: string
@@ -231,7 +232,7 @@ export default function WritingStatsPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Writing Stats</h1>
+            <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">Writing Stats <HelpLink href="/guides/authors/analytics" label="Analytics guide" /></h1>
             <p className="text-zinc-500 mt-1">Track your writing progress and build consistency</p>
           </div>
         </div>

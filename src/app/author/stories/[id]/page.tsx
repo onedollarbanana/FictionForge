@@ -9,6 +9,7 @@ import { CreateAnnouncementForm } from "@/components/announcements";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { GripVertical, Check, Trash2, Eye, EyeOff, X, Lock } from "lucide-react";
 import { showToast } from "@/components/ui/toast";
+import { ExportEpubButton } from "@/components/author/export-epub-button"
 
 interface Story {
   id: string;
@@ -292,6 +293,7 @@ export default function StoryOverviewPage() {
           <Link href={`/author/stories/${storyId}/chapters/import`}>
             <Button variant="outline">Import Chapters</Button>
           </Link>
+          <ExportEpubButton storyId={storyId} storyTitle={story.title} />
         </div>
       </div>
 

@@ -1,3 +1,4 @@
+import { HelpLink } from '@/components/ui/help-link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { LibraryClient } from '@/components/library/library-client'
@@ -74,7 +75,7 @@ export default async function LibraryPage() {
     console.error('Error fetching library:', error)
     return (
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">My Library</h1>
+        <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">My Library <HelpLink href="/guides/readers/getting-started" label="Reader guide" /></h1>
         <LibraryTabs />
         <p className="text-muted-foreground">Failed to load library. Please try again.</p>
       </div>
@@ -157,7 +158,7 @@ export default async function LibraryPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">My Library</h1>
+      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">My Library <HelpLink href="/guides/readers/getting-started" label="Reader guide" /></h1>
       <LibraryTabs />
       <LibraryClient items={libraryItems} />
     </div>

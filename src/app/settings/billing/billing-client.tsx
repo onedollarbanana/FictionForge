@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Crown, CreditCard, ExternalLink, Check, Loader2, ArrowUpCircle } from "lucide-react";
+import { HelpLink } from "@/components/ui/help-link"
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -164,7 +165,7 @@ export function BillingClient({
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl font-semibold mb-1">Billing</h2>
+        <h2 className="text-xl font-semibold mb-1 flex items-center gap-2">Billing <HelpLink href="/guides/readers/premium" label="Premium guide" /></h2>
         <p className="text-sm text-muted-foreground">
           Manage your Reader Premium subscription
         </p>

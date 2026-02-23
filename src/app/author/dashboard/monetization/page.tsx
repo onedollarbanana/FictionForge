@@ -20,6 +20,7 @@ import {
   Loader2,
   Save,
 } from 'lucide-react'
+import { HelpLink } from '@/components/ui/help-link'
 
 // --- Types ---
 
@@ -225,7 +226,7 @@ export default function MonetizationPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Monetization</h1>
+            <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">Monetization <HelpLink href="/guides/authors/monetization" label="Monetization guide" /></h1>
             <p className="text-zinc-500 mt-1">Set up payments and configure subscription tiers</p>
           </div>
         </div>

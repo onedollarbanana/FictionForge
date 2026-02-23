@@ -11,6 +11,7 @@ import { ChapterEngagementTable } from '@/components/author/chapter-engagement-t
 import { ActivityFeed } from '@/components/author/activity-feed'
 import { Button } from '@/components/ui/button'
 import { Plus, BookOpen, Eye, Users, Heart, FileText, BarChart3, Library, DollarSign, Wallet } from 'lucide-react'
+import { HelpLink } from '@/components/ui/help-link'
 
 interface Story {
   id: string
@@ -193,7 +194,7 @@ export default function AuthorDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Author Dashboard</h1>
+          <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">Author Dashboard <HelpLink href="/guides/authors/getting-started" label="Getting started guide" /></h1>
           <p className="text-zinc-500 mt-1">Track your stories and engagement</p>
         </div>
         <div className="flex items-center gap-3">
