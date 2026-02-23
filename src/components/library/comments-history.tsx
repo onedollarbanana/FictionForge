@@ -17,6 +17,7 @@ import {
   Check,
   AlertTriangle
 } from 'lucide-react'
+import { getStoryUrl, getChapterUrl } from "@/lib/url-utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,6 +42,8 @@ interface Comment {
     chapterNumber: number
     story: {
       id: string
+      slug?: string | null
+      short_id?: string | null
       title: string
       coverUrl: string | null
       authorUsername: string
@@ -82,7 +85,7 @@ const CommentCard = memo(function CommentCard({
     <div className="border rounded-lg p-4">
       {/* Story/chapter header */}
       <div className="flex items-start gap-3 mb-3">
-        <Link href={`/story/${comment.chapter.story.id}`} className="shrink-0">
+        <Link href={getStoryUrl(comment.chapter.story)} className="shrink-0">
           {comment.chapter.story.coverUrl ? (
             <div className="relative w-12 h-16 rounded overflow-hidden">
               <Image
@@ -101,13 +104,13 @@ const CommentCard = memo(function CommentCard({
         </Link>
         <div className="flex-1 min-w-0">
           <Link 
-            href={`/story/${comment.chapter.story.id}`}
+            href={getStoryUrl(comment.chapter.story)}
             className="font-medium hover:text-primary transition-colors line-clamp-1"
           >
             {comment.chapter.story.title}
           </Link>
           <Link
-            href={`/story/${comment.chapter.story.id}/chapter/${comment.chapter.id}`}
+            href={`${getStoryUrl(comment.chapter.story)}/chapter/${comment.chapter.id}`}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors block"
           >
             Chapter {comment.chapter.chapterNumber}: {comment.chapter.title}

@@ -7,6 +7,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Star, BookOpen, Trash2 } from 'lucide-react'
+import { getStoryUrl } from "@/lib/url-utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +30,8 @@ interface Rating {
   createdAt: string
   story: {
     id: string
+    slug?: string | null
+    short_id?: string | null
     title: string
     coverUrl: string | null
     authorUsername: string
@@ -74,7 +77,7 @@ const RatingCard = memo(function RatingCard({
     <div className="border rounded-lg p-4">
       {/* Story header */}
       <div className="flex items-start gap-3 mb-3">
-        <Link href={`/story/${rating.story.id}`} className="shrink-0">
+        <Link href={getStoryUrl(rating.story)} className="shrink-0">
           {rating.story.coverUrl ? (
             <div className="relative w-12 h-16 rounded overflow-hidden">
               <Image
@@ -93,7 +96,7 @@ const RatingCard = memo(function RatingCard({
         </Link>
         <div className="flex-1 min-w-0">
           <Link 
-            href={`/story/${rating.story.id}`}
+            href={getStoryUrl(rating.story)}
             className="font-medium hover:text-primary transition-colors line-clamp-1"
           >
             {rating.story.title}

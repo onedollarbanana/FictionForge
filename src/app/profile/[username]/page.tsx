@@ -28,6 +28,7 @@ import type { FeaturedBadge } from '@/components/achievements/types'
 import { ProfileBorder } from '@/components/profile/profile-border'
 import { ReportButton } from '@/components/moderation/report-button'
 import { PremiumBadge } from '@/components/premium-badge'
+import { getStoryUrl } from '@/lib/url-utils'
 
 export const revalidate = 120
 
@@ -116,6 +117,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       id,
       title,
       slug,
+      short_id,
       blurb,
       cover_url,
       total_views,
@@ -144,6 +146,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         id,
         title,
         slug,
+        short_id,
         cover_url
       )
     `)
@@ -162,7 +165,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       stories (
         id,
         title,
-        slug
+        slug,
+        short_id
       )
     `)
     .eq('user_id', profile.id)
@@ -183,7 +187,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         stories (
           id,
           title,
-          slug
+          slug,
+          short_id
         )
       )
     `)
@@ -412,7 +417,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                     const chapter = comment.chapters as unknown as { 
                       id: string
                       title: string
-                      stories: { id: string; title: string; slug: string } | { id: string; title: string; slug: string }[]
+                      stories: { id: string; title: string; slug: string; short_id: string } | { id: string; title: string; slug: string; short_id: string }[]
                     } | null
                     const story = chapter?.stories
                     const storyData = Array.isArray(story) ? story[0] : story
@@ -423,7 +428,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                           <div>
                             {storyData && (
                               <Link 
-                                href={`/story/${storyData.slug}`}
+                                href={getStoryUrl(storyData)}
                                 className="text-sm font-medium hover:text-primary transition-colors"
                               >
                                 {storyData.title}
@@ -473,7 +478,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                       )}
                       <div className="flex-1 min-w-0">
                         <Link 
-                          href={`/story/${story.slug}`}
+                          href={getStoryUrl(story)}
                           className="font-semibold hover:text-primary transition-colors line-clamp-1"
                         >
                           {story.title}
@@ -525,13 +530,13 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               {library && library.length > 0 ? (
                 <div className="grid gap-3">
                   {library.map((item) => {
-                    const story = item.stories as unknown as { id: string; title: string; slug: string; cover_url: string | null } | null
+                    const story = item.stories as unknown as { id: string; title: string; slug: string; short_id: string; cover_url: string | null } | null
                     if (!story) return null
                     
                     return (
                       <Link 
                         key={item.id}
-                        href={`/story/${story.slug}`}
+                        href={getStoryUrl(story)}
                         className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors"
                       >
                         {story.cover_url && (
@@ -571,7 +576,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               {reviews && reviews.length > 0 ? (
                 <div className="space-y-4">
                   {reviews.map((review) => {
-                    const story = review.stories as unknown as { id: string; title: string; slug: string } | { id: string; title: string; slug: string }[] | null
+                    const story = review.stories as unknown as { id: string; title: string; slug: string; short_id: string } | { id: string; title: string; slug: string; short_id: string }[] | null
                     const storyData = Array.isArray(story) ? story[0] : story
                     
                     return (
@@ -580,7 +585,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                           <div>
                             {storyData && (
                               <Link 
-                                href={`/story/${storyData.slug}`}
+                                href={getStoryUrl(storyData)}
                                 className="font-medium hover:text-primary transition-colors"
                               >
                                 {storyData.title}

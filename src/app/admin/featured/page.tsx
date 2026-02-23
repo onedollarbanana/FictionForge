@@ -15,7 +15,7 @@ export default async function AdminFeaturedPage() {
       featured_at,
       display_order,
       note,
-      stories!story_id(id, title, cover_url, profiles!author_id(username)),
+      stories!story_id(id, slug, short_id, title, cover_url, profiles!author_id(username)),
       profiles!featured_by(username)
     `)
     .order('display_order', { ascending: true });

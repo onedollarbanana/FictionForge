@@ -3,10 +3,13 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { BookOpen, Eye, Heart, Users, Star } from 'lucide-react'
+import { getStoryUrl } from "@/lib/url-utils";
 
 interface StoryCardCompactProps {
   story: {
     id: string
+  slug?: string | null;
+  short_id?: string | null;
     title: string
     blurb?: string | null
     tagline?: string | null
@@ -47,7 +50,7 @@ export function StoryCardCompact({ story, rank, showRank = false }: StoryCardCom
     : 'v1'
 
   return (
-    <Link href={`/story/${story.id}`} className="block group flex-shrink-0 w-[180px] sm:w-[200px]">
+    <Link href={getStoryUrl(story)} className="block group flex-shrink-0 w-[180px] sm:w-[200px]">
       <div className="bg-card border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow h-full flex flex-col">
         {/* Cover Image */}
         <div className="relative w-full aspect-[2/3] overflow-hidden bg-muted">

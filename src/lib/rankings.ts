@@ -25,7 +25,7 @@ export async function getRankings(options: RankingOptions): Promise<StoryCardDat
   let query = supabase
     .from('stories')
     .select(`
-      id,
+      id, slug, short_id,
       title,
       tagline,
       blurb,
@@ -143,7 +143,7 @@ export async function getPopularThisWeek(limit: number = 10, supabase?: Supabase
   const { data, error } = await client
     .from('stories')
     .select(`
-      id,
+      id, slug, short_id,
       title,
       tagline,
       blurb,
@@ -182,7 +182,7 @@ export async function getLatestUpdates(limit: number = 10, supabase?: SupabaseCl
   const { data, error } = await client
     .from('stories')
     .select(`
-      id,
+      id, slug, short_id,
       title,
       tagline,
       blurb,
@@ -221,7 +221,7 @@ export async function getMostFollowed(limit: number = 10, supabase?: SupabaseCli
   const { data, error } = await client
     .from('stories')
     .select(`
-      id,
+      id, slug, short_id,
       title,
       tagline,
       blurb,
@@ -263,7 +263,7 @@ export async function getNewReleases(limit: number = 10, supabase?: SupabaseClie
   const { data, error } = await client
     .from('stories')
     .select(`
-      id,
+      id, slug, short_id,
       title,
       tagline,
       blurb,
@@ -306,7 +306,7 @@ export async function getStaffPicks(limit: number = 10, supabase?: SupabaseClien
       display_order,
       note,
       stories!story_id(
-        id, title, tagline, blurb, cover_url, genres, tags, status,
+        id, slug, short_id, title, tagline, blurb, cover_url, genres, tags, status,
         total_views, follower_count, chapter_count, rating_average, rating_count,
         created_at, updated_at,
         profiles!author_id(username, display_name)
@@ -336,7 +336,7 @@ export async function getStoriesByGenre(genre: string, limit: number = 10, supab
   const { data, error } = await client
     .from('stories')
     .select(`
-      id, title, tagline, blurb, cover_url, genres, tags, status,
+      id, slug, short_id, title, tagline, blurb, cover_url, genres, tags, status,
       total_views, follower_count, chapter_count, rating_average, rating_count,
       created_at, updated_at,
       profiles!author_id(username, display_name)

@@ -7,6 +7,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
 import { StatusDropdown } from '@/components/story/StatusDropdown'
+import { getStoryUrl } from "@/lib/url-utils";
 
 interface LibraryItem {
   followId: string
@@ -16,6 +17,8 @@ interface LibraryItem {
   updatedAt: string
   story: {
     id: string
+  slug?: string | null
+  short_id?: string | null
     title: string
     tagline: string | null
     coverUrl: string | null
@@ -227,7 +230,7 @@ export function LibraryClient({ items: initialItems }: LibraryClientProps) {
               className="flex gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
             >
               {/* Cover image */}
-              <Link href={`/story/${item.story.id}`} className="shrink-0">
+              <Link href={getStoryUrl(item.story)} className="shrink-0">
                 {item.story.coverUrl ? (
                   <div className="relative w-20 h-28 sm:w-24 sm:h-32 rounded overflow-hidden">
                     <Image
@@ -248,7 +251,7 @@ export function LibraryClient({ items: initialItems }: LibraryClientProps) {
               {/* Story info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2 mb-1">
-                  <Link href={`/story/${item.story.id}`}>
+                  <Link href={getStoryUrl(item.story)}>
                     <h3 className="font-semibold line-clamp-2 hover:text-primary transition-colors">
                       {item.story.title}
                     </h3>
@@ -307,7 +310,7 @@ export function LibraryClient({ items: initialItems }: LibraryClientProps) {
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                  <Link href={`/story/${item.story.id}`}>
+                  <Link href={getStoryUrl(item.story)}>
                     <Button size="sm" variant="outline">
                       {item.progress.read > 0 && item.progress.read < item.progress.total ? 'Continue' : 'Read'}
                     </Button>

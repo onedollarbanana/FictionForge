@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import { GENRES } from '@/lib/constants';
+import { getStoryUrl } from '@/lib/url-utils';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -72,11 +73,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Dynamic: stories
   const { data: stories } = await supabase
     .from('stories')
-    .select('id, updated_at')
+    .select('id, slug, short_id, updated_at')
     .eq('status', 'published');
 
   const storyPages = (stories || []).map((story) => ({
-    url: `${baseUrl}/story/${story.id}`,
+    url: `${baseUrl}${getStoryUrl(story)}`,
     lastModified: new Date(story.updated_at),
     changeFrequency: 'weekly' as const,
     priority: 0.7,

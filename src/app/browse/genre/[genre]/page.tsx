@@ -77,7 +77,7 @@ export default async function GenrePage({
     .from('stories')
     .select(
       `
-      id,
+      id, slug, short_id,
       title,
       tagline,
       blurb,

@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { StatusDropdown } from './StatusDropdown'
 import { useState } from 'react'
 import { Star } from 'lucide-react'
+import { getStoryUrl } from "@/lib/url-utils";
 
 interface LibraryStoryCardProps {
   story: {
@@ -43,7 +44,7 @@ export function LibraryStoryCard({ story, status: initialStatus }: LibraryStoryC
   return (
     <div className="flex gap-4 p-4 border rounded-lg hover:border-primary/50 transition-colors bg-card">
       {/* Cover */}
-      <Link href={`/story/${story.id}`} className="shrink-0">
+      <Link href={getStoryUrl(story)} className="shrink-0">
         <div className="relative w-20 h-28 rounded overflow-hidden bg-muted">
           {story.cover_url ? (
             <Image
@@ -66,7 +67,7 @@ export function LibraryStoryCard({ story, status: initialStatus }: LibraryStoryC
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <Link href={`/story/${story.id}`}>
+            <Link href={getStoryUrl(story)}>
               <h3 className="font-semibold hover:text-primary transition-colors line-clamp-2">
                 {story.title}
               </h3>

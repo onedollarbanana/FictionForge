@@ -6,9 +6,12 @@ import { BookOpen, Eye, Heart, BookMarked, Clock, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { getStoryUrl } from "@/lib/url-utils";
 
 export interface StoryCardData {
   id: string;
+  slug?: string | null;
+  short_id?: string | null;
   title: string;
   tagline?: string | null;
   blurb?: string | null;
@@ -118,7 +121,7 @@ export function StoryCard({
 }: StoryCardProps) {
   const primaryGenre = story.genres?.[0] || "Fantasy";
   const gradientClass = genreGradients[primaryGenre] || genreGradients.Fantasy;
-  const linkHref = href || `/story/${story.id}`;
+  const linkHref = href || getStoryUrl(story);
   const authorUsername = getAuthorUsername(story);
 
   // Use updated_at for cache busting, fallback to stable value

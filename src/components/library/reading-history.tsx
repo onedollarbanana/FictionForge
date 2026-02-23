@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { formatDistanceToNow, format, isToday, isYesterday, isThisWeek } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { History, BookOpen } from 'lucide-react'
+import { getStoryUrl, getChapterUrl } from "@/lib/url-utils";
 
 interface ReadingEntry {
   chapterId: string
@@ -13,6 +14,8 @@ interface ReadingEntry {
   readAt: string
   story: {
     id: string
+    slug?: string | null
+    short_id?: string | null
     title: string
     coverUrl: string | null
     authorUsername: string
@@ -95,7 +98,7 @@ export function ReadingHistory({ entries, stats }: ReadingHistoryProps) {
             {group.entries.map((entry, idx) => (
               <Link
                 key={`${entry.chapterId}-${entry.readAt}-${idx}`}
-                href={`/story/${entry.story.id}/chapter/${entry.chapterId}`}
+                href={`${getStoryUrl(entry.story)}/chapter/${entry.chapterId}`}
                 className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 {entry.story.coverUrl ? (

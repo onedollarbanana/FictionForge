@@ -34,6 +34,8 @@ export async function getCommunityPicksLeaderboard(
 
   return (data || []).map((row: any) => ({
     id: row.id,
+    slug: row.slug,
+    short_id: row.shortId,
     title: row.title,
     tagline: row.tagline,
     blurb: row.blurb,
@@ -71,7 +73,7 @@ export async function getPastCommunityPicks(
       vote_count,
       rank,
       stories!story_id(
-        id, title, tagline, blurb, cover_url, genres, tags, status,
+        id, slug, short_id, title, tagline, blurb, cover_url, genres, tags, status,
         total_views, follower_count, chapter_count, rating_average, rating_count,
         word_count, created_at, updated_at,
         profiles!author_id(username, display_name)

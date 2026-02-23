@@ -25,7 +25,7 @@ export async function MoreFromAuthor({
   const { data: stories, error } = await supabase
     .from('stories')
     .select(`
-      id,
+      id, slug, short_id,
       title,
       tagline,
       blurb,

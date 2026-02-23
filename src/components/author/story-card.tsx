@@ -4,9 +4,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Star, Eye, Users, Heart } from "lucide-react";
+import { getStoryUrl } from "@/lib/url-utils";
 
 interface Story {
   id: string;
+  slug?: string | null;
+  short_id?: string | null;
   title: string;
   tagline: string | null;
   blurb: string;
@@ -46,7 +49,7 @@ export function AuthorStoryCard({ story }: StoryCardProps) {
   return (
     <div className="flex gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:shadow-md transition-shadow">
       {/* Cover */}
-      <Link href={`/story/${story.id}`} className="shrink-0">
+      <Link href={getStoryUrl(story)} className="shrink-0">
         {story.cover_url ? (
           <div className="relative w-20 h-28 rounded-lg overflow-hidden">
             <Image
@@ -68,7 +71,7 @@ export function AuthorStoryCard({ story }: StoryCardProps) {
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <Link href={`/story/${story.id}`}>
+            <Link href={getStoryUrl(story)}>
               <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 hover:text-blue-600 dark:hover:text-blue-400 line-clamp-1">
                 {story.title}
               </h3>
@@ -129,7 +132,7 @@ export function AuthorStoryCard({ story }: StoryCardProps) {
           <Link href={`/author/stories/${story.id}/chapters`}>
             <Button variant="outline" size="sm">Chapters</Button>
           </Link>
-          <Link href={`/story/${story.id}`}>
+          <Link href={getStoryUrl(story)}>
             <Button variant="ghost" size="sm">View</Button>
           </Link>
         </div>

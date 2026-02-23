@@ -37,7 +37,7 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
   const { data: stories, error } = await supabase
     .from('stories')
     .select(`
-      id,
+      id, slug, short_id,
       title,
       tagline,
       blurb,

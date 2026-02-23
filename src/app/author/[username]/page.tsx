@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BookOpen, Users, Calendar, FileText } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { getStoryUrl } from "@/lib/url-utils";
 import { AuthorTierCards } from "@/components/story/author-tier-cards";
 import { type TierName } from "@/lib/platform-config";
 
@@ -38,6 +39,7 @@ export default async function AuthorPage({ params }: PageProps) {
       id,
       title,
       slug,
+      short_id,
       blurb,
       cover_url,
       status,
@@ -162,7 +164,7 @@ export default async function AuthorPage({ params }: PageProps) {
             {publishedStories.map((story) => (
               <Link
                 key={story.id}
-                href={`/story/${story.slug}`}
+                href={getStoryUrl(story)}
                 className="flex gap-4 p-4 bg-card border rounded-lg hover:shadow-md transition-shadow"
               >
                 {/* Cover */}

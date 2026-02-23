@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import type { StoryCardData } from "./story-card";
+import { getStoryUrl } from "@/lib/url-utils";
 
 const statusColors: Record<string, string> = {
   ongoing: "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200",
@@ -77,7 +78,7 @@ export function BrowseStoryCard({ story, className }: BrowseStoryCardProps) {
       )}
     >
       {/* Cover Image */}
-      <Link href={`/story/${story.id}`} className="shrink-0 relative">
+      <Link href={getStoryUrl(story)} className="shrink-0 relative">
         {story.cover_url ? (
           <div className="relative w-24 h-36 sm:w-28 sm:h-40">
             <Image
@@ -112,7 +113,7 @@ export function BrowseStoryCard({ story, className }: BrowseStoryCardProps) {
         {/* Title + Status row */}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <Link href={`/story/${story.id}`}>
+            <Link href={getStoryUrl(story)}>
               <h3 className="font-semibold text-lg hover:text-primary transition-colors line-clamp-1 break-words">
                 {story.title}
               </h3>
