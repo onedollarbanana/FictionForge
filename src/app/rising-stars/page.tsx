@@ -1,76 +1,93 @@
-export const revalidate = 60
-import { createClient } from '@/lib/supabase/server';
-import { BookOpen } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { type StoryCardData } from '@/components/story/story-card';
-import { BrowseStoryGrid } from '@/components/story/browse-story-grid';
-import { GenreTagSort } from '@/components/browse/genre-tag-sort';
-import { getRisingStars } from '@/lib/rankings';
-import { enrichWithCommunityPicks } from '@/lib/community-picks';
+export const revalidate = 60;
+
+import { createClient } from "@/lib/supabase/server";
+import { BookOpen } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { type StoryCardData } from "@/components/story/story-card";
+import { DiscoveryFilter } from "@/components/discovery/discovery-filter";
+import { DiscoveryStoryList } from "@/components/discovery/discovery-story-list";
+import { enrichWithCommunityPicks } from "@/lib/community-picks";
 
 export const metadata = {
-  title: 'Rising Stars | Fictionry',
-  description: 'Stories gaining traction \u2014 ranked by engagement velocity',
+  title: "Rising Stars | Fictionry",
+  description: "Stories gaining traction — ranked by engagement velocity",
 };
 
 interface PageProps {
-  searchParams: Promise<{ sort?: string }>;
+  searchParams: Promise<{ genre?: string }>;
 }
 
 export default async function RisingStarsPage({ searchParams }: PageProps) {
-  const { sort = 'popular' } = await searchParams;
-  
-  let typedStories: StoryCardData[];
+  const params = await searchParams;
+  const genre = params.genre || "";
+  const supabase = await createClient();
 
-  if (sort === 'popular') {
-    // Use the real trending algorithm
-    typedStories = await getRisingStars(100);
-  } else {
-    // Fallback to standard query for other sorts
-    const supabase = await createClient();
-    const orderColumn = sort === 'newest' ? 'created_at' : 'updated_at';
+  // Fetch genres for filter
+  const { data: genres } = await supabase
+    .from("genres")
+    .select("name, slug")
+    .order("display_order");
 
-    const { data: stories, error } = await supabase
-      .from('stories')
-      .select(`
+  // Query story_rankings snapshot
+  const today = new Date().toISOString().split("T")[0];
+  let query = supabase
+    .from("story_rankings")
+    .select(
+      `rank, score, stories!story_id(
         id, slug, short_id, title, tagline, blurb, cover_url, genres, tags, status,
         total_views, follower_count, chapter_count, rating_average, rating_count,
         created_at, updated_at,
         profiles!author_id(username, display_name)
-      `)
-      .eq('visibility', 'published')
-      .gt('chapter_count', 0)
-      .order(orderColumn, { ascending: false })
-      .limit(100);
+      )`
+    )
+    .eq("page_slug", "rising-stars")
+    .eq("snapshot_date", today)
+    .order("rank", { ascending: true })
+    .limit(50);
 
-    if (error) console.error('Error:', error);
-    typedStories = (stories || []) as unknown as StoryCardData[];
+  if (genre) {
+    query = query.eq("genre", genre);
+  } else {
+    query = query.is("genre", null);
   }
 
-  const supabaseForEnrich = await createClient();
-  await enrichWithCommunityPicks(typedStories, supabaseForEnrich);
+  const { data, error } = await query;
+  if (error) console.error("Rising stars query error:", error);
+
+  // Flatten results
+  const stories = (data || []).map((r: any) => ({
+    ...(r.stories as any),
+    rank: r.rank,
+    score: r.score,
+  })) as (StoryCardData & { rank: number; score: number })[];
+
+  await enrichWithCommunityPicks(stories, supabase);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Rising Stars</h1>
-          <p className="text-muted-foreground mt-1">
-            Stories gaining traction \u2014 ranked by engagement velocity
-          </p>
-        </div>
-        <GenreTagSort currentSort={sort} />
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">Rising Stars</h1>
+        <p className="text-muted-foreground mt-1">
+          Stories gaining traction — ranked by engagement velocity
+        </p>
       </div>
 
-      {typedStories.length === 0 ? (
+      <div className="mb-6">
+        <DiscoveryFilter genres={genres || []} />
+      </div>
+
+      {stories.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No rising stars yet. Check back soon!</p>
+            <p className="text-muted-foreground">
+              No rising stars found{genre ? ` in ${genre}` : ""}. Check back
+              soon!
+            </p>
           </CardContent>
         </Card>
       ) : (
-        <BrowseStoryGrid stories={typedStories} />
+        <DiscoveryStoryList stories={stories} showRank />
       )}
     </div>
   );

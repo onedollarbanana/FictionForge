@@ -1,72 +1,104 @@
-export const revalidate = 60
-import { createClient } from '@/lib/supabase/server';
-import { BookOpen } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { type StoryCardData } from '@/components/story/story-card';
-import { BrowseStoryGrid } from '@/components/story/browse-story-grid';
-import { GenreTagSort } from '@/components/browse/genre-tag-sort';
-import { enrichWithCommunityPicks } from '@/lib/community-picks';
+export const revalidate = 60;
+
+import { createClient } from "@/lib/supabase/server";
+import { BookOpen } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { type StoryCardData } from "@/components/story/story-card";
+import { DiscoveryFilter } from "@/components/discovery/discovery-filter";
+import { DiscoveryStoryList } from "@/components/discovery/discovery-story-list";
+import { DiscoveryPagination } from "@/components/discovery/discovery-pagination";
+import { enrichWithCommunityPicks } from "@/lib/community-picks";
 
 export const metadata = {
-  title: 'New Releases | Fictionry',
-  description: 'Recently published stories',
+  title: "New Releases | Fictionry",
+  description: "Fresh stories just published in the last 60 days",
 };
 
+const PAGE_SIZE = 50;
+
 interface PageProps {
-  searchParams: Promise<{ sort?: string }>;
+  searchParams: Promise<{ genre?: string; page?: string }>;
 }
 
 export default async function NewReleasesPage({ searchParams }: PageProps) {
-  const { sort = 'newest' } = await searchParams;
+  const params = await searchParams;
+  const genre = params.genre || "";
+  const page = Math.max(1, parseInt(params.page || "1", 10));
+  const offset = (page - 1) * PAGE_SIZE;
+
   const supabase = await createClient();
 
-  let orderColumn = 'created_at';
-  const ascending = false;
-  if (sort === 'popular') orderColumn = 'total_views';
-  else if (sort === 'updated') orderColumn = 'updated_at';
+  // Fetch genres for filter
+  const { data: genres } = await supabase
+    .from("genres")
+    .select("name, slug")
+    .order("display_order");
 
-  const sixtyDaysAgo = new Date();
-  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+  // 60 days ago
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 60);
+  const cutoffStr = cutoff.toISOString();
 
-  const { data: stories, error } = await supabase
-    .from('stories')
-    .select(`
-      id, slug, short_id, title, tagline, blurb, cover_url, genres, tags, status,
-      total_views, follower_count, chapter_count, rating_average, rating_count,
-      created_at, updated_at,
-      profiles!author_id(username, display_name)
-    `)
-    .eq('visibility', 'published')
-    .gt('chapter_count', 0)
-    .gte('created_at', sixtyDaysAgo.toISOString())
-    .order(orderColumn, { ascending })
-    .limit(100);
+  let query = supabase
+    .from("stories")
+    .select(
+      `id, slug, short_id, title, tagline, blurb, cover_url, genres, tags, status,
+       total_views, follower_count, chapter_count, rating_average, rating_count,
+       created_at, updated_at,
+       profiles!author_id(username, display_name)`,
+      { count: "exact" }
+    )
+    .eq("visibility", "published")
+    .gt("chapter_count", 0)
+    .gte("created_at", cutoffStr)
+    .order("created_at", { ascending: false })
+    .range(offset, offset + PAGE_SIZE - 1);
 
-  if (error) console.error('Error:', error);
-  const typedStories = (stories || []) as unknown as StoryCardData[];
+  if (genre) {
+    query = query.contains("genres", [genre]);
+  }
+
+  const { data, count, error } = await query;
+  if (error) console.error("New releases query error:", error);
+
+  const typedStories = (data || []) as unknown as StoryCardData[];
+
   await enrichWithCommunityPicks(typedStories, supabase);
+
+  const totalPages = Math.ceil((count || 0) / PAGE_SIZE);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">New Releases</h1>
-          <p className="text-muted-foreground mt-1">
-            {typedStories.length} {typedStories.length === 1 ? 'story' : 'stories'}
-          </p>
-        </div>
-        <GenreTagSort currentSort={sort} />
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">New Releases</h1>
+        <p className="text-muted-foreground mt-1">
+          Fresh stories published in the last 60 days
+        </p>
+      </div>
+
+      <div className="mb-6">
+        <DiscoveryFilter genres={genres || []} />
       </div>
 
       {typedStories.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No new releases in the last 60 days.</p>
+            <p className="text-muted-foreground">
+              No new releases found{genre ? ` in ${genre}` : ""}. Check back
+              soon!
+            </p>
           </CardContent>
         </Card>
       ) : (
-        <BrowseStoryGrid stories={typedStories} />
+        <>
+          <DiscoveryStoryList stories={typedStories} />
+          <DiscoveryPagination
+            currentPage={page}
+            totalPages={totalPages}
+            basePath="/new-releases"
+          />
+        </>
       )}
     </div>
   );

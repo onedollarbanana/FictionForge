@@ -71,7 +71,7 @@ export async function MoreFromAuthor({
             More from {authorName}
           </div>
           <Link 
-            href={`/author/${authorUsername}`}
+            href={`/profile/${authorUsername}`}
             className="text-sm font-normal text-primary hover:underline"
           >
             View all

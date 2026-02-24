@@ -1,14 +1,16 @@
-export const revalidate = 60
+export const revalidate = 60;
+
 import { createClient } from "@/lib/supabase/server";
 import {
   getCommunityPicksLeaderboard,
   getPastCommunityPicks,
 } from "@/lib/community-picks";
 import type { CommunityPickStory } from "@/lib/community-picks";
-import { BrowseStoryCard } from "@/components/story/browse-story-card";
+import { StoryCard } from "@/components/story/story-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Info, Medal } from "lucide-react";
+import { getStoryUrl } from "@/lib/url-utils";
 
 function formatMonthTitle(dateStr: string): string {
   try {
@@ -23,6 +25,11 @@ function getCurrentMonth(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 }
+
+export const metadata = {
+  title: "Community Picks | Fictionry",
+  description: "Reader-voted favorite stories on Fictionry",
+};
 
 export default async function CommunityPicksPage() {
   const supabase = await createClient();
@@ -44,7 +51,7 @@ export default async function CommunityPicksPage() {
   const monthTitle = formatMonthTitle(currentMonth);
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl">
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
       <div className="flex items-center gap-3 mb-2">
         <Trophy className="h-7 w-7 text-amber-500" />
         <h1 className="text-3xl font-bold">Community Picks</h1>
@@ -57,11 +64,17 @@ export default async function CommunityPicksPage() {
           <div className="flex gap-3">
             <Info className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
             <div className="text-sm text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground">How Community Picks work</p>
+              <p className="font-medium text-foreground">
+                How Community Picks work
+              </p>
               <p>
-                Readers with <Badge variant="secondary" className="text-xs">Regular</Badge> rank
-                or higher (250+ XP) can nominate up to 3 stories per month. Stories must have at
-                least 10,000 words. Top nominated stories become Community Picks!
+                Readers with{" "}
+                <Badge variant="secondary" className="text-xs">
+                  Regular
+                </Badge>{" "}
+                rank or higher (250+ XP) can nominate up to 3 stories per month.
+                Stories must have at least 10,000 words. Top nominated stories
+                become Community Picks!
               </p>
             </div>
           </div>
@@ -82,17 +95,27 @@ export default async function CommunityPicksPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-3">
             {leaderboard.map((story, index) => (
-              <div key={story.id} className="relative">
-                <div className="absolute -left-1 -top-1 z-10 bg-amber-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow">
-                  {index + 1}
+              <div key={story.id} className="flex items-stretch gap-3">
+                <div className="flex items-center justify-center w-12 shrink-0">
+                  <span className="text-2xl font-bold text-amber-500">
+                    #{index + 1}
+                  </span>
                 </div>
-                <BrowseStoryCard story={story} />
-                <div className="absolute top-2 right-2 z-10">
-                  <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
-                    {story.nominationCount} {story.nominationCount === 1 ? "nomination" : "nominations"}
-                  </Badge>
+                <div className="flex-1 min-w-0 relative">
+                  <StoryCard story={story} variant="horizontal" />
+                  <div className="absolute top-2 right-2 z-10">
+                    <Badge
+                      variant="secondary"
+                      className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200"
+                    >
+                      {story.nominationCount}{" "}
+                      {story.nominationCount === 1
+                        ? "nomination"
+                        : "nominations"}
+                    </Badge>
+                  </div>
                 </div>
               </div>
             ))}
@@ -109,12 +132,15 @@ export default async function CommunityPicksPage() {
               <h3 className="text-lg font-medium mb-3 text-muted-foreground">
                 {formatMonthTitle(month)}
               </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-3">
                 {picks.map((story) => (
                   <div key={story.id} className="relative">
-                    <BrowseStoryCard story={story} />
+                    <StoryCard story={story} variant="horizontal" />
                     <div className="absolute top-2 right-2 z-10">
-                      <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+                      <Badge
+                        variant="secondary"
+                        className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200"
+                      >
                         {story.nominationCount} votes
                       </Badge>
                     </div>

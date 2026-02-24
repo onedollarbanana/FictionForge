@@ -121,7 +121,7 @@ export function BrowseStoryCard({ story, className }: BrowseStoryCardProps) {
             <div className="flex items-center gap-2 mt-0.5">
               {authorUsername ? (
                 <Link
-                  href={`/author/${authorUsername}`}
+                  href={`/profile/${authorUsername}`}
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
                   by {getAuthorName(story)}

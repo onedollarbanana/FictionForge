@@ -1,8 +1,9 @@
-export const revalidate = 60
+export const revalidate = 60;
+
 import { createClient } from "@/lib/supabase/server";
-import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tag, BookOpen } from "lucide-react";
+import { TagGrid } from "./tag-grid";
 
 export const metadata = {
   title: "Browse by Tag | Fictionry",
@@ -26,10 +27,12 @@ export default async function TagsPage() {
     });
   });
 
-  const sortedTags = Object.entries(tagCounts).sort(([, a], [, b]) => b - a);
+  const sortedTags = Object.entries(tagCounts)
+    .sort(([, a], [, b]) => b - a)
+    .map(([tag, count]) => ({ tag, count }));
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
       <div className="flex items-center gap-3 mb-2">
         <Tag className="h-7 w-7 text-primary" />
         <h1 className="text-3xl font-bold">Browse by Tag</h1>
@@ -48,23 +51,7 @@ export default async function TagsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          {sortedTags.map(([tag, count]) => (
-            <Link key={tag} href={`/browse/tag/${encodeURIComponent(tag)}`}>
-              <Card className="hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer h-full">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Tag className="h-4 w-4 text-primary flex-shrink-0" />
-                    <span className="font-medium text-sm truncate">{tag}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {count} {count === 1 ? "story" : "stories"}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
+        <TagGrid tags={sortedTags} />
       )}
     </div>
   );

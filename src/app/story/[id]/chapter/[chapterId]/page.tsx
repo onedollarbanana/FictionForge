@@ -377,7 +377,7 @@ export default async function ChapterReadingPage({ params }: PageProps) {
             <p className="opacity-70">
               By{" "}
               <Link
-                href={`/author/${chapter.stories?.profiles?.username}`}
+                href={`/profile/${chapter.stories?.profiles?.username}`}
                 className="hover:underline"
               >
                 {chapter.stories?.profiles?.username || "Unknown"}

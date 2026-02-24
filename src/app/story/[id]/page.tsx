@@ -301,7 +301,7 @@ export default async function StoryPage({ params }: PageProps) {
             author: {
               "@type": "Person",
               name: authorName,
-              url: `https://www.fictionry.com/author/${story.profiles?.username || ""}`,
+              url: `https://www.fictionry.com/profile/${story.profiles?.username || ""}`,
             },
             description: story.blurb || undefined,
             genre: story.genres || undefined,
@@ -374,7 +374,7 @@ export default async function StoryPage({ params }: PageProps) {
           </div>
           
           <Link 
-            href={`/author/${story.profiles?.username}`}
+            href={`/profile/${story.profiles?.username}`}
             className="text-muted-foreground hover:text-primary flex items-center gap-2 mb-4"
           >
             <User className="h-4 w-4" />
