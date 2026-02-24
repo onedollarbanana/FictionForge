@@ -120,7 +120,7 @@ export function BadgeSelectorClient({
                     </div>
                   )}
                   <p className="text-xs mt-1 truncate text-center">
-                    {ua.achievement.name}
+                    {ua.achievement.description}
                   </p>
                 </button>
               )

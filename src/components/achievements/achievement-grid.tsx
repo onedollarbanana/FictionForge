@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { AchievementCard } from './achievement-card'
-import type { Achievement, UserAchievement, AchievementCategory } from './types'
+import type { AchievementDefinition, UserAchievement, AchievementCategory } from './types'
 
 interface UserStats {
   commentCount: number
@@ -14,7 +14,7 @@ interface UserStats {
 }
 
 interface AchievementGridProps {
-  achievements: Achievement[]
+  achievements: AchievementDefinition[]
   userAchievements: UserAchievement[]
   userStats?: UserStats
   category?: AchievementCategory | 'all'
@@ -23,8 +23,8 @@ interface AchievementGridProps {
 }
 
 // Map stat_key to userStats property
-function getStatValue(statKey: string | null, stats?: UserStats): number | undefined {
-  if (!stats || !statKey) return undefined
+function getStatValue(trackId: string | null, stats?: UserStats): number | undefined {
+  if (!stats || !trackId) return undefined
   
   const mapping: Record<string, keyof UserStats> = {
     comment_count: 'commentCount',
@@ -35,7 +35,7 @@ function getStatValue(statKey: string | null, stats?: UserStats): number | undef
     account_age_days: 'accountAgeDays',
   }
   
-  const key = mapping[statKey]
+  const key = mapping[trackId]
   return key ? stats[key] : undefined
 }
 
@@ -68,12 +68,12 @@ export function AchievementGrid({
       filtered = filtered.filter(a => unlockedMap.has(a.id))
     }
 
-    // Sort: unlocked first, then by sort_order
+    // Sort: unlocked first, then by milestone level
     return filtered.sort((a, b) => {
       const aUnlocked = unlockedMap.has(a.id) ? 0 : 1
       const bUnlocked = unlockedMap.has(b.id) ? 0 : 1
       if (aUnlocked !== bUnlocked) return aUnlocked - bUnlocked
-      return a.sortOrder - b.sortOrder
+      return (a.milestoneLevel ?? 0) - (b.milestoneLevel ?? 0)
     })
   }, [achievements, category, showLocked, unlockedMap])
 
@@ -93,7 +93,7 @@ export function AchievementGrid({
             key={achievement.id}
             achievement={achievement}
             userAchievement={unlockedMap.get(achievement.id)}
-            currentProgress={getStatValue(achievement.statKey, userStats)}
+            currentProgress={getStatValue(achievement.trackId, userStats)}
           />
         ))}
       </div>

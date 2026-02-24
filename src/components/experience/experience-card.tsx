@@ -13,15 +13,18 @@ interface ExperienceCardProps {
 
 // Maps current tier to next tier with its minimum score threshold
 const nextTierMap: Record<ExperienceTier, { tier: ExperienceTier; minScore: number } | null> = {
-  newcomer: { tier: 'reader', minScore: 100 },
-  reader: { tier: 'regular', minScore: 250 },
-  regular: { tier: 'contributor', minScore: 500 },
-  contributor: { tier: 'veteran', minScore: 1000 },
-  veteran: { tier: 'master', minScore: 2500 },
-  master: { tier: 'legend', minScore: 5000 },
-  legend: { tier: 'elite', minScore: 10000 },
-  elite: { tier: 'mythic', minScore: 25000 },
-  mythic: null
+  newcomer: { tier: 'regular', minScore: 100 },
+  regular: { tier: 'established', minScore: 350 },
+  established: { tier: 'veteran', minScore: 750 },
+  veteran: { tier: 'elite', minScore: 1500 },
+  elite: { tier: 'legend', minScore: 3000 },
+  legend: { tier: 'mythic', minScore: 6000 },
+  mythic: { tier: 'transcendent', minScore: 10000 },
+  transcendent: { tier: 'celestial', minScore: 20000 },
+  celestial: { tier: 'immortal', minScore: 35000 },
+  immortal: { tier: 'godlike', minScore: 60000 },
+  godlike: { tier: 'omniscient', minScore: 100000 },
+  omniscient: null
 }
 
 export function ExperienceCard({ experience, showDetails = true }: ExperienceCardProps) {
@@ -58,14 +61,14 @@ export function ExperienceCard({ experience, showDetails = true }: ExperienceCar
           <div className="flex items-center gap-3">
             <ExperienceBadge tier={tier} size="lg" />
             <div>
-              <p className="font-semibold capitalize">{tier}</p>
+              <p className="font-semibold">{config.label}</p>
               <p className="text-sm text-muted-foreground">{xpScore.toLocaleString()} XP</p>
             </div>
           </div>
           {nextTier && (
             <div className="text-right text-sm text-muted-foreground">
               <TrendingUp className="h-4 w-4 inline mr-1" />
-              Next: {nextTier.tier}
+              Next: {tierConfig[nextTier.tier].label}
             </div>
           )}
         </div>
@@ -73,7 +76,7 @@ export function ExperienceCard({ experience, showDetails = true }: ExperienceCar
         {showDetails && nextTier && (
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span>Progress to {nextTier.tier}</span>
+              <span>Progress to {tierConfig[nextTier.tier].label}</span>
               <span>{Math.round(progressInTier)}%</span>
             </div>
             <Progress value={progressInTier} className="h-2" />

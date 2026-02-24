@@ -81,14 +81,14 @@ interface AchievementItem {
   unlockedAt: string | null
   achievement: {
     id: string
-    name: string
     description: string
-    icon: string
+    icon: string | null
     category: string
     xpReward: number
-    sortOrder: number
-    threshold: number
-    statKey: string
+    trackId: string
+    trackType: string
+    milestoneLevel: number | null
+    thresholdValue: number
   }
 }
 
@@ -695,7 +695,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                       >
                         <AchievementBadge achievement={item.achievement} size="sm" />
                         <div className="min-w-0">
-                          <p className="font-medium text-sm truncate">{item.achievement.name}</p>
+                          <p className="font-medium text-sm truncate">{item.achievement.description}</p>
                           <p className="text-xs text-muted-foreground">+{item.achievement.xpReward} XP</p>
                         </div>
                       </div>

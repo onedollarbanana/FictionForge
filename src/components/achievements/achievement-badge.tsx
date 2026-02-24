@@ -10,9 +10,8 @@ import {
 
 // Minimal achievement data needed for badge display
 interface BadgeAchievement {
-  name: string
   description: string
-  icon: string
+  icon: string | null
 }
 
 interface AchievementBadgeProps {
@@ -45,9 +44,9 @@ export function AchievementBadge({
         className
       )}
       role="img"
-      aria-label={achievement.name}
+      aria-label={achievement.description}
     >
-      {achievement.icon}
+      {achievement.icon || '🏆'}
     </span>
   )
 
@@ -63,8 +62,7 @@ export function AchievementBadge({
         </TooltipTrigger>
         <TooltipContent>
           <div className="text-center">
-            <p className="font-semibold">{achievement.name}</p>
-            <p className="text-xs text-muted-foreground">{achievement.description}</p>
+            <p className="font-semibold">{achievement.description}</p>
             {!unlocked && (
               <p className="text-xs text-amber-500 mt-1">🔒 Locked</p>
             )}

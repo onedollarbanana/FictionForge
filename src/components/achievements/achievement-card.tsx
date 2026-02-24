@@ -5,20 +5,22 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Check, Lock } from 'lucide-react'
-import type { Achievement, UserAchievement } from './types'
+import type { AchievementDefinition, UserAchievement } from './types'
 
 interface AchievementCardProps {
-  achievement: Achievement
+  achievement: AchievementDefinition
   userAchievement?: UserAchievement
   currentProgress?: number // Current stat value for progress tracking
   className?: string
 }
 
 const categoryColors: Record<string, { bg: string; text: string }> = {
-  reader: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-300' },
-  reviewer: { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300' },
-  author: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-300' },
-  loyalty: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-300' },
+  reading: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-300' },
+  writing: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-300' },
+  social: { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300' },
+  popularity: { bg: 'bg-pink-100 dark:bg-pink-900/30', text: 'text-pink-700 dark:text-pink-300' },
+  rankings: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-300' },
+  special: { bg: 'bg-cyan-100 dark:bg-cyan-900/30', text: 'text-cyan-700 dark:text-cyan-300' },
 }
 
 export function AchievementCard({
@@ -28,11 +30,11 @@ export function AchievementCard({
   className,
 }: AchievementCardProps) {
   const isUnlocked = !!userAchievement
-  const colors = categoryColors[achievement.category] || categoryColors.reader
+  const colors = categoryColors[achievement.category] || categoryColors.reading
   
   // Calculate progress percentage
-  const progressPercent = achievement.threshold && currentProgress !== undefined
-    ? Math.min(100, Math.round((currentProgress / achievement.threshold) * 100))
+  const progressPercent = achievement.thresholdValue && currentProgress !== undefined
+    ? Math.min(100, Math.round((currentProgress / achievement.thresholdValue) * 100))
     : isUnlocked ? 100 : 0
 
   return (
@@ -64,7 +66,7 @@ export function AchievementCard({
               !isUnlocked && 'grayscale'
             )}
           >
-            {isUnlocked ? achievement.icon : <Lock className="h-5 w-5 text-muted-foreground" />}
+            {isUnlocked ? (achievement.icon || '🏆') : <Lock className="h-5 w-5 text-muted-foreground" />}
           </div>
           
           {/* Content */}
@@ -74,7 +76,7 @@ export function AchievementCard({
                 'font-semibold text-sm truncate',
                 !isUnlocked && 'text-muted-foreground'
               )}>
-                {achievement.name}
+                {achievement.description}
               </h3>
               <Badge 
                 variant="secondary" 
@@ -84,15 +86,11 @@ export function AchievementCard({
               </Badge>
             </div>
             
-            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-              {achievement.description}
-            </p>
-            
             {/* Progress bar for locked achievements */}
-            {!isUnlocked && achievement.threshold && currentProgress !== undefined && (
+            {!isUnlocked && achievement.thresholdValue && currentProgress !== undefined && (
               <div className="mt-2">
                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>{currentProgress.toLocaleString()} / {achievement.threshold.toLocaleString()}</span>
+                  <span>{currentProgress.toLocaleString()} / {achievement.thresholdValue.toLocaleString()}</span>
                   <span>{progressPercent}%</span>
                 </div>
                 <Progress value={progressPercent} className="h-1.5" />

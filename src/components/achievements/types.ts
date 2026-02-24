@@ -1,36 +1,48 @@
-// Achievement types - no "use client" directive since these are just types
+// Achievement types for new track-based system
 
-export type AchievementCategory = 'reader' | 'reviewer' | 'author' | 'loyalty'
+export type AchievementCategory = 'reading' | 'writing' | 'social' | 'popularity' | 'rankings' | 'special'
+export type AchievementTrackType = 'progressive' | 'one_time'
 
-export interface Achievement {
+export interface AchievementDefinition {
   id: string
-  name: string
-  description: string
+  trackId: string
+  trackType: AchievementTrackType
   category: AchievementCategory
-  icon: string
-  statKey: string  // e.g., 'comment_count', 'review_count', 'total_words'
-  threshold: number
+  description: string
+  milestoneLevel: number | null
+  thresholdValue: number
   xpReward: number
-  sortOrder: number  // Used for display ordering
+  icon: string | null
 }
 
 export interface UserAchievement {
+  id: string
   achievementId: string
   unlockedAt: string
-  achievement: Achievement
+  achievement: AchievementDefinition
 }
 
-// For profile preview - partial achievement data
+// For grouping progressive achievements into tracks
+export interface AchievementTrack {
+  trackId: string
+  trackType: AchievementTrackType
+  category: AchievementCategory
+  icon: string | null
+  milestones: AchievementDefinition[]
+  userProgress: UserAchievement[] // which milestones user has unlocked
+}
+
+// For profile preview
 export interface AchievementPreview {
   id: string
-  name: string
-  icon: string
+  description: string
+  icon: string | null
   category: AchievementCategory
 }
 
-// Featured badge from get_featured_badges function
+// Featured badge from profile
 export interface FeaturedBadge {
   achievementId: string
   displayOrder: number
-  achievement: Achievement
+  achievement: AchievementDefinition
 }

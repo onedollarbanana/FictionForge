@@ -4,9 +4,9 @@ import { Metadata } from 'next'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { Trophy, BookOpen, Star, Pen, Heart } from 'lucide-react'
+import { Trophy, BookOpen, Pen, Users, TrendingUp, Award, Sparkles } from 'lucide-react'
 import { AchievementGrid } from '@/components/achievements'
-import type { Achievement, UserAchievement, AchievementCategory } from '@/components/achievements/types'
+import type { AchievementDefinition, UserAchievement, AchievementCategory } from '@/components/achievements/types'
 import { BadgeSelectorClient } from './badge-selector-client'
 
 export const metadata: Metadata = {
@@ -15,17 +15,21 @@ export const metadata: Metadata = {
 }
 
 const categoryIcons: Record<AchievementCategory, typeof Trophy> = {
-  reader: BookOpen,
-  reviewer: Star,
-  author: Pen,
-  loyalty: Heart,
+  reading: BookOpen,
+  writing: Pen,
+  social: Users,
+  popularity: TrendingUp,
+  rankings: Award,
+  special: Sparkles,
 }
 
 const categoryLabels: Record<AchievementCategory, string> = {
-  reader: 'Reader',
-  reviewer: 'Reviewer',
-  author: 'Author',
-  loyalty: 'Loyalty',
+  reading: 'Reading',
+  writing: 'Writing',
+  social: 'Social',
+  popularity: 'Popularity',
+  rankings: 'Rankings',
+  special: 'Special',
 }
 
 export default async function AchievementsPage() {
@@ -39,7 +43,7 @@ export default async function AchievementsPage() {
 
   // Get all achievements
   const { data: allAchievementsResult } = await supabase.rpc('get_all_achievements')
-  const allAchievements: Achievement[] = (allAchievementsResult as Achievement[]) || []
+  const allAchievements: AchievementDefinition[] = (allAchievementsResult as AchievementDefinition[]) || []
 
   // Get user's unlocked achievements
   const { data: userAchievementsResult } = await supabase
@@ -65,7 +69,7 @@ export default async function AchievementsPage() {
   } | null
 
   // Calculate stats per category
-  const categories: AchievementCategory[] = ['reader', 'reviewer', 'author', 'loyalty']
+  const categories: AchievementCategory[] = ['reading', 'writing', 'social', 'popularity', 'rankings', 'special']
   const categoryStats = categories.map(cat => {
     const total = allAchievements.filter(a => a.category === cat).length
     const unlocked = userAchievements.filter(ua => 
@@ -117,7 +121,7 @@ export default async function AchievementsPage() {
             </div>
 
             {/* Category Breakdown */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-6">
               {categoryStats.map(({ category, total, unlocked, percentage }) => {
                 const Icon = categoryIcons[category]
                 return (

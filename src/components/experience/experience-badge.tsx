@@ -3,15 +3,8 @@
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { 
-  Sprout, 
-  BookOpen, 
-  Pen, 
-  Shield, 
-  Crown,
-  Star,
-  Gem,
-  Flame,
-  Sparkles
+  Sprout, BookOpen, Pen, Shield, Crown, Star, Gem, Flame, Sparkles,
+  Zap, Globe, Sun
 } from 'lucide-react'
 import type { ExperienceTier } from './types'
 
@@ -36,26 +29,19 @@ export const tierConfig: Record<ExperienceTier, {
     bgColor: 'bg-zinc-100 dark:bg-zinc-800',
     description: 'Welcome to Fictionry! Start reading and engaging to level up.'
   },
-  reader: {
-    label: 'Reader',
+  regular: {
+    label: 'Regular',
     icon: BookOpen,
     color: 'text-blue-600 dark:text-blue-400',
     bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-    description: 'An active reader who enjoys exploring stories.'
+    description: 'An active member of the community.'
   },
-  regular: {
-    label: 'Regular',
+  established: {
+    label: 'Established',
     icon: Star,
     color: 'text-teal-600 dark:text-teal-400',
     bgColor: 'bg-teal-100 dark:bg-teal-900/30',
-    description: 'A consistent member of the community.'
-  },
-  contributor: {
-    label: 'Contributor',
-    icon: Pen,
-    color: 'text-purple-600 dark:text-purple-400',
-    bgColor: 'bg-purple-100 dark:bg-purple-900/30',
-    description: 'Actively contributes reviews and comments.'
+    description: 'A consistent and recognized community member.'
   },
   veteran: {
     label: 'Veteran',
@@ -64,12 +50,12 @@ export const tierConfig: Record<ExperienceTier, {
     bgColor: 'bg-amber-100 dark:bg-amber-900/30',
     description: 'A seasoned member with valuable experience.'
   },
-  master: {
-    label: 'Master',
-    icon: Crown,
-    color: 'text-orange-600 dark:text-orange-400',
-    bgColor: 'bg-orange-100 dark:bg-orange-900/30',
-    description: 'A highly experienced and respected member.'
+  elite: {
+    label: 'Elite',
+    icon: Gem,
+    color: 'text-purple-600 dark:text-purple-400',
+    bgColor: 'bg-purple-100 dark:bg-purple-900/30',
+    description: 'Among the most dedicated members.'
   },
   legend: {
     label: 'Legend',
@@ -78,19 +64,47 @@ export const tierConfig: Record<ExperienceTier, {
     bgColor: 'bg-red-100 dark:bg-red-900/30',
     description: 'A legendary contributor to the community.'
   },
-  elite: {
-    label: 'Elite',
-    icon: Gem,
-    color: 'text-cyan-600 dark:text-cyan-400',
-    bgColor: 'bg-cyan-100 dark:bg-cyan-900/30',
-    description: 'Among the most dedicated members.'
-  },
   mythic: {
     label: 'Mythic',
+    icon: Crown,
+    color: 'text-orange-600 dark:text-orange-400',
+    bgColor: 'bg-orange-100 dark:bg-orange-900/30',
+    description: 'Truly mythical dedication and contribution.'
+  },
+  transcendent: {
+    label: 'Transcendent',
+    icon: Sparkles,
+    color: 'text-cyan-600 dark:text-cyan-400',
+    bgColor: 'bg-cyan-100 dark:bg-cyan-900/30',
+    description: 'Transcending ordinary achievement.'
+  },
+  celestial: {
+    label: 'Celestial',
+    icon: Globe,
+    color: 'text-indigo-600 dark:text-indigo-400',
+    bgColor: 'bg-gradient-to-r from-indigo-100 to-blue-100 dark:from-indigo-900/30 dark:to-blue-900/30',
+    description: 'A celestial presence in the community.'
+  },
+  immortal: {
+    label: 'Immortal',
+    icon: Zap,
+    color: 'text-yellow-600 dark:text-yellow-400',
+    bgColor: 'bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30',
+    description: 'Your legacy will endure forever.'
+  },
+  godlike: {
+    label: 'Godlike',
+    icon: Sun,
+    color: 'text-rose-600 dark:text-rose-400',
+    bgColor: 'bg-gradient-to-r from-rose-100 to-pink-100 dark:from-rose-900/30 dark:to-pink-900/30',
+    description: 'Approaching the pinnacle of all achievement.'
+  },
+  omniscient: {
+    label: 'Omniscient',
     icon: Sparkles,
     color: 'text-yellow-500 dark:text-yellow-400',
-    bgColor: 'bg-gradient-to-r from-yellow-100 to-amber-100 dark:from-yellow-900/30 dark:to-amber-900/30',
-    description: 'The pinnacle of community achievement.'
+    bgColor: 'bg-gradient-to-r from-yellow-100 via-amber-100 to-orange-100 dark:from-yellow-900/30 dark:via-amber-900/30 dark:to-orange-900/30',
+    description: 'The absolute pinnacle. You have seen and done it all.'
   }
 }
 

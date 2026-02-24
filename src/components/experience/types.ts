@@ -3,14 +3,17 @@
 
 export type ExperienceTier = 
   | 'newcomer' 
-  | 'reader' 
   | 'regular'
-  | 'contributor' 
+  | 'established' 
   | 'veteran' 
-  | 'master'
-  | 'legend'
   | 'elite'
+  | 'legend'
   | 'mythic'
+  | 'transcendent'
+  | 'celestial'
+  | 'immortal'
+  | 'godlike'
+  | 'omniscient'
 
 export interface ExperienceData {
   xpScore: number
@@ -20,4 +23,6 @@ export interface ExperienceData {
   tierMinScore: number
   tierMaxScore: number
   progressInTier: number
+  currentStreak: number
+  longestStreak: number
 }
