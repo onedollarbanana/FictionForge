@@ -23,6 +23,7 @@ import { getCommunityPickBadge } from "@/lib/community-picks";
 import { AuthorTierCards } from "@/components/story/author-tier-cards";
 import { type TierName } from "@/lib/platform-config";
 import { ShareButtons } from "@/components/ui/share-buttons";
+import { SignupCta } from "@/components/onboarding/signup-cta";
 import type { Metadata } from "next";
 import { isLegacyUuid, parseStoryParam, getStoryUrl, getAbsoluteStoryUrl, getChapterUrl } from "@/lib/url-utils";
 
@@ -501,6 +502,12 @@ export default async function StoryPage({ params }: PageProps) {
               {story.visibility === 'published' && (
                 <NominateButton storyId={storyId} storyWordCount={totalWords} />
               )}
+            </div>
+          )}
+          {/* Signup CTA for logged-out users */}
+          {!user && (
+            <div className="mt-4">
+              <SignupCta variant="story" />
             </div>
           )}
         </div>
