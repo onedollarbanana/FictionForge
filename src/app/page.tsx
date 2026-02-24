@@ -178,7 +178,8 @@ export default async function Home() {
             author_name: authorName || "Unknown",
             updated_at: story?.updated_at || new Date().toISOString(),
           };
-        });
+        })
+        .filter((item: { continue_chapter_number: number; total_chapters: number }) => item.continue_chapter_number <= item.total_chapters);
     }
 
     // Fetch "Because you read" and collaborative recommendations

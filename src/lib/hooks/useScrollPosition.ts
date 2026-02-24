@@ -15,6 +15,7 @@ export function useScrollPosition({ storyId, chapterId, chapterNumber, enabled =
   const [showResumeToast, setShowResumeToast] = useState(false)
   const lastSavedPosition = useRef(0)
   const markedAsRead = useRef(false)
+  const isAlreadyRead = useRef(false)
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Restore scroll position on mount — only if saved chapter matches current chapter
@@ -28,6 +29,22 @@ export function useScrollPosition({ storyId, chapterId, chapterNumber, enabled =
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
+        setIsRestored(true)
+        return
+      }
+
+      // Check if this chapter is already marked as read
+      const { data: readData } = await supabase
+        .from('chapter_reads')
+        .select('chapter_id')
+        .eq('user_id', user.id)
+        .eq('chapter_id', chapterId)
+        .single()
+
+      const alreadyRead = !!readData
+      isAlreadyRead.current = alreadyRead
+
+      if (alreadyRead) {
         setIsRestored(true)
         return
       }
@@ -111,6 +128,7 @@ export function useScrollPosition({ storyId, chapterId, chapterNumber, enabled =
     if (!enabled || !isRestored) return
 
     const handleScroll = () => {
+      if (isAlreadyRead.current) return
       const contentEl = document.getElementById('chapter-content')
       if (!contentEl) return
       const rect = contentEl.getBoundingClientRect()
@@ -140,6 +158,7 @@ export function useScrollPosition({ storyId, chapterId, chapterNumber, enabled =
 
     // Save on page leave
     const handleBeforeUnload = () => {
+      if (isAlreadyRead.current) return
       const contentEl = document.getElementById('chapter-content')
       if (!contentEl) return
       const contentTop = contentEl.offsetTop

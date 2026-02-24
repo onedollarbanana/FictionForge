@@ -58,6 +58,8 @@ interface StoryCardProps {
   children?: React.ReactNode;
   /** Hide author name in display */
   hideAuthor?: boolean;
+  /** Rank number to display inside card */
+  rank?: number;
 }
 
 // Genre color mapping for gradient fallbacks
@@ -122,6 +124,7 @@ export function StoryCard({
   children,
   hideAuthor = false,
   expandable = false,
+  rank,
 }: StoryCardProps) {
   const primaryGenre = story.genres?.[0] || "Fantasy";
   const gradientClass = genreGradients[primaryGenre] || genreGradients.Fantasy;
@@ -150,21 +153,21 @@ export function StoryCard({
         className
       )}>
         {/* Cover */}
-        <Link href={linkHref} className="shrink-0">
+        <Link href={linkHref} className="shrink-0 self-stretch">
           {story.cover_url ? (
-            <div className="relative w-20 h-28">
+            <div className="relative w-24 md:w-28 h-auto min-h-[7rem]">
               <Image
                 src={`${story.cover_url}?t=${imageTimestamp}`}
                 alt={`Cover for ${story.title}`}
                 fill
-                sizes="80px"
+                sizes="112px"
                 className="object-cover rounded"
                 loading="lazy"
               />
             </div>
           ) : (
             <div className={cn(
-              "w-20 h-28 rounded flex items-center justify-center bg-gradient-to-br",
+              "w-24 md:w-28 h-auto min-h-[7rem] rounded flex items-center justify-center bg-gradient-to-br",
               gradientClass
             )}>
               <BookOpen className="h-6 w-6 text-white/40" />
@@ -177,7 +180,7 @@ export function StoryCard({
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
               <Link href={linkHref}>
-                <h3 className="font-semibold text-lg hover:text-primary transition-colors line-clamp-2">
+                <h3 className="font-semibold text-lg md:text-xl hover:text-primary transition-colors line-clamp-2">
                   {story.title}
                 </h3>
               </Link>
@@ -185,35 +188,43 @@ export function StoryCard({
               {!hideAuthor && (authorUsername ? (
                 <Link 
                   href={`/profile/${authorUsername}`}
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                  className="text-sm md:text-base text-muted-foreground hover:text-primary transition-colors"
                 >
                   by {getAuthorName(story)}
                 </Link>
               ) : (
-                <p className="text-sm text-muted-foreground">by {getAuthorName(story)}</p>
+                <p className="text-sm md:text-base text-muted-foreground">by {getAuthorName(story)}</p>
               ))}
             </div>
 
-            {story.status && (
-              <span className={cn(
-                "px-2 py-0.5 rounded text-xs font-medium shrink-0",
-                statusColors[story.status] || statusColors.ongoing
-              )}>
-                {story.status.charAt(0).toUpperCase() + story.status.slice(1)}
-              </span>
-            )}
+            {/* Status + Rank column */}
+            <div className="flex flex-col items-end gap-1 shrink-0">
+              {story.status && (
+                <span className={cn(
+                  "px-2 py-0.5 rounded text-xs font-medium",
+                  statusColors[story.status] || statusColors.ongoing
+                )}>
+                  {story.status.charAt(0).toUpperCase() + story.status.slice(1)}
+                </span>
+              )}
+              {rank != null && (
+                <span className="text-2xl md:text-3xl font-bold text-primary/70">
+                  #{rank}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Tagline */}
           {story.tagline && (
-            <p className={`text-sm font-medium text-primary/80 mt-1 ${expandable && expanded ? "" : "line-clamp-2"}`}>
+            <p className={`text-sm md:text-base font-medium text-primary/80 mt-1 ${expandable && expanded ? "" : "line-clamp-1"}`}>
               {story.tagline}
             </p>
           )}
 
-          {/* Blurb (fallback if no tagline) */}
-          {!story.tagline && story.blurb && (
-            <p className={`text-sm text-muted-foreground mt-1 ${expandable && expanded ? "" : "line-clamp-2"}`}>
+          {/* Blurb */}
+          {story.blurb && (
+            <p className={`text-sm md:text-base text-muted-foreground mt-1 ${expandable && expanded ? "" : "line-clamp-2"}`}>
               {story.blurb}
             </p>
           )}
@@ -241,7 +252,7 @@ export function StoryCard({
           )}
 
           {/* Stats row */}
-          <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-3 mt-2 text-xs md:text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <BookMarked className="h-3 w-3" />
               {story.chapter_count || 0} ch
@@ -268,12 +279,12 @@ export function StoryCard({
             <button
               type="button"
               onClick={() => setExpanded(!expanded)}
-              className="flex items-center gap-1 mt-2 text-xs text-muted-foreground hover:text-primary transition-colors"
+              className="inline-flex items-center gap-1 mt-2 px-3 py-1.5 text-xs md:text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-full transition-colors"
             >
               {expanded ? (
-                <>Show less <ChevronUp className="h-3 w-3" /></>
+                <>Show less <ChevronUp className="h-3.5 w-3.5" /></>
               ) : (
-                <>Show more <ChevronDown className="h-3 w-3" /></>
+                <>Show more <ChevronDown className="h-3.5 w-3.5" /></>
               )}
             </button>
           )}
