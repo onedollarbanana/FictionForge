@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminSupabase } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase-admin';
 
 export async function POST(request: NextRequest) {
   // Verify authorization - accept either admin auth or cron secret
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const adminSupabase = getAdminSupabase();
+    const adminSupabase = createAdminClient();
     const { data, error } = await adminSupabase.rpc('snapshot_rankings');
     
     if (error) {
