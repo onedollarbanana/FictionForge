@@ -42,26 +42,38 @@ export function ChapterCompleteCard({
   shareTitle,
   reportButton,
 }: ChapterCompleteCardProps) {
-  // Safety net: mark chapter as read when user reaches the end-of-chapter card
+  // Safety net: mark chapter as read when user scrolls to see this card (not on mount)
   const markedRead = useRef(false)
+  const cardRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    if (markedRead.current || !currentUserId) return
-    markedRead.current = true
+    if (!currentUserId || !cardRef.current) return
 
-    const markRead = async () => {
-      const supabase = createClient()
-      const { error } = await supabase.from('chapter_reads').upsert({
-        chapter_id: chapterId,
-        story_id: storyId,
-        user_id: currentUserId,
-      }, { onConflict: 'user_id,chapter_id' })
-      if (error) console.error('Error marking chapter as read:', error)
-    }
-    markRead()
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !markedRead.current) {
+          markedRead.current = true
+          const markRead = async () => {
+            const supabase = createClient()
+            const { error } = await supabase.from('chapter_reads').upsert({
+              chapter_id: chapterId,
+              story_id: storyId,
+              user_id: currentUserId,
+            }, { onConflict: 'user_id,chapter_id' })
+            if (error) console.error('Error marking chapter as read:', error)
+          }
+          markRead()
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.5 } // Card must be 50% visible
+    )
+
+    observer.observe(cardRef.current)
+    return () => observer.disconnect()
   }, [chapterId, storyId, currentUserId])
 
   return (
-    <div className="mt-10 mb-4">
+    <div ref={cardRef} className="mt-10 mb-4">
       {/* Divider */}
       <div className="flex items-center gap-3 mb-6">
         <div className="flex-1 h-px bg-current opacity-10" />
