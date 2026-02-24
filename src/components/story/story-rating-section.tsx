@@ -8,11 +8,6 @@ import { showToast } from '@/components/ui/toast';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-interface StoryRatingSectionProps {
-  storyId: string;
-  authorId: string;
-}
-
 interface RatingStats {
   averageRating: number;
   ratingCount: number;
@@ -26,22 +21,37 @@ interface UserRating {
   character_rating: number | null;
 }
 
-export function StoryRatingSection({ storyId, authorId }: StoryRatingSectionProps) {
-  const [stats, setStats] = useState<RatingStats | null>(null);
-  const [userRating, setUserRating] = useState<UserRating | null>(null);
-  const [chaptersRead, setChaptersRead] = useState<number>(0);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+interface StoryRatingSectionProps {
+  storyId: string;
+  authorId: string;
+  // New server-provided initial data
+  initialStats?: { averageRating: number; ratingCount: number } | null;
+  initialUserRating?: UserRating | null;
+  initialChaptersRead?: number;
+  initialUserId?: string | null;
+}
+
+export function StoryRatingSection({ storyId, authorId, initialStats, initialUserRating, initialChaptersRead, initialUserId }: StoryRatingSectionProps) {
+  const [stats, setStats] = useState<RatingStats | null>(initialStats ?? null);
+  const [userRating, setUserRating] = useState<UserRating | null>(initialUserRating ?? null);
+  const [chaptersRead, setChaptersRead] = useState<number>(initialChaptersRead ?? 0);
+  const [userId, setUserId] = useState<string | null>(initialUserId ?? null);
+  const [isLoading, setIsLoading] = useState(!initialStats); // Only show loading if no initial data
   const [isSaving, setIsSaving] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   
   // Local state for editing
-  const [editRating, setEditRating] = useState<UserRating>({
-    overall_rating: 0,
-    style_rating: null,
-    story_rating: null,
-    grammar_rating: null,
-    character_rating: null,
+  const [editRating, setEditRating] = useState<UserRating>(() => {
+    if (initialUserRating) {
+      return initialUserRating;
+    }
+    return {
+      overall_rating: 0,
+      style_rating: null,
+      story_rating: null,
+      grammar_rating: null,
+      character_rating: null,
+    };
   });
   
   const supabase = createClient();
@@ -50,6 +60,7 @@ export function StoryRatingSection({ storyId, authorId }: StoryRatingSectionProp
   const isOwnStory = userId === authorId;
   
   useEffect(() => {
+    if (initialStats !== undefined) return; // Server already provided data
     loadData();
   }, [storyId]);
   

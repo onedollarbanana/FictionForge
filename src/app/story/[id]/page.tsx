@@ -9,7 +9,7 @@ import { ChapterReadToggle } from "@/components/story/chapter-read-toggle";
 import { formatDistanceToNow } from "date-fns";
 import { LibraryButton } from "@/components/story/LibraryButton";
 import { AnnouncementBanner } from "@/components/announcements";
-import { StoryRatingSection } from "@/components/story/story-rating-section";
+import { StoryRatingSectionServer } from "@/components/story/story-rating-section-server";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { RelatedStories } from "@/components/story/related-stories";
 import { MoreFromAuthor } from "@/components/story/more-from-author";
@@ -135,7 +135,7 @@ export default async function StoryPage({ params }: PageProps) {
   const { id } = params;
   const supabase = await createClient();
 
-  // Resolve URL param to story
+  // === Step 1: Resolve URL param (must run first) ===
   const resolved = await resolveStoryParam(id, supabase);
   if (!resolved) {
     notFound();
@@ -155,26 +155,70 @@ export default async function StoryPage({ params }: PageProps) {
 
   const storyId = resolved.id;
 
-  // Fetch story with author info
-  const { data: story, error } = await supabase
-    .from("stories")
-    .select(`
-      *,
-      profiles!author_id(
-        username,
-        display_name,
-        avatar_url
-      )
-    `)
-    .eq("id", storyId)
-    .single();
+  // === Step 2: Parallel Group A — all independent queries ===
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+  const [
+    { data: story, error },
+    { data: { user } },
+    { data: chapters },
+    { data: authorTiers },
+    { data: storyTierSettings },
+    { data: allAnnouncements },
+    communityPickData,
+  ] = await Promise.all([
+    // Fetch story with author info
+    supabase
+      .from("stories")
+      .select(`
+        *,
+        profiles!author_id(
+          username,
+          display_name,
+          avatar_url
+        )
+      `)
+      .eq("id", storyId)
+      .single(),
+    // Get current user to check ownership
+    supabase.auth.getUser(),
+    // Fetch published chapters (include min_tier_name for lock icons)
+    supabase
+      .from("chapters")
+      .select("id, title, chapter_number, word_count, likes, created_at, is_published, min_tier_name, slug, short_id")
+      .eq("story_id", storyId)
+      .eq("is_published", true)
+      .order("chapter_number", { ascending: true }),
+    // Fetch author tiers (global settings - no advance_chapter_count here)
+    supabase
+      .from('author_tiers')
+      .select('tier_name, enabled, description')
+      .eq('author_id', resolved.id)
+      .eq('enabled', true)
+      .order('tier_name'),
+    // Fetch per-story tier settings for advance chapter counts
+    supabase
+      .from('story_tier_settings')
+      .select('tier_name, advance_chapter_count')
+      .eq('story_id', storyId),
+    // Fetch announcements for this story (last 30 days)
+    supabase
+      .from("announcements")
+      .select("*")
+      .eq("story_id", storyId)
+      .gte("created_at", thirtyDaysAgo.toISOString())
+      .order("created_at", { ascending: false })
+      .limit(10),
+    // Check if this story is a Community Pick
+    getCommunityPickBadge(storyId, supabase),
+  ]);
+
+  // === Step 3: Early exits after Group A ===
   if (error || !story) {
     notFound();
   }
 
-  // Get current user to check ownership
-  const { data: { user } } = await supabase.auth.getUser();
   const isOwner = user && story.author_id === user.id;
 
   // Check visibility - only owner can see draft/removed stories
@@ -182,43 +226,8 @@ export default async function StoryPage({ params }: PageProps) {
     notFound();
   }
 
-  // Fetch published chapters (include min_tier_name for lock icons)
-  const { data: chapters } = await supabase
-    .from("chapters")
-    .select("id, title, chapter_number, word_count, likes, created_at, is_published, min_tier_name, slug, short_id")
-    .eq("story_id", storyId)
-    .eq("is_published", true)
-    .order("chapter_number", { ascending: true });
-
   const publishedChapters = chapters || [];
   const totalWords = publishedChapters.reduce((sum, ch) => sum + (ch.word_count || 0), 0);
-
-  // Fetch reading progress for current user
-  let readingProgress: { chapter_id: string; chapter_number: number } | null = null;
-  if (user) {
-    const { data: progress } = await supabase
-      .from('reading_progress')
-      .select('chapter_id, chapter_number')
-      .eq('user_id', user.id)
-      .eq('story_id', storyId)
-      .single();
-    readingProgress = progress;
-  }
-
-  // Fetch author tiers
-  // Fetch author tiers (global settings - no advance_chapter_count here)
-  const { data: authorTiers } = await supabase
-    .from('author_tiers')
-    .select('tier_name, enabled, description')
-    .eq('author_id', story.author_id)
-    .eq('enabled', true)
-    .order('tier_name');
-
-  // Fetch per-story tier settings for advance chapter counts
-  const { data: storyTierSettings } = await supabase
-    .from('story_tier_settings')
-    .select('tier_name, advance_chapter_count')
-    .eq('story_id', storyId);
 
   // Build a map of tier_name -> advance_chapter_count for this story
   const advanceCountMap: Record<string, number> = {};
@@ -228,62 +237,59 @@ export default async function StoryPage({ params }: PageProps) {
     }
   }
 
-  // Check user's subscription to this author
+  // === Step 4: Parallel Group B — user-specific, conditional on user being logged in ===
+  let readingProgress: { chapter_id: string; chapter_number: number } | null = null;
   let userSubscription = null;
-  if (user) {
-    const { data: sub } = await supabase
-      .from('author_subscriptions')
-      .select('tier_name, status')
-      .eq('subscriber_id', user.id)
-      .eq('author_id', story.author_id)
-      .eq('status', 'active')
-      .single();
-    userSubscription = sub;
-  }
-
-  // Fetch announcements for this story (last 30 days)
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  
-  const { data: allAnnouncements } = await supabase
-    .from("announcements")
-    .select("*")
-    .eq("story_id", storyId)
-    .gte("created_at", thirtyDaysAgo.toISOString())
-    .order("created_at", { ascending: false })
-    .limit(10);
-
-  // Get which announcements user has read
-  let unreadAnnouncements = allAnnouncements || [];
-  
-  if (user && allAnnouncements && allAnnouncements.length > 0) {
-    const announcementIds = allAnnouncements.map(a => a.id);
-    const { data: reads } = await supabase
-      .from("announcement_reads")
-      .select("announcement_id")
-      .eq("user_id", user.id)
-      .in("announcement_id", announcementIds);
-    
-    const readIds = new Set((reads || []).map(r => r.announcement_id));
-    unreadAnnouncements = allAnnouncements.filter(a => !readIds.has(a.id));
-  }
-
-  // Get which chapters user has read
   let readChapterIds = new Set<string>();
-  
-  if (user && publishedChapters.length > 0) {
-    const chapterIds = publishedChapters.map(c => c.id);
-    const { data: chapterReads } = await supabase
-      .from("chapter_reads")
-      .select("chapter_id")
-      .eq("user_id", user.id)
-      .in("chapter_id", chapterIds);
-    
-    readChapterIds = new Set((chapterReads || []).map(r => r.chapter_id));
-  }
+  let unreadAnnouncements = allAnnouncements || [];
 
-  // Check if this story is a Community Pick
-  const communityPickData = await getCommunityPickBadge(storyId, supabase);
+  if (user) {
+    const [progressResult, subResult, announcementReadsResult, chapterReadsResult] = await Promise.all([
+      // Fetch reading progress for current user
+      supabase
+        .from('reading_progress')
+        .select('chapter_id, chapter_number')
+        .eq('user_id', user.id)
+        .eq('story_id', storyId)
+        .single(),
+      // Check user's subscription to this author
+      supabase
+        .from('author_subscriptions')
+        .select('tier_name, status')
+        .eq('subscriber_id', user.id)
+        .eq('author_id', story.author_id)
+        .eq('status', 'active')
+        .single(),
+      // Get which announcements user has read
+      allAnnouncements && allAnnouncements.length > 0
+        ? supabase
+            .from("announcement_reads")
+            .select("announcement_id")
+            .eq("user_id", user.id)
+            .in("announcement_id", allAnnouncements.map(a => a.id))
+        : Promise.resolve({ data: null }),
+      // Get which chapters user has read
+      publishedChapters.length > 0
+        ? supabase
+            .from("chapter_reads")
+            .select("chapter_id")
+            .eq("user_id", user.id)
+            .in("chapter_id", publishedChapters.map(c => c.id))
+        : Promise.resolve({ data: null }),
+    ]);
+
+    readingProgress = progressResult.data;
+    userSubscription = subResult.data;
+
+    if (allAnnouncements && allAnnouncements.length > 0 && announcementReadsResult.data) {
+      const readIds = new Set(announcementReadsResult.data.map((r: any) => r.announcement_id));
+      unreadAnnouncements = allAnnouncements.filter(a => !readIds.has(a.id));
+    }
+
+    if (chapterReadsResult.data) {
+      readChapterIds = new Set(chapterReadsResult.data.map((r: any) => r.chapter_id));
+    }
+  }
 
   const authorName = story.profiles?.display_name || story.profiles?.username || 'Unknown';
   const isMature = hasMatureContent(story.content_warnings || []);
@@ -541,7 +547,7 @@ export default async function StoryPage({ params }: PageProps) {
 
       {/* Ratings Section */}
       <div className="mb-8">
-        <StoryRatingSection storyId={storyId} authorId={story.author_id} />
+        <StoryRatingSectionServer storyId={storyId} authorId={story.author_id} />
       </div>
 
       {/* Chapter List */}
