@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { showToast } from "@/components/ui/toast";
 
+const MAX_CHARS = 2000;
+
 interface CommentInputProps {
   chapterId: string;
   currentUserId: string | null;
@@ -143,6 +145,7 @@ export function CommentInput({
         placeholder="Write a comment... Use @username to mention someone, [spoiler]text[/spoiler] for spoilers"
         className="w-full p-3 border rounded-lg resize-none bg-white dark:bg-zinc-900"
         rows={3}
+        maxLength={MAX_CHARS}
       />
       
       {/* @mention dropdown */}
@@ -169,9 +172,14 @@ export function CommentInput({
         <span className="text-xs text-muted-foreground">
           Tip: Use [spoiler]text[/spoiler] to hide spoilers
         </span>
-        <Button onClick={handleSubmit} disabled={isSubmitting || !content.trim()}>
-          {isSubmitting ? "Posting..." : "Post Comment"}
-        </Button>
+        <div className="flex items-center gap-3">
+          <span className={`text-xs ${content.length > MAX_CHARS * 0.9 ? 'text-amber-500' : 'text-muted-foreground'}`}>
+            {content.length}/{MAX_CHARS}
+          </span>
+          <Button onClick={handleSubmit} disabled={isSubmitting || !content.trim() || content.length > MAX_CHARS}>
+            {isSubmitting ? "Posting..." : "Post Comment"}
+          </Button>
+        </div>
       </div>
     </div>
   );

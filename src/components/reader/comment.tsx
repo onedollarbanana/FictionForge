@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ interface CommentProps {
   onReplyPosted: () => void;
   onCommentUpdated?: () => void;
   isReply?: boolean;
+  topLevelCommentId?: string;
 }
 
 const EDIT_TIME_LIMIT_MINUTES = 15;
@@ -43,7 +44,8 @@ export function Comment({
   storyAuthorId,
   onReplyPosted,
   onCommentUpdated,
-  isReply = false 
+  isReply = false,
+  topLevelCommentId 
 }: CommentProps) {
   const isAuthor = comment.user_id === storyAuthorId;
   const isOwnComment = currentUserId === comment.user_id;
@@ -67,6 +69,25 @@ export function Comment({
   
   // Menu state
   const [showMenu, setShowMenu] = useState(false);
+  
+  // Collapse replies state
+  const [showAllReplies, setShowAllReplies] = useState(false);
+
+  // Check if user has liked this comment
+  useEffect(() => {
+    if (!currentUserId) return;
+    const checkLike = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('comment_likes')
+        .select('id')
+        .eq('comment_id', comment.id)
+        .eq('user_id', currentUserId)
+        .maybeSingle();
+      if (data) setLiked(true);
+    };
+    checkLike();
+  }, [comment.id, currentUserId]);
 
   // Can edit within 15 minutes
   const createdAt = new Date(comment.created_at);
@@ -170,9 +191,39 @@ export function Comment({
 
   const handleLike = async () => {
     if (!currentUserId) return;
+    const supabase = createClient();
     
-    setLiked(!liked);
-    setLikesCount(prev => liked ? prev - 1 : prev + 1);
+    if (liked) {
+      // Unlike
+      await supabase
+        .from('comment_likes')
+        .delete()
+        .eq('comment_id', comment.id)
+        .eq('user_id', currentUserId);
+      
+      await supabase
+        .from('comments')
+        .update({ likes: Math.max(0, likesCount - 1) })
+        .eq('id', comment.id);
+      
+      setLiked(false);
+      setLikesCount(prev => Math.max(0, prev - 1));
+    } else {
+      // Like
+      const { error } = await supabase
+        .from('comment_likes')
+        .insert({ comment_id: comment.id, user_id: currentUserId });
+      
+      if (!error) {
+        await supabase
+          .from('comments')
+          .update({ likes: likesCount + 1 })
+          .eq('id', comment.id);
+        
+        setLiked(true);
+        setLikesCount(prev => prev + 1);
+      }
+    }
   };
 
   const handleReply = async () => {
@@ -184,7 +235,7 @@ export function Comment({
     const { error } = await supabase.from("comments").insert({
       chapter_id: chapterId,
       user_id: currentUserId,
-      parent_id: comment.id,
+      parent_id: topLevelCommentId || comment.id,
       content: replyContent.trim(),
     });
 
@@ -356,6 +407,7 @@ export function Comment({
                 onChange={(e) => setEditContent(e.target.value)}
                 className="w-full p-2 text-sm border rounded-md resize-none bg-white dark:bg-zinc-900"
                 rows={3}
+                maxLength={2000}
               />
               <div className="flex gap-2">
                 <Button 
@@ -433,15 +485,20 @@ export function Comment({
                 />
               )}
               
-              {!isReply && currentUserId && (
+              {currentUserId && (
                 <Button
                   variant="ghost"
                   size="sm"
                   className="h-7 px-2 text-xs"
-                  onClick={() => setShowReplyInput(!showReplyInput)}
+                  onClick={() => {
+                    setShowReplyInput(!showReplyInput);
+                    if (!showReplyInput && isReply && !replyContent) {
+                      setReplyContent(`@${comment.profiles?.username} `);
+                    }
+                  }}
                 >
                   <MessageSquare className="h-3 w-3 mr-1" />
-                  Reply
+                  Reply{!isReply && comment.replies && comment.replies.length > 0 && ` (${comment.replies.length})`}
                 </Button>
               )}
             </div>
@@ -455,6 +512,7 @@ export function Comment({
                 placeholder="Write a reply..."
                 className="w-full p-2 text-sm border rounded-md resize-none bg-white dark:bg-zinc-900"
                 rows={2}
+                maxLength={2000}
               />
               <div className="flex gap-2">
                 <Button size="sm" onClick={handleReply} disabled={isSubmitting || !replyContent.trim()}>
@@ -470,7 +528,7 @@ export function Comment({
           {/* Render replies */}
           {comment.replies && comment.replies.length > 0 && (
             <div className="mt-2">
-              {comment.replies.map((reply) => (
+              {(showAllReplies ? comment.replies : comment.replies.slice(0, 3)).map((reply) => (
                 <Comment
                   key={reply.id}
                   comment={reply}
@@ -480,8 +538,17 @@ export function Comment({
                   onReplyPosted={onReplyPosted}
                   onCommentUpdated={onCommentUpdated}
                   isReply={true}
+                  topLevelCommentId={isReply ? (topLevelCommentId || comment.id) : comment.id}
                 />
               ))}
+              {!showAllReplies && comment.replies.length > 3 && (
+                <button
+                  onClick={() => setShowAllReplies(true)}
+                  className="text-sm text-primary hover:underline ml-8 py-1"
+                >
+                  View {comment.replies.length - 3} more {comment.replies.length - 3 === 1 ? 'reply' : 'replies'}
+                </button>
+              )}
             </div>
           )}
         </div>
