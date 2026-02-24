@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { LibraryClient } from '@/components/library/library-client'
 import { LibraryTabs } from '@/components/library/library-tabs'
+import { ProfileCompletionBanner } from '@/components/onboarding/profile-completion-banner'
 import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
@@ -52,6 +53,15 @@ export default async function LibraryPage() {
   if (!user) {
     redirect('/login?redirect=/library')
   }
+
+  // Fetch user profile for completion banner
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('avatar_url, bio')
+    .eq('id', user.id)
+    .single()
+
+  const showProfileBanner = !profile?.avatar_url || !profile?.bio
 
   // Fetch ALL library entries with story details
   const { data: follows, error } = await supabase
@@ -292,6 +302,7 @@ export default async function LibraryPage() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">My Library <HelpLink href="/guides/readers/getting-started" label="Reader guide" /></h1>
+      {showProfileBanner && <ProfileCompletionBanner />}
       <LibraryTabs />
       <LibraryClient items={libraryItems} />
     </div>

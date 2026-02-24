@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const type = searchParams.get('type')
-  const next = searchParams.get('next') ?? '/author/dashboard'
+  const next = searchParams.get('next')
 
   if (code) {
     const cookieStore = cookies()
@@ -42,16 +42,30 @@ export async function GET(request: Request) {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('id')
+          .select('id, onboarding_completed')
           .eq('id', user.id)
           .single()
 
         if (!profile) {
           return NextResponse.redirect(`${origin}/create-profile`)
         }
+
+        // If user has an explicit next destination, respect it
+        if (next) {
+          return NextResponse.redirect(`${origin}${next}`)
+        }
+
+        // New users who haven't completed onboarding go to genre picker
+        if (!profile.onboarding_completed) {
+          return NextResponse.redirect(`${origin}/onboarding/genres`)
+        }
+
+        // Returning users go to library
+        return NextResponse.redirect(`${origin}/library`)
       }
 
-      return NextResponse.redirect(`${origin}${next}`)
+      // Fallback: if next is set use it, otherwise go to library
+      return NextResponse.redirect(`${origin}${next || '/library'}`)
     }
   }
 

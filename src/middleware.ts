@@ -128,9 +128,23 @@ export async function middleware(request: NextRequest) {
       }
     }
 
+    // Protect onboarding route - require auth
+    if (request.nextUrl.pathname.startsWith('/onboarding')) {
+      if (!user) {
+        return NextResponse.redirect(new URL('/login?redirect=/onboarding/genres', request.url))
+      }
+    }
+
+    // Protect library route - require auth
+    if (request.nextUrl.pathname === '/library' || request.nextUrl.pathname.startsWith('/library/')) {
+      if (!user) {
+        return NextResponse.redirect(new URL('/login?redirect=/library', request.url))
+      }
+    }
+
     // Redirect logged-in users away from auth pages
     if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
-      return NextResponse.redirect(new URL('/author/dashboard', request.url))
+      return NextResponse.redirect(new URL('/library', request.url))
     }
   } catch (error) {
     // If auth check fails, allow request to continue

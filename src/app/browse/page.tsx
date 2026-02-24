@@ -8,6 +8,7 @@ import { BrowseFilters } from "@/components/browse/browse-filters";
 import { type StoryCardData } from "@/components/story/story-card";
 import { BrowseStoryGrid } from "@/components/story/browse-story-grid";
 import { enrichWithCommunityPicks } from "@/lib/community-picks";
+import { SignupCta } from "@/components/onboarding/signup-cta";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -59,6 +60,10 @@ export default async function BrowsePage({
 }) {
   const { search, genre, sort = "updated", tag, page } = await searchParams;
   const supabase = await createClient();
+
+  // Check auth state for signup CTA
+  const { data: { user } } = await supabase.auth.getUser();
+  const isLoggedOut = !user;
 
   // Fetch all stories with author info and ratings
   const { data: stories, error } = await supabase
@@ -183,6 +188,9 @@ export default async function BrowsePage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <h1 className="text-3xl font-bold mb-6">Browse Stories</h1>
+
+      {/* Signup CTA for logged-out users */}
+      {isLoggedOut && <SignupCta variant="browse" />}
 
       <Suspense fallback={<div className="h-12 bg-muted animate-pulse rounded-md mb-6" />}>
         <BrowseFilters genreCounts={genreCounts} />

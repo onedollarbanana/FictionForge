@@ -70,7 +70,8 @@ export default function CreateProfilePage() {
       return;
     }
 
-    router.push("/author/dashboard");
+    // Redirect to onboarding genres instead of dashboard
+    router.push("/onboarding/genres");
     router.refresh();
   };
 
