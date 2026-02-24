@@ -98,12 +98,18 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const decodedUsername = decodeURIComponent(username)
   const supabase = await createClient()
   
-  // Get user profile
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('username', decodedUsername)
-    .single()
+  // ===== GROUP 1: Profile + Auth (parallel, must complete before Group 2) =====
+  const [profileResult, currentUserResult] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('*')
+      .eq('username', decodedUsername)
+      .single(),
+    supabase.auth.getUser()
+  ])
+
+  const { data: profile, error: profileError } = profileResult
+  const { data: { user: currentUser } } = currentUserResult
   
   if (profileError || !profile) {
     console.error('Profile not found:', decodedUsername, profileError)
@@ -111,127 +117,169 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   }
 
   console.log('PROFILE_DEBUG - Profile loaded:', { id: profile.id, username: profile.username })
-  
-  // Get user's published stories
-  const { data: stories, error: storiesError } = await supabase
-    .from('stories')
-    .select(`
-      id,
-      title,
-      slug,
-      short_id,
-      blurb,
-      cover_url,
-      total_views,
-      chapter_count,
-      status,
-      created_at,
-      updated_at
-    `)
-    .eq('author_id', profile.id)
-    .eq('visibility', 'published')
-    .order('updated_at', { ascending: false })
 
-  console.log('PROFILE_DEBUG - Stories query result:', { 
-    count: stories?.length ?? 'null', 
-    error: storiesError?.message ?? 'none',
-    authorId: profile.id 
-  })
-  
-  // Get user's library (followed stories)
-  const { data: library } = await supabase
-    .from('follows')
-    .select(`
-      id,
-      created_at,
-      stories (
+  const isOwnProfile = currentUser?.id === profile.id
+
+  // ===== GROUP 2: All queries depending on profile.id (parallel) =====
+  const [
+    storiesResult,
+    libraryResult,
+    reviewsResult,
+    recentActivityResult,
+    experienceResult,
+    peerRepResult,
+    featuredBadgesResult,
+    achievementsResult,
+    fullStatsResult,
+    authorTiersResult,
+    equippedBorderResult
+  ] = await Promise.all([
+    // Get user's published stories
+    supabase
+      .from('stories')
+      .select(`
         id,
         title,
         slug,
         short_id,
-        cover_url
-      )
-    `)
-    .eq('user_id', profile.id)
-    .order('created_at', { ascending: false })
-    .limit(10)
-  
-  // Get user's reviews (ratings with review text)
-  const { data: reviews } = await supabase
-    .from('story_ratings')
-    .select(`
-      id,
-      overall_rating,
-      review_text,
-      created_at,
-      stories (
+        blurb,
+        cover_url,
+        total_views,
+        chapter_count,
+        status,
+        created_at,
+        updated_at
+      `)
+      .eq('author_id', profile.id)
+      .eq('visibility', 'published')
+      .order('updated_at', { ascending: false }),
+
+    // Get user's library (followed stories)
+    supabase
+      .from('follows')
+      .select(`
         id,
-        title,
-        slug,
-        short_id
-      )
-    `)
-    .eq('user_id', profile.id)
-    .not('review_text', 'is', null)
-    .order('created_at', { ascending: false })
-    .limit(10)
-  
-  // Get user's activity (comments)
-  const { data: recentActivity } = await supabase
-    .from('comments')
-    .select(`
-      id,
-      content,
-      created_at,
-      chapters (
+        created_at,
+        stories (
+          id,
+          title,
+          slug,
+          short_id,
+          cover_url
+        )
+      `)
+      .eq('user_id', profile.id)
+      .order('created_at', { ascending: false })
+      .limit(10),
+
+    // Get user's reviews (ratings with review text)
+    supabase
+      .from('story_ratings')
+      .select(`
         id,
-        title,
+        overall_rating,
+        review_text,
+        created_at,
         stories (
           id,
           title,
           slug,
           short_id
         )
-      )
-    `)
-    .eq('user_id', profile.id)
-    .order('created_at', { ascending: false })
-    .limit(10)
+      `)
+      .eq('user_id', profile.id)
+      .not('review_text', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(10),
 
-  // Get current user for "is own profile" check
-  const { data: { user: currentUser } } = await supabase.auth.getUser()
-  const isOwnProfile = currentUser?.id === profile.id
+    // Get user's activity (comments)
+    supabase
+      .from('comments')
+      .select(`
+        id,
+        content,
+        created_at,
+        chapters (
+          id,
+          title,
+          stories (
+            id,
+            title,
+            slug,
+            short_id
+          )
+        )
+      `)
+      .eq('user_id', profile.id)
+      .order('created_at', { ascending: false })
+      .limit(10),
 
-  // Get user's experience data
-  const { data: experienceData } = await supabase
-    .rpc('get_user_experience', { target_user_id: profile.id })
-  
+    // Get user's experience data
+    supabase
+      .rpc('get_user_experience', { target_user_id: profile.id }),
+
+    // Get user's peer reputation
+    supabase
+      .rpc('get_user_peer_reputation', { target_user_id: profile.id }),
+
+    // Get user's featured badges
+    supabase
+      .rpc('get_featured_badges', { target_user_id: profile.id, p_limit: 5 }),
+
+    // Get user's achievements
+    supabase
+      .rpc('get_user_achievements', { target_user_id: profile.id }),
+
+    // Get full user stats for streak display
+    supabase
+      .rpc('get_user_stats_full', { p_user_id: profile.id }),
+
+    // Get author's tier configuration
+    supabase
+      .from('author_tiers')
+      .select('tier_name, description')
+      .eq('author_id', profile.id)
+      .eq('enabled', true)
+      .order('tier_name'),
+
+    // Get user's equipped border (conditional)
+    profile.equipped_border_id
+      ? supabase
+          .from('profile_borders')
+          .select('*')
+          .eq('id', profile.equipped_border_id)
+          .single()
+      : Promise.resolve({ data: null })
+  ])
+
+  const { data: stories, error: storiesError } = storiesResult
+  const { data: library } = libraryResult
+  const { data: reviews } = reviewsResult
+  const { data: recentActivity } = recentActivityResult
+  const { data: experienceData } = experienceResult
+  const { data: peerRepData } = peerRepResult
+  const { data: featuredBadgesData } = featuredBadgesResult
+  const { data: achievementsData } = achievementsResult
+  const { data: fullStatsData } = fullStatsResult
+  const { data: authorTiers } = authorTiersResult
+  const { data: borderData } = equippedBorderResult
+
+  console.log('PROFILE_DEBUG - Stories query result:', { 
+    count: stories?.length ?? 'null', 
+    error: storiesError?.message ?? 'none',
+    authorId: profile.id 
+  })
+
   // get_user_experience returns a single object, not an array
   const experience: ExperienceData | null = experienceData
 
-  // Get user's peer reputation
-  const { data: peerRepData } = await supabase
-    .rpc('get_user_peer_reputation', { target_user_id: profile.id })
-  
   const peerRep = peerRepData
 
-  // Get user's featured badges
-  const { data: featuredBadgesData } = await supabase
-    .rpc('get_featured_badges', { target_user_id: profile.id, p_limit: 5 })
-  
   const featuredBadges = featuredBadgesData || []
 
-  // Get user's achievements
-  const { data: achievementsData } = await supabase
-    .rpc('get_user_achievements', { target_user_id: profile.id })
-  
   const achievements: AchievementItem[] = achievementsData || []
   const unlockedCount = achievements.filter((item) => item.unlockedAt).length
 
-  // Get full user stats for streak display
-  const { data: fullStatsData } = await supabase
-    .rpc('get_user_stats_full', { p_user_id: profile.id })
-  
   const fullStats: UserStatsMap | null = (fullStatsData as UserStatsMap) ?? null
 
   // Build streak info
@@ -242,37 +290,22 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     publishingLongest: fullStats?.publishing_longest_streak ?? 0,
   }
 
-  // Get user's equipped border
+  // Process equipped border
   let equippedBorder = null
-  if (profile.equipped_border_id) {
-    const { data: borderData } = await supabase
-      .from('profile_borders')
-      .select('*')
-      .eq('id', profile.equipped_border_id)
-      .single()
-    
-    if (borderData) {
-      equippedBorder = {
-        id: borderData.id,
-        name: borderData.name,
-        description: borderData.description,
-        cssClass: borderData.css_class,
-        unlockType: borderData.unlock_type,
-        unlockValue: borderData.unlock_value,
-        rarity: borderData.rarity,
-        sortOrder: borderData.sort_order
-      }
+  if (borderData) {
+    equippedBorder = {
+      id: borderData.id,
+      name: borderData.name,
+      description: borderData.description,
+      cssClass: borderData.css_class,
+      unlockType: borderData.unlock_type,
+      unlockValue: borderData.unlock_value,
+      rarity: borderData.rarity,
+      sortOrder: borderData.sort_order
     }
   }
 
-  // Get author's tier configuration
-  const { data: authorTiers } = await supabase
-    .from('author_tiers')
-    .select('tier_name, description')
-    .eq('author_id', profile.id)
-    .eq('enabled', true)
-    .order('tier_name')
-
+  // ===== GROUP 3: Depends on both currentUser AND profile =====
   // Get current user's subscription to this author
   let currentAuthorSub = null
   if (currentUser && !isOwnProfile) {
