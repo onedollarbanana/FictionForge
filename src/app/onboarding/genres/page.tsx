@@ -5,22 +5,13 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { PRIMARY_GENRES } from "@/lib/constants";
 
-const GENRES = [
-  { name: "Action", emoji: "⚔️", description: "High-octane thrills and combat" },
-  { name: "Adventure", emoji: "🗺️", description: "Epic journeys and exploration" },
-  { name: "Contemporary", emoji: "🏙️", description: "Modern-day stories and drama" },
-  { name: "Cyberpunk", emoji: "🤖", description: "Neon-lit dystopian futures" },
-  { name: "Fantasy", emoji: "🧙", description: "Magic, myths, and otherworldly realms" },
-  { name: "Historical", emoji: "📜", description: "Stories from ages past" },
-  { name: "Horror", emoji: "👻", description: "Terrifying tales and dark mysteries" },
-  { name: "LitRPG", emoji: "🎮", description: "Game mechanics meet storytelling" },
-  { name: "Mystery", emoji: "🔍", description: "Puzzles, clues, and whodunits" },
-  { name: "Romance", emoji: "💕", description: "Love stories and heartfelt connections" },
-  { name: "Sci-Fi", emoji: "🚀", description: "Space, technology, and the future" },
-  { name: "Thriller", emoji: "🎯", description: "Suspense and edge-of-your-seat tension" },
-  { name: "Urban Fantasy", emoji: "🌃", description: "Magic hidden in the modern world" },
-];
+const GENRES = PRIMARY_GENRES.map(g => ({
+  name: g.name,
+  emoji: g.emoji,
+  description: g.readerDescription,
+}));
 
 export default function OnboardingGenresPage() {
   const [selected, setSelected] = useState<string[]>([]);

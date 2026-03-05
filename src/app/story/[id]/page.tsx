@@ -293,7 +293,7 @@ export default async function StoryPage({ params }: PageProps) {
   }
 
   const authorName = story.profiles?.display_name || story.profiles?.username || 'Unknown';
-  const isMature = hasMatureContent(story.content_warnings || []);
+  const isMature = hasMatureContent(story.content_rating);
 
   const pageContent = (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -640,7 +640,7 @@ export default async function StoryPage({ params }: PageProps) {
 
   if (isMature) {
     return (
-      <ContentWarningGate warnings={story.content_warnings} storyTitle={story.title}>
+      <ContentWarningGate contentRating={story.content_rating} warnings={story.content_warnings || []} storyTitle={story.title}>
         {pageContent}
       </ContentWarningGate>
     );

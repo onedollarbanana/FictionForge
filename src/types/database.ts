@@ -15,16 +15,35 @@ export interface Story {
   author_id: string
   title: string
   slug: string
+  short_id: string
+  tagline: string | null
   blurb: string | null
   cover_url: string | null
   status: StoryStatus
-  genres: string[]
+  visibility: string
+  // Taxonomy v3
+  primary_genre: string | null
+  subgenres: string[]
   tags: string[]
+  content_rating: 'everyone' | 'teen' | 'mature' | 'adult_18' | null
+  content_warnings: string[]
+  format: string | null
+  origin_type: 'original' | 'fan_fiction'
+  fandoms: string[]
+  secondary_genre: string | null
+  relationship_tags: string[]
+  primary_genre_change_count: number
+  primary_genre_changed_at: string | null
+  // Legacy — preserved during migration; prefer primary_genre
+  genres: string[]
+  // Stats
   total_views: number
   total_likes: number
   follower_count: number
   chapter_count: number
   word_count: number
+  rating_average: number
+  rating_count: number
   created_at: string
   updated_at: string
   last_chapter_at: string | null
@@ -116,25 +135,11 @@ export interface ChapterRead {
   read_at: string
 }
 
-// Genre options for stories
-export const GENRES = [
-  'Fantasy',
-  'Sci-Fi',
-  'LitRPG',
-  'Progression',
-  'Romance',
-  'Horror',
-  'Mystery',
-  'Thriller',
-  'Comedy',
-  'Drama',
-  'Action',
-  'Adventure',
-  'Slice of Life',
-  'Historical',
-  'Isekai',
-  'Xianxia',
-  'Cultivation',
-] as const
-
-export type Genre = typeof GENRES[number]
+export interface StoryGenreChangeLog {
+  id: string
+  story_id: string
+  changed_by: string
+  old_genre: string | null
+  new_genre: string
+  changed_at: string
+}

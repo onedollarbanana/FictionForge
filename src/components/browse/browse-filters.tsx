@@ -5,7 +5,8 @@ import { useState, useTransition, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, X, ChevronDown, ChevronUp } from "lucide-react";
-import { TAGS } from "@/lib/constants";
+import { ALL_TAGS } from "@/lib/constants";
+const TAGS = ALL_TAGS.map(t => t.name);
 
 const GENRES = [
   "Fantasy",
