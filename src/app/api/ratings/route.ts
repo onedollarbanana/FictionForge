@@ -41,8 +41,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Notify story author (non-blocking)
-  void notifyNewReview({ reviewerId: user.id, storyId: story_id, rating: overall_rating });
+  // Notify story author (must await — Vercel terminates after response)
+  await notifyNewReview({ reviewerId: user.id, storyId: story_id, rating: overall_rating });
 
   return NextResponse.json({ ok: true });
 }

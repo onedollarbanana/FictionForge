@@ -35,8 +35,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Notify story followers (non-blocking)
-  void notifyAnnouncementFollowers({
+  // Notify story followers (must await — Vercel terminates after response)
+  await notifyAnnouncementFollowers({
     authorId: user.id,
     storyId: story_id,
     announcementTitle: title.trim(),

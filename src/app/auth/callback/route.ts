@@ -93,7 +93,7 @@ export async function GET(request: Request) {
 
           await supabase.from('profiles').update(updates).eq('id', user.id)
 
-          void sendEmail({
+          await sendEmail({
             to: user.email,
             subject: 'Welcome to Fictionry!',
             react: createElement(WelcomeEmail, { displayName: displayName || 'there' }),

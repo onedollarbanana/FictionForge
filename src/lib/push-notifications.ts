@@ -316,8 +316,8 @@ export async function notifyFollowers(
     }
   }
 
-  // Send chapter emails (non-blocking, runs in background)
-  void sendChapterEmails({
+  // Send chapter emails (must await — Vercel terminates after response)
+  await sendChapterEmails({
     supabase,
     followerIds,
     storyId,

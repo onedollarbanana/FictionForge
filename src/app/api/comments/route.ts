@@ -37,9 +37,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // If this is a reply, notify the parent comment author
+  // If this is a reply, notify the parent comment author (must await — Vercel terminates after response)
   if (parent_id) {
-    void notifyCommentReply({
+    await notifyCommentReply({
       replierId: user.id,
       parentCommentId: parent_id,
       chapterId: chapter_id,
