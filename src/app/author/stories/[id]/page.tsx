@@ -278,11 +278,11 @@ export default function StoryOverviewPage() {
             <span className="text-sm px-2 py-1 rounded bg-muted capitalize">
               {story.status}
             </span>
-            {story.genres.slice(0, 3).map((genre) => (
-              <span key={genre} className="text-sm text-muted-foreground">
-                {genre}
+            {story.primary_genre && (
+              <span className="text-sm text-muted-foreground capitalize">
+                {story.primary_genre.replace(/-/g, ' ')}
               </span>
-            ))}
+            )}
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
