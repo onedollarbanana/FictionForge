@@ -178,18 +178,19 @@ export default async function Home() {
           />
         ))}
 
-        {/* Explore genres outside preferences */}
+        {/* Explore Something New — genres outside user's preferences */}
         {otherShelves.length > 0 && (
           <>
-            <div className="flex items-center gap-3 my-4">
-              <div className="h-px flex-1 bg-border" />
-              <span className="text-sm font-medium text-muted-foreground">Discover something different</span>
-              <div className="h-px flex-1 bg-border" />
+            <div className="mt-10 mb-4">
+              <h2 className="text-xl font-bold">Explore New Genres</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Stories breaking out in genres outside your usual reads
+              </p>
             </div>
             {otherShelves.map((genre) => (
               <StoryCarousel
                 key={genre.name}
-                title={`Breaking Out in ${genre.name}`}
+                title={genre.name}
                 icon={genre.icon}
                 stories={genre.stories}
                 viewAllLink={`/browse/genre/${genre.name.toLowerCase()}`}
