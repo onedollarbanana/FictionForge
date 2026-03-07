@@ -34,8 +34,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/browse?sort=rising" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Rising Stars
+                <Link href="/breaking-out" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Breaking Out
                 </Link>
               </li>
               <li>

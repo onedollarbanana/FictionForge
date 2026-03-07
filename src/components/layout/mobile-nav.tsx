@@ -101,12 +101,12 @@ export function MobileNav({ onLogout }: MobileNavProps) {
               <div className="my-2 border-t" />
               <p className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Discover</p>
               <Link
-                href="/rising-stars"
+                href="/breaking-out"
                 className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-muted transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 <TrendingUp className="h-5 w-5 text-muted-foreground" />
-                <span>Rising Stars</span>
+                <span>Breaking Out</span>
               </Link>
               <Link
                 href="/popular"
