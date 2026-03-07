@@ -29,6 +29,11 @@ const securityHeaders = [
 ];
 
 const baseConfig = {
+  async redirects() {
+    return [
+      { source: '/rising-stars', destination: '/breaking-out', permanent: true },
+    ];
+  },
   images: {
     remotePatterns: [
       {

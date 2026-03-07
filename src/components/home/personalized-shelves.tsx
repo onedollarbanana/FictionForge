@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { ContinueReading } from '@/components/home/continue-reading';
 import { StoryCarousel } from '@/components/home/story-carousel';
-import { BookOpen, Users } from 'lucide-react';
+import { Bell, BookOpen, Users } from 'lucide-react';
 import type { StoryCardData } from '@/components/story/story-card';
 import { getStoryUrl } from '@/lib/url-utils';
 
@@ -13,7 +13,7 @@ export async function PersonalizedShelves({ userId }: { userId: string }) {
   const { getBecauseYouRead, getCollaborativeRecommendations } = await import('@/lib/recommendations');
 
   // Fetch all user-specific data in parallel
-  const [progressData, becauseYouReadShelves, collabRecommendations] = await Promise.all([
+  const [progressData, becauseYouReadShelves, collabRecommendations, newChaptersData] = await Promise.all([
     supabase
       .from("reading_progress")
       .select(`
@@ -40,6 +40,9 @@ export async function PersonalizedShelves({ userId }: { userId: string }) {
       .then(res => res.data),
     getBecauseYouRead(userId, 8, supabase),
     getCollaborativeRecommendations(userId, 10, supabase),
+    // New chapters in followed stories since user last read them
+    supabase.rpc('get_new_chapters_in_library', { p_user_id: userId, p_limit: 10 })
+      .then(res => res.data || []),
   ]);
 
   // Process continue reading data
@@ -134,10 +137,27 @@ export async function PersonalizedShelves({ userId }: { userId: string }) {
       .filter((item: { continue_chapter_number: number; total_chapters: number }) => item.continue_chapter_number <= item.total_chapters);
   }
 
+  // Map new chapters RPC rows to StoryCardData shape
+  const newChapterStories: StoryCardData[] = (newChaptersData as any[]).map((r) => ({
+    ...r,
+    profiles: { username: r.author_username, display_name: r.author_display_name },
+  }));
+
   return (
     <>
       {/* Continue Reading - only for logged-in users */}
       <ContinueReading items={continueReadingItems} />
+
+      {/* New chapters in followed stories */}
+      {newChapterStories.length > 0 && (
+        <StoryCarousel
+          title="New in Your Library"
+          icon={<Bell className="h-5 w-5 text-blue-500" />}
+          stories={newChapterStories}
+          viewAllLink="/library"
+          emptyMessage=""
+        />
+      )}
 
       {/* "Because You Read X" personalized shelves */}
       {becauseYouReadShelves.length > 0 && becauseYouReadShelves.map((shelf) => (

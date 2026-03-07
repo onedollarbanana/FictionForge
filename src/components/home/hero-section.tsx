@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { BookOpen, PenTool, TrendingUp, Users, Star } from "lucide-react";
+import { BookOpen, PenTool, Users, Star } from "lucide-react";
 
 interface HeroSectionProps {
   isLoggedIn: boolean;
+  storyCount?: number;
 }
 
-export function HeroSection({ isLoggedIn }: HeroSectionProps) {
+export function HeroSection({ isLoggedIn, storyCount }: HeroSectionProps) {
   if (isLoggedIn) {
     // Minimal hero for logged-in users - they see Continue Reading below
     return null;
@@ -27,19 +28,19 @@ export function HeroSection({ isLoggedIn }: HeroSectionProps) {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-medium mb-6">
             <Star className="h-4 w-4" />
-            <span>The Modern Platform for Web Fiction</span>
+            <span>Human-First Fiction Platform</span>
           </div>
 
           {/* Headline */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-            Discover Your Next{" "}
-            <span className="text-primary">Obsession</span>
+            Where Great Fiction{" "}
+            <span className="text-primary">Finds Its Readers</span>
           </h1>
 
           {/* Subheadline */}
           <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Thousands of free stories from talented authors. Beautiful reading experience, 
-            powerful writing tools, and a community that loves great fiction.
+            No algorithm gaming. No AI content floods. No predatory contracts.
+            Just quality stories rising on reader love.
           </p>
 
           {/* CTAs */}
@@ -62,15 +63,15 @@ export function HeroSection({ isLoggedIn }: HeroSectionProps) {
           <div className="flex flex-wrap justify-center gap-8 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <BookOpen className="h-4 w-4 text-primary" />
-              <span>10,000+ Chapters</span>
+              <span>{storyCount ? `${storyCount.toLocaleString()} Stories Published` : 'Stories Published'}</span>
             </div>
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-primary" />
-              <span>Active Community</span>
+              <span>Growing Community</span>
             </div>
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              <span>New Updates Daily</span>
+              <BookOpen className="h-4 w-4 text-primary" />
+              <span>New Chapters Weekly</span>
             </div>
           </div>
         </div>

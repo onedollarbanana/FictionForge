@@ -15,7 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '',
     '/browse',
     '/popular',
-    '/rising-stars',
+    '/breaking-out',
     '/new-releases',
     '/recently-updated',
     '/featured',
