@@ -1,19 +1,18 @@
 import { createClient } from '@/lib/supabase/server';
 import { ContinueReading } from '@/components/home/continue-reading';
 import { StoryCarousel } from '@/components/home/story-carousel';
-import { Bell, BookOpen, Users } from 'lucide-react';
+import { Bell, Users } from 'lucide-react';
 import type { StoryCardData } from '@/components/story/story-card';
-import { getStoryUrl } from '@/lib/url-utils';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export async function PersonalizedShelves({ userId }: { userId: string }) {
   const supabase = await createClient();
 
-  const { getBecauseYouRead, getCollaborativeRecommendations } = await import('@/lib/recommendations');
+  const { getCollaborativeRecommendations } = await import('@/lib/recommendations');
 
   // Fetch all user-specific data in parallel
-  const [progressData, becauseYouReadShelves, collabRecommendations, newChaptersData] = await Promise.all([
+  const [progressData, collabRecommendations, newChaptersData] = await Promise.all([
     supabase
       .from("reading_progress")
       .select(`
@@ -38,7 +37,6 @@ export async function PersonalizedShelves({ userId }: { userId: string }) {
       .order("updated_at", { ascending: false })
       .limit(10)
       .then(res => res.data),
-    getBecauseYouRead(userId, 8, supabase),
     getCollaborativeRecommendations(userId, 10, supabase),
     // New chapters in followed stories since user last read them
     supabase.rpc('get_new_chapters_in_library', { p_user_id: userId, p_limit: 10 })
@@ -159,24 +157,13 @@ export async function PersonalizedShelves({ userId }: { userId: string }) {
         />
       )}
 
-      {/* "Because You Read X" personalized shelves */}
-      {becauseYouReadShelves.length > 0 && becauseYouReadShelves.map((shelf) => (
-        <StoryCarousel
-          key={`byr-${shelf.sourceId}`}
-          title={`Because you read ${shelf.sourceTitle}`}
-          icon={<BookOpen className="h-5 w-5 text-violet-500" />}
-          stories={shelf.stories}
-          viewAllLink={getStoryUrl({ id: shelf.sourceId, slug: shelf.sourceSlug || null, short_id: shelf.sourceShortId || null })}
-        />
-      ))}
-
-      {/* Collaborative filtering shelf */}
+      {/* Recommended For You */}
       {collabRecommendations.length > 0 && (
         <StoryCarousel
-          title="Readers like you enjoyed"
-          icon={<Users className="h-5 w-5 text-indigo-500" />}
+          title="Recommended For You"
+          icon={<Users className="h-5 w-5 text-violet-500" />}
           stories={collabRecommendations}
-          viewAllLink="/browse"
+          viewAllLink="/for-you"
         />
       )}
     </>
