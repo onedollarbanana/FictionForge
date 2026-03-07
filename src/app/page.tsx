@@ -35,6 +35,21 @@ export const metadata: Metadata = {
   },
 };
 
+// Maps genre_preferences display names (as stored in DB) to primary_genre slugs
+const PREF_TO_SLUG: Record<string, string> = {
+  'Fantasy': 'fantasy',
+  'Sci-Fi': 'science-fiction',
+  'Science Fiction': 'science-fiction',
+  'Romance': 'romance',
+  'Mystery': 'thriller-mystery',
+  'Thriller': 'thriller-mystery',
+  'Horror': 'horror',
+  'LitRPG': 'litrpg',
+  'Contemporary Fiction': 'contemporary-fiction',
+  'Historical Fiction': 'historical-fiction',
+  'Action & Adventure': 'action-adventure',
+};
+
 const GENRE_SHELVES = [
   { name: 'Fantasy', slug: 'fantasy', icon: <Sword className="h-5 w-5 text-purple-500" /> },
   { name: 'Science Fiction', slug: 'science-fiction', icon: <Rocket className="h-5 w-5 text-cyan-500" /> },
@@ -127,9 +142,15 @@ export default async function Home() {
   let preferredShelves: typeof genreShelvesWithData;
   let otherShelves: typeof genreShelvesWithData;
 
-  if (userGenrePreferences.length > 0) {
-    preferredShelves = genreShelvesWithData.filter(g => userGenrePreferences.includes(g.slug));
-    otherShelves = genreShelvesWithData.filter(g => !userGenrePreferences.includes(g.slug));
+  // Map preference display names → DB slugs
+  const preferredSlugs = new Set(
+    userGenrePreferences.map(p => PREF_TO_SLUG[p]).filter(Boolean)
+  );
+  const preferredSlugsArray = Array.from(preferredSlugs);
+
+  if (preferredSlugs.size > 0) {
+    preferredShelves = genreShelvesWithData.filter(g => preferredSlugs.has(g.slug));
+    otherShelves = genreShelvesWithData.filter(g => !preferredSlugs.has(g.slug));
   } else {
     preferredShelves = genreShelvesWithData;
     otherShelves = [];
@@ -151,7 +172,7 @@ export default async function Home() {
 
         {/* Personalized: Continue Reading + New Chapters + Recommendations */}
         <Suspense fallback={<PersonalizedSkeleton />}>
-          <PersonalizedShelves userId={user!.id} />
+          <PersonalizedShelves userId={user!.id} preferredGenreSlugs={preferredSlugsArray} />
         </Suspense>
 
         {/* Community Picks */}
