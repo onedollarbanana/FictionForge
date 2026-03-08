@@ -1,12 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+function friendlyAuthError(message: string): string {
+  if (message.includes('Invalid login credentials')) return 'Incorrect email or password.'
+  if (message.includes('Email not confirmed')) return 'Please confirm your email before signing in.'
+  if (message.includes('Too many requests')) return 'Too many sign-in attempts. Please wait a moment and try again.'
+  if (message.includes('User not found')) return 'No account found with that email.'
+  return message
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -14,14 +22,20 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
+  // Safe redirect: must be a relative path, not an external URL
+  const rawRedirect = searchParams.get('redirect') || ''
+  const redirectTo = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/library'
+
   const handleGoogleLogin = async () => {
+    const callbackUrl = redirectTo !== '/library'
+      ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
+      : `${window.location.origin}/auth/callback`
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { redirectTo: callbackUrl },
     });
     if (error) {
       setError(error.message);
@@ -39,12 +53,12 @@ export default function LoginPage() {
     });
 
     if (error) {
-      setError(error.message);
+      setError(friendlyAuthError(error.message));
       setLoading(false);
       return;
     }
 
-    router.push("/library");
+    router.push(redirectTo);
     router.refresh();
   };
 
@@ -91,6 +105,7 @@ export default function LoginPage() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
               required
             />
           </div>
@@ -103,6 +118,7 @@ export default function LoginPage() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
               required
             />
           </div>

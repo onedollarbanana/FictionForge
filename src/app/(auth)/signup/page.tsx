@@ -8,6 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail } from "lucide-react";
 
+function friendlySignupError(message: string): string {
+  if (message.includes('User already registered') || message.includes('already been registered')) return 'An account with that email already exists. Try signing in instead.'
+  if (message.includes('Password should be at least')) return 'Password must be at least 6 characters.'
+  if (message.includes('Unable to validate email')) return 'Please enter a valid email address.'
+  if (message.includes('Too many requests')) return 'Too many attempts. Please wait a moment and try again.'
+  return message
+}
+
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,7 +50,7 @@ export default function SignupPage() {
     });
 
     if (error) {
-      setError(error.message);
+      setError(friendlySignupError(error.message));
       setLoading(false);
       return;
     }
@@ -130,6 +138,7 @@ export default function SignupPage() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
               required
             />
           </div>
@@ -142,6 +151,7 @@ export default function SignupPage() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
               required
               minLength={6}
             />
