@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { MobileNav } from '@/components/layout/mobile-nav'
+import { LogoWordmark } from '@/components/logo-wordmark'
 import { Pen, Settings, LogOut, Loader2, User } from 'lucide-react'
 import { NotificationBell } from '@/components/notifications/notification-bell'
 import { DiscoverDropdown } from '@/components/layout/discover-dropdown'
@@ -25,9 +26,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 flex h-14 items-center justify-between">
         <div className="flex items-center gap-6">
-          <Link href="/" className="text-xl font-bold text-primary">
-            Fictionry
-          </Link>
+          <LogoWordmark height={28} />
           <nav className="hidden md:flex items-center gap-4">
             <Link href="/browse" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Browse
