@@ -46,10 +46,14 @@ export function BillingClient({
   const [verifying, setVerifying] = useState(false);
   const [authorSubs, setAuthorSubs] = useState<any[]>([]);
 
-  const verifySession = useCallback(async () => {
+  const verifySession = useCallback(async (sessionId: string) => {
     setVerifying(true);
     try {
-      const res = await fetch("/api/stripe/verify-session", { method: "POST" });
+      const res = await fetch("/api/stripe/verify-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId }),
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.subscription) {
@@ -69,12 +73,13 @@ export function BillingClient({
     const params = new URLSearchParams(window.location.search);
     const isSuccess = params.get("success") === "true";
     const isCanceled = params.get("canceled") === "true";
+    const sessionId = params.get("session_id");
     setShowSuccess(isSuccess);
     setShowCanceled(isCanceled);
 
     // If checkout succeeded but we don't have a subscription yet, verify it
-    if (isSuccess && !initialSubscription) {
-      verifySession();
+    if (isSuccess && sessionId && !initialSubscription) {
+      verifySession(sessionId);
     }
 
     // Fetch author subscriptions

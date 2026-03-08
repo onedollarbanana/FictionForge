@@ -31,6 +31,14 @@ export async function POST() {
       )
     }
 
+    // Check if account is on hold before doing any balance calculation
+    if (stripeAccount.payout_hold) {
+      return NextResponse.json(
+        { error: 'Your payouts are currently on hold. Please contact support for more information.' },
+        { status: 403 }
+      )
+    }
+
     // Calculate available balance
     const { data: earnedRows } = await admin
       .from('author_revenue')
@@ -41,20 +49,20 @@ export async function POST() {
 
     const { data: paidRows } = await admin
       .from('payouts')
-      .select('amount')
+      .select('amount_cents')
       .eq('author_id', user.id)
       .eq('status', 'paid')
 
-    const totalPaid = paidRows?.reduce((s, r) => s + (r.amount || 0), 0) ?? 0
+    const totalPaid = paidRows?.reduce((s, r) => s + (r.amount_cents || 0), 0) ?? 0
 
     // Also subtract pending payouts to avoid double-requesting
     const { data: pendingRows } = await admin
       .from('payouts')
-      .select('amount')
+      .select('amount_cents')
       .eq('author_id', user.id)
       .eq('status', 'pending')
 
-    const totalPending = pendingRows?.reduce((s, r) => s + (r.amount || 0), 0) ?? 0
+    const totalPending = pendingRows?.reduce((s, r) => s + (r.amount_cents || 0), 0) ?? 0
 
     const availableBalance = totalEarned - totalPaid - totalPending
 
@@ -71,14 +79,6 @@ export async function POST() {
       )
     }
 
-    // Check if account is on hold
-    if (stripeAccount.payout_hold) {
-      return NextResponse.json(
-        { error: 'Your payouts are currently on hold. Please contact support for more information.' },
-        { status: 403 }
-      )
-    }
-
     // Create payout record
     // In production, this would call stripe.transfers.create() to the connected account
     const now = new Date().toISOString()
@@ -87,9 +87,8 @@ export async function POST() {
       .from('payouts')
       .insert({
         author_id: user.id,
-        amount: availableBalance,
+        amount_cents: availableBalance,
         status: 'pending',
-        stripe_payout_id: null, // Would be set after stripe.transfers.create()
         period_start: null,
         period_end: now,
         created_at: now,

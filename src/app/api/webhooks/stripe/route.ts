@@ -285,7 +285,9 @@ async function handleAuthorSubscriptionCreated(
   const amountCents = item.price.unit_amount || 0;
   const period = getSubscriptionPeriod(subscription);
 
-  // Upsert author_subscriptions record
+  // Upsert author_subscriptions record only.
+  // Revenue is recorded by handleInvoicePaid when the invoice.paid event fires
+  // (including the initial payment), so we must not double-record it here.
   await supabase.from('author_subscriptions').upsert({
     subscriber_id: subscriberId,
     author_id: authorId,
@@ -297,19 +299,6 @@ async function handleAuthorSubscriptionCreated(
     current_period_end: period.end,
     cancel_at_period_end: subscription.cancel_at_period_end,
   }, { onConflict: 'subscriber_id,author_id' });
-
-  // Record revenue for author
-  const platformFeeCents = Math.round(amountCents * PLATFORM_CONFIG.PLATFORM_FEE_PERCENT / 100);
-  const netAmountCents = amountCents - platformFeeCents;
-
-  await supabase.from('author_revenue').insert({
-    author_id: authorId,
-    subscription_id: null, // Will be linked after upsert
-    gross_amount_cents: amountCents,
-    platform_fee_cents: platformFeeCents,
-    net_amount_cents: netAmountCents,
-    description: `New ${tierName} subscription`,
-  });
 }
 
 async function handleAuthorSubscriptionUpdated(
@@ -373,23 +362,41 @@ async function handleInvoicePaid(
     const tierName = sub.metadata.tier_name;
     if (!authorId) return;
 
+    // Idempotency: skip if this invoice has already been processed
+    const { data: existingTx } = await supabase
+      .from('transactions')
+      .select('id')
+      .eq('stripe_invoice_id', invoice.id)
+      .eq('type', 'author_subscription_payment')
+      .maybeSingle();
+    if (existingTx) return;
+
     const amountPaid = inv.amountPaid;
     const platformFeeCents = Math.round(amountPaid * PLATFORM_CONFIG.PLATFORM_FEE_PERCENT / 100);
     const netAmountCents = amountPaid - platformFeeCents;
 
+    // Look up the author_subscriptions row to get its PK for FK linking
+    const { data: authorSub } = await supabase
+      .from('author_subscriptions')
+      .select('id')
+      .eq('stripe_subscription_id', inv.subscription)
+      .maybeSingle();
+
     // Record revenue
     const { error: revenueError } = await supabase.from('author_revenue').insert({
       author_id: authorId,
+      subscription_id: authorSub?.id ?? null,
       gross_amount_cents: amountPaid,
       platform_fee_cents: platformFeeCents,
       net_amount_cents: netAmountCents,
-      description: `${tierName} subscription renewal`,
+      description: `${tierName} subscription payment`,
     });
     if (revenueError) console.error('Failed to insert author_revenue:', revenueError);
 
     // Record transaction
     const { error: txError } = await supabase.from('transactions').insert({
       user_id: sub.metadata.subscriber_id || null,
+      subscription_id: authorSub?.id ?? null,
       type: 'author_subscription_payment',
       status: 'succeeded',
       amount_cents: amountPaid,
@@ -410,6 +417,15 @@ async function handleInvoicePaid(
   // Reader premium invoice handling
   const userId = sub.metadata.user_id;
   if (!userId) return;
+
+  // Idempotency: skip if this invoice has already been processed
+  const { data: existingReaderTx } = await supabase
+    .from('transactions')
+    .select('id')
+    .eq('stripe_invoice_id', invoice.id)
+    .eq('type', 'reader_premium_payment')
+    .maybeSingle();
+  if (existingReaderTx) return;
 
   // Find our subscription record
   const { data: dbSub } = await supabase

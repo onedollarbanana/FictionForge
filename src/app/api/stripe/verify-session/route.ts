@@ -10,31 +10,34 @@ function getAdminSupabase() {
   );
 }
 
-// Called after checkout redirect to sync subscription immediately
-// This is a fast-path so users see premium status right away
-// The webhook is the reliable backup for all lifecycle events
+// Called after checkout redirect to sync subscription immediately.
+// This is a fast-path so users see premium status right away.
+// The webhook is the reliable backup for all lifecycle events.
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Find the most recent checkout session for this user
-    const sessions = await stripe.checkout.sessions.list({
-      limit: 5,
-    });
+    const { session_id } = await request.json().catch(() => ({}));
 
-    const session = sessions.data.find(
-      (s) => s.metadata?.user_id === user.id && 
-             s.metadata?.type === 'reader_premium' &&
-             s.status === 'complete' &&
-             s.subscription
-    );
+    if (!session_id || typeof session_id !== 'string') {
+      return NextResponse.json({ error: 'session_id is required' }, { status: 400 });
+    }
 
-    if (!session || !session.subscription) {
+    // Retrieve the specific session directly — no listing, no race condition
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+
+    // Validate this session belongs to the authenticated user and is the right type
+    if (
+      session.metadata?.user_id !== user.id ||
+      session.metadata?.type !== 'reader_premium' ||
+      session.status !== 'complete' ||
+      !session.subscription
+    ) {
       return NextResponse.json({ error: 'No completed session found' }, { status: 404 });
     }
 
