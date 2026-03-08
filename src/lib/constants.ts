@@ -11,6 +11,7 @@ export type PrimaryGenre = {
   emoji: string
   description: string
   readerDescription: string // shown in reader onboarding
+  shortName?: string // abbreviated display name for constrained UI (e.g. compact cards)
 }
 
 export type Subgenre = {
@@ -18,6 +19,7 @@ export type Subgenre = {
   slug: string
   description: string
   authorGuidance: string
+  shortName?: string // abbreviated display name for constrained UI (e.g. compact cards)
 }
 
 export type Tag = {
@@ -70,6 +72,7 @@ export const PRIMARY_GENRES: PrimaryGenre[] = [
     emoji: '🚀',
     description: 'Futures, speculative technology, space, and scientifically framed impossibilities.',
     readerDescription: 'Space, technology, and the future',
+    shortName: 'Sci-Fi',
   },
   {
     name: 'Horror',
@@ -91,6 +94,7 @@ export const PRIMARY_GENRES: PrimaryGenre[] = [
     emoji: '🔍',
     description: 'Suspense, investigation, crime, secrets, pursuit, and revelation.',
     readerDescription: 'Suspense, puzzles, and edge-of-your-seat tension',
+    shortName: 'Thriller',
   },
   {
     name: 'Action & Adventure',
@@ -98,6 +102,7 @@ export const PRIMARY_GENRES: PrimaryGenre[] = [
     emoji: '⚔️',
     description: 'Conflict, movement, quests, exploration, or survival as the main engine.',
     readerDescription: 'High-octane thrills, quests, and exploration',
+    shortName: 'Action',
   },
   {
     name: 'Comedy & Satire',
@@ -105,6 +110,7 @@ export const PRIMARY_GENRES: PrimaryGenre[] = [
     emoji: '😂',
     description: 'Primary intent is to amuse, parody, or critique through humour.',
     readerDescription: 'Funny, satirical, and delightfully absurd',
+    shortName: 'Comedy',
   },
   {
     name: 'Contemporary Fiction',
@@ -112,6 +118,7 @@ export const PRIMARY_GENRES: PrimaryGenre[] = [
     emoji: '🏙️',
     description: 'Real-world setting, no speculative core premise. Drama, slice-of-life, or commercial.',
     readerDescription: 'Modern-day stories and everyday drama',
+    shortName: 'Contemporary',
   },
   {
     name: 'Historical Fiction',
@@ -119,6 +126,7 @@ export const PRIMARY_GENRES: PrimaryGenre[] = [
     emoji: '📜',
     description: 'Specific real historical period where the setting is a defining feature.',
     readerDescription: 'Stories from ages past',
+    shortName: 'Historical',
   },
   {
     name: 'Literary Fiction',
@@ -126,6 +134,7 @@ export const PRIMARY_GENRES: PrimaryGenre[] = [
     emoji: '📖',
     description: 'Prose craft, theme, and character interiority are primary over plot mechanics.',
     readerDescription: 'Beautifully written, character-driven, idea-rich',
+    shortName: 'Literary',
   },
   {
     name: 'Paranormal & Supernatural',
@@ -133,6 +142,7 @@ export const PRIMARY_GENRES: PrimaryGenre[] = [
     emoji: '🌙',
     description: 'Paranormal/supernatural in a near-real setting — not primarily Horror, Romance, or worldbuilding Fantasy.',
     readerDescription: 'Ghosts, witches, and hidden supernatural worlds',
+    shortName: 'Paranormal',
   },
   {
     name: 'Non-Fiction & Essay',
@@ -140,6 +150,7 @@ export const PRIMARY_GENRES: PrimaryGenre[] = [
     emoji: '✍️',
     description: 'True stories, memoir, essay, narrative non-fiction, serial journalism, and craft writing.',
     readerDescription: 'True stories, memoir, and sharp essays',
+    shortName: 'Non-Fiction',
   },
   {
     name: 'Fan Fiction',
@@ -167,16 +178,16 @@ export const SUBGENRES: Record<string, Subgenre[]> = {
     { name: 'Cultivation / Xianxia', slug: 'cultivation-xianxia', description: 'Chinese-inspired cultivation systems, spiritual power, martial progression.', authorGuidance: 'Qi, realms, tribulations' },
     { name: 'Wuxia', slug: 'wuxia', description: 'Martial arts-focused, often historical Chinese-inspired, no cultivation required.', authorGuidance: 'Jianghu / martial honour' },
     { name: 'Murim', slug: 'murim', description: 'Korean martial arts fantasy conventions, sects, masters, regressors common.', authorGuidance: 'Korean martial fantasy ecosystem' },
-    { name: 'Isekai / Portal Fantasy', slug: 'isekai-portal-fantasy', description: 'Character transported/reincarnated into another world.', authorGuidance: 'Portal/summoned/reborn elsewhere' },
+    { name: 'Isekai / Portal Fantasy', slug: 'isekai-portal-fantasy', description: 'Character transported/reincarnated into another world.', authorGuidance: 'Portal/summoned/reborn elsewhere', shortName: 'Isekai' },
     { name: 'Urban Fantasy', slug: 'urban-fantasy', description: 'Magic/supernatural systems in a modern city; worldbuilding focus matters.', authorGuidance: 'Hidden magic society, magical investigation' },
-    { name: 'Dark Fantasy / Grimdark', slug: 'dark-fantasy-grimdark', description: 'Bleak, brutal, morally grey fantasy with serious consequences.', authorGuidance: 'Tone-heavy but a stable fantasy convention' },
+    { name: 'Dark Fantasy / Grimdark', slug: 'dark-fantasy-grimdark', description: 'Bleak, brutal, morally grey fantasy with serious consequences.', authorGuidance: 'Tone-heavy but a stable fantasy convention', shortName: 'Dark Fantasy' },
     { name: 'Mythological Fantasy', slug: 'mythological-fantasy', description: 'Real-world mythologies drive worldbuilding and conflict.', authorGuidance: 'Greek/Norse/Egyptian/etc.-rooted' },
     { name: 'Fairy Tale Retelling', slug: 'fairy-tale-retelling', description: 'Reworking known fairy tales/folk stories.', authorGuidance: 'Retellings/fractures' },
-    { name: 'Gaslamp / Steampunk Fantasy', slug: 'gaslamp-steampunk-fantasy', description: 'Industrial-era aesthetics + magic.', authorGuidance: 'Victorian-ish fantasy tech/magic blend' },
+    { name: 'Gaslamp / Steampunk Fantasy', slug: 'gaslamp-steampunk-fantasy', description: 'Industrial-era aesthetics + magic.', authorGuidance: 'Victorian-ish fantasy tech/magic blend', shortName: 'Gaslamp Steampunk' },
     { name: 'Romantasy', slug: 'romantasy', description: 'Fantasy and romance are co-equal narrative engines.', authorGuidance: 'Both must be central' },
     { name: 'Dungeon Core', slug: 'dungeon-core', description: 'MC is the dungeon/intelligence behind the dungeon.', authorGuidance: 'Dungeon consciousness perspective' },
     { name: 'System Apocalypse', slug: 'system-apocalypse', description: 'Real world receives game-like system overlay.', authorGuidance: 'Earth + system arrival' },
-    { name: 'Kingdom / Base Building', slug: 'kingdom-base-building', description: 'Governance, settlement growth, expansion are central.', authorGuidance: 'Logistics/infrastructure/politics focus' },
+    { name: 'Kingdom / Base Building', slug: 'kingdom-base-building', description: 'Governance, settlement growth, expansion are central.', authorGuidance: 'Logistics/infrastructure/politics focus', shortName: 'Kingdom Building' },
     { name: 'Sword & Sorcery', slug: 'sword-and-sorcery', description: 'Personal-scale, episodic, adventure-heavy fantasy.', authorGuidance: 'Conan-style, immediate stakes' },
   ],
   'science-fiction': [
@@ -185,7 +196,7 @@ export const SUBGENRES: Record<string, Subgenre[]> = {
     { name: 'Post-Apocalyptic', slug: 'post-apocalyptic', description: 'Set after collapse; survival/rebuilding in the aftermath.', authorGuidance: 'Collapse already happened' },
     { name: 'Dystopian', slug: 'dystopian', description: 'Oppressive systems/societies; collapse not required.', authorGuidance: 'Surveillance/control/power' },
     { name: 'Hard Science Fiction', slug: 'hard-science-fiction', description: 'Scientific plausibility and rigor are primary values.', authorGuidance: 'Extrapolation matters' },
-    { name: 'Military Science Fiction', slug: 'military-science-fiction', description: 'War and command structures in SF context.', authorGuidance: 'Units/chain of command' },
+    { name: 'Military Science Fiction', slug: 'military-science-fiction', description: 'War and command structures in SF context.', authorGuidance: 'Units/chain of command', shortName: 'Military Sci-Fi' },
     { name: 'Solarpunk', slug: 'solarpunk', description: 'Optimistic, ecological, community-centred future.', authorGuidance: 'Regeneration and hopeful systems' },
     { name: 'Time Travel', slug: 'time-travel', description: 'Temporal mechanics are central to the plot.', authorGuidance: 'Loops/paradoxes/consequences' },
     { name: 'Biopunk / Genepunk', slug: 'biopunk-genepunk', description: 'Genetic engineering, biotech, body-as-platform futures.', authorGuidance: 'Organic/biological tech focus' },
@@ -196,14 +207,14 @@ export const SUBGENRES: Record<string, Subgenre[]> = {
     { name: 'Alternate History', slug: 'alternate-history-sf', description: 'Historical divergence leading to a different present/future.', authorGuidance: 'Counterfactual history with speculative framing' },
   ],
   'horror': [
-    { name: 'Psychological Horror', slug: 'psychological-horror', description: 'Mental states, paranoia, uncertainty, unreliable reality.', authorGuidance: 'Internal dread' },
+    { name: 'Psychological Horror', slug: 'psychological-horror', description: 'Mental states, paranoia, uncertainty, unreliable reality.', authorGuidance: 'Internal dread', shortName: 'Psych Horror' },
     { name: 'Supernatural Horror', slug: 'supernatural-horror', description: 'Ghosts, demons, monsters, cursed phenomena.', authorGuidance: 'External supernatural threat' },
     { name: 'Cosmic Horror', slug: 'cosmic-horror', description: 'Existential dread, unknowable forces, insignificance.', authorGuidance: 'Lovecraftian scale' },
     { name: 'Body Horror', slug: 'body-horror', description: 'Physical transformation, corruption, visceral biological dread.', authorGuidance: 'Flesh-focused terror' },
     { name: 'Gothic Horror', slug: 'gothic-horror', description: 'Atmosphere, decay, inheritance, haunted spaces.', authorGuidance: 'Gothic architecture + dread' },
     { name: 'Folk Horror', slug: 'folk-horror', description: 'Rural tradition, ritual, landscape/community as threat.', authorGuidance: 'Old ways, harvest dread' },
-    { name: 'Slasher / Survival Horror', slug: 'slasher-survival-horror', description: 'Pursuit, entrapment, staying alive under threat.', authorGuidance: 'Chase/survive mode' },
-    { name: 'Internet / Analog Horror', slug: 'internet-analog-horror', description: 'Web-native or media-native horror artifacts and storytelling.', authorGuidance: 'Creepypasta/ARG/analog mode' },
+    { name: 'Slasher / Survival Horror', slug: 'slasher-survival-horror', description: 'Pursuit, entrapment, staying alive under threat.', authorGuidance: 'Chase/survive mode', shortName: 'Slasher/Survival' },
+    { name: 'Internet / Analog Horror', slug: 'internet-analog-horror', description: 'Web-native or media-native horror artifacts and storytelling.', authorGuidance: 'Creepypasta/ARG/analog mode', shortName: 'Internet Horror' },
     { name: 'Cozy Horror', slug: 'cozy-horror', description: 'Spooky/uncanny atmosphere without intense terror.', authorGuidance: 'Comfort-spooky' },
     { name: 'Apocalyptic Horror', slug: 'apocalyptic-horror', description: 'End-of-world collapse happening in real time as horror.', authorGuidance: 'Living through the end' },
   ],
@@ -214,20 +225,20 @@ export const SUBGENRES: Record<string, Subgenre[]> = {
     { name: 'Paranormal Romance', slug: 'paranormal-romance', description: 'Supernatural setting/elements, romance spine.', authorGuidance: 'Vampires/shifters/fae + HEA/HFN expectation' },
     { name: 'Romantic Comedy (RomCom)', slug: 'romantic-comedy', description: 'Comedy + romance co-central, light/warm structure.', authorGuidance: 'Banter + HEA' },
     { name: 'Dark Romance', slug: 'dark-romance', description: 'Taboo/dangerous/morally complex romantic dynamics.', authorGuidance: 'Requires careful warnings' },
-    { name: 'Mafia / Organised Crime Romance', slug: 'mafia-organised-crime-romance', description: 'Criminal ecosystem is the relationship context.', authorGuidance: 'Mob/mafia underworld romance' },
+    { name: 'Mafia / Organised Crime Romance', slug: 'mafia-organised-crime-romance', description: 'Criminal ecosystem is the relationship context.', authorGuidance: 'Mob/mafia underworld romance', shortName: 'Mafia Romance' },
     { name: 'Sports Romance', slug: 'sports-romance', description: 'Sport/athlete life central to romance context.', authorGuidance: 'Team/training/competition matters' },
     { name: 'Workplace Romance', slug: 'workplace-romance', description: 'Professional setting drives relationship proximity and conflict.', authorGuidance: 'Office/hospital/firehouse etc.' },
     { name: 'Boys Love (BL)', slug: 'boys-love', description: 'M/M romance with BL conventions/tradition.', authorGuidance: 'BL-specific reader expectation' },
     { name: 'Girls Love (GL)', slug: 'girls-love', description: 'F/F romance / yuri-adjacent conventions.', authorGuidance: 'GL-specific framing when relevant' },
     { name: 'Omegaverse', slug: 'omegaverse', description: 'A/B/O dynamics as core relationship framework.', authorGuidance: 'Social/biological hierarchy framework' },
-    { name: 'Reverse Harem / Why Choose', slug: 'reverse-harem-why-choose', description: 'One lead, multiple love interests, no forced end-choice.', authorGuidance: 'RH/why choose convention' },
+    { name: 'Reverse Harem / Why Choose', slug: 'reverse-harem-why-choose', description: 'One lead, multiple love interests, no forced end-choice.', authorGuidance: 'RH/why choose convention', shortName: 'Reverse Harem' },
     { name: 'New Adult Romance', slug: 'new-adult-romance', description: 'Ages ~18–25, first adult-life transitions, romance central.', authorGuidance: 'Between YA and adult market positioning' },
   ],
   'thriller-mystery': [
     { name: 'Cozy Mystery', slug: 'cozy-mystery', description: 'Amateur sleuth, low graphic violence, community puzzle.', authorGuidance: 'Cozy puzzle-first mystery' },
     { name: 'Crime Thriller', slug: 'crime-thriller', description: 'Investigation/procedural/criminal pursuit.', authorGuidance: 'Professional or high-stakes crime focus' },
-    { name: 'Psychological Thriller', slug: 'psychological-thriller', description: 'Tension from manipulation, perception, distrust.', authorGuidance: 'Mind-games and instability' },
-    { name: 'Espionage / Spy Thriller', slug: 'espionage-spy-thriller', description: 'Intelligence, covert operations, geopolitical stakes.', authorGuidance: 'Agencies/secrets/tradecraft' },
+    { name: 'Psychological Thriller', slug: 'psychological-thriller', description: 'Tension from manipulation, perception, distrust.', authorGuidance: 'Mind-games and instability', shortName: 'Psych Thriller' },
+    { name: 'Espionage / Spy Thriller', slug: 'espionage-spy-thriller', description: 'Intelligence, covert operations, geopolitical stakes.', authorGuidance: 'Agencies/secrets/tradecraft', shortName: 'Spy Thriller' },
     { name: 'Legal / Court Drama', slug: 'legal-court-drama', description: 'Justice/procedure/courts central to tension.', authorGuidance: 'Trial/case-driven structure' },
     { name: 'Conspiracy Thriller', slug: 'conspiracy-thriller', description: 'Hidden powers, institutions, dangerous truths.', authorGuidance: 'Cover-up/exposure structure' },
     { name: 'Political Thriller', slug: 'political-thriller', description: 'Power, government, geopolitics, political machinery.', authorGuidance: 'State/policy/power stakes' },
@@ -242,14 +253,14 @@ export const SUBGENRES: Record<string, Subgenre[]> = {
     { name: 'Martial Arts', slug: 'martial-arts', description: 'Combat craft, training, competition, philosophy (non-cultivation focus).', authorGuidance: 'Real-world/light-speculative martial focus' },
     { name: 'Military / War', slug: 'military-war', description: 'Combat, tactics, campaign action, cost of war.', authorGuidance: 'Action/war-first framing' },
     { name: 'Pirate / Seafaring', slug: 'pirate-seafaring', description: 'Ships, ocean travel, naval conflict, maritime adventure.', authorGuidance: 'Seafaring adventure identity' },
-    { name: 'Treasure Hunting / Exploration', slug: 'treasure-hunting-exploration', description: 'Expedition, discovery, ruins, archaeology-style adventure.', authorGuidance: 'Discovery-driven action' },
+    { name: 'Treasure Hunting / Exploration', slug: 'treasure-hunting-exploration', description: 'Expedition, discovery, ruins, archaeology-style adventure.', authorGuidance: 'Discovery-driven action', shortName: 'Treasure Hunting' },
     { name: 'Tower Climbing', slug: 'tower-climbing', description: 'Vertical challenge progression floor-by-floor.', authorGuidance: 'Tower ascent as core structure' },
   ],
   'comedy-satire': [
     { name: 'Comedic Fantasy', slug: 'comedic-fantasy', description: 'Fantasy setting where comedy is the core reading promise.', authorGuidance: 'Funny-first fantasy' },
     { name: 'Parody', slug: 'parody', description: 'Exaggerates genre conventions for comic effect.', authorGuidance: 'Direct imitation/mockery' },
     { name: 'Absurdist Fiction', slug: 'absurdist-fiction', description: 'Surreal logic, nonsense structures, meaning through absurdity.', authorGuidance: 'Reality misbehaves' },
-    { name: 'Romantic Comedy', slug: 'romantic-comedy-satire', description: 'Romance and comedy co-drive the story.', authorGuidance: 'Romcom-first audience promise' },
+    { name: 'Romantic Comedy', slug: 'romantic-comedy-satire', description: 'Romance and comedy co-drive the story.', authorGuidance: 'Romcom-first audience promise', shortName: 'Romantic Comedy' },
     { name: 'Workplace Comedy', slug: 'workplace-comedy', description: 'Workplace/social systems are the engine of humour.', authorGuidance: 'Job is the joke' },
     { name: 'Social Satire', slug: 'social-satire', description: 'Uses humour to critique institutions/culture.', authorGuidance: 'Society-targeted comedy' },
     { name: 'Dark Comedy', slug: 'dark-comedy', description: 'Humour around bleak/taboo/disturbing subject matter.', authorGuidance: 'Gallows humour mode' },
@@ -260,28 +271,28 @@ export const SUBGENRES: Record<string, Subgenre[]> = {
     { name: 'Family Drama', slug: 'family-drama', description: 'Family relationships and tensions are central.', authorGuidance: 'Generational dynamics' },
     { name: 'Workplace Fiction', slug: 'workplace-fiction', description: 'Career/professional life and identity at the centre.', authorGuidance: 'Work as social world' },
     { name: 'Sports Fiction', slug: 'sports-fiction', description: 'Competition/training/team identity in real-world setting.', authorGuidance: 'Sport-world first' },
-    { name: 'Campus / Academic Fiction', slug: 'campus-academic-fiction', description: 'School/university/academic institution defines culture and conflict.', authorGuidance: 'Campus systems matter' },
+    { name: 'Campus / Academic Fiction', slug: 'campus-academic-fiction', description: 'School/university/academic institution defines culture and conflict.', authorGuidance: 'Campus systems matter', shortName: 'Campus Fiction' },
     { name: 'Foodie Fiction', slug: 'foodie-fiction', description: 'Food/cooking/hospitality culture drives setting and story.', authorGuidance: 'Culinary-centred fiction' },
     { name: 'Music Fiction', slug: 'music-fiction', description: 'Music creation/performance/industry central to story.', authorGuidance: 'Band/artist/scene focus' },
   ],
   'historical-fiction': [
     { name: 'Ancient World', slug: 'ancient-world', description: 'Pre-medieval real historical settings.', authorGuidance: 'Egypt/Rome/Han/etc.' },
     { name: 'Medieval', slug: 'medieval', description: 'Medieval-era historical settings (non-magical).', authorGuidance: 'Approx. 500–1400 CE' },
-    { name: 'Renaissance & Early Modern', slug: 'renaissance-early-modern', description: '15th–17th century historical settings.', authorGuidance: '1400–1700 CE' },
+    { name: 'Renaissance & Early Modern', slug: 'renaissance-early-modern', description: '15th–17th century historical settings.', authorGuidance: '1400–1700 CE', shortName: 'Renaissance' },
     { name: 'Victorian & Edwardian', slug: 'victorian-edwardian', description: 'Industrial/class/empire era historical settings.', authorGuidance: '1800–1914' },
     { name: '20th Century', slug: '20th-century', description: 'WWI through late Cold War historical fiction.', authorGuidance: '1914–1990' },
-    { name: 'Non-Western Historical', slug: 'non-western-historical', description: 'Historical fiction centred on non-European settings/perspectives.', authorGuidance: 'Any period, non-Western focus' },
+    { name: 'Non-Western Historical', slug: 'non-western-historical', description: 'Historical fiction centred on non-European settings/perspectives.', authorGuidance: 'Any period, non-Western focus', shortName: 'Non-Western' },
     { name: 'Alternate History', slug: 'alternate-history', description: 'Counterfactual historical divergence in a historical-fiction frame.', authorGuidance: '"What if" history' },
-    { name: 'War Fiction (Historical)', slug: 'war-fiction-historical', description: 'Historical conflict from soldier/civilian/community perspectives.', authorGuidance: 'War shapes the story' },
+    { name: 'War Fiction (Historical)', slug: 'war-fiction-historical', description: 'Historical conflict from soldier/civilian/community perspectives.', authorGuidance: 'War shapes the story', shortName: 'War Fiction' },
   ],
   'literary-fiction': [
     { name: 'Magical Realism', slug: 'magical-realism', description: 'Mundane world with subtle magical elements treated as normal.', authorGuidance: 'Literary realism + quiet magic' },
     { name: 'Satirical Fiction', slug: 'satirical-fiction', description: 'Narrative fiction used for social/political critique.', authorGuidance: 'Literary satire focus' },
-    { name: 'Philosophical Fiction', slug: 'philosophical-fiction', description: 'Questions/ideas/ethics are primary content.', authorGuidance: 'Idea-driven literary fiction' },
-    { name: 'Absurdist Literary Fiction', slug: 'absurdist-literary-fiction', description: 'Literary absurdism, alienation, surreal systems.', authorGuidance: 'Kafka-adjacent traditions' },
+    { name: 'Philosophical Fiction', slug: 'philosophical-fiction', description: 'Questions/ideas/ethics are primary content.', authorGuidance: 'Idea-driven literary fiction', shortName: 'Philosophical' },
+    { name: 'Absurdist Literary Fiction', slug: 'absurdist-literary-fiction', description: 'Literary absurdism, alienation, surreal systems.', authorGuidance: 'Kafka-adjacent traditions', shortName: 'Absurdist' },
     { name: 'Political Fiction', slug: 'political-fiction', description: 'Power, ideology, governance as literary focus.', authorGuidance: 'Political systems as theme' },
     { name: 'Autofiction', slug: 'autofiction', description: 'Fictionalised autobiography/author-self blending.', authorGuidance: 'Memoir-fiction blur' },
-    { name: 'Speculative Literary Fiction', slug: 'speculative-literary-fiction', description: 'Literary fiction with speculative elements, literary frame primary.', authorGuidance: 'Literary-first speculative' },
+    { name: 'Speculative Literary Fiction', slug: 'speculative-literary-fiction', description: 'Literary fiction with speculative elements, literary frame primary.', authorGuidance: 'Literary-first speculative', shortName: 'Spec. Literary' },
   ],
   'paranormal-supernatural': [
     { name: 'Ghost Story', slug: 'ghost-story', description: 'Hauntings/spirits/liminal spaces in a near-real setting.', authorGuidance: 'If dread dominates, choose Horror' },
@@ -290,16 +301,16 @@ export const SUBGENRES: Record<string, Subgenre[]> = {
     { name: 'Psychic / Abilities', slug: 'psychic-abilities', description: 'Paranormal mental/perceptual abilities in real-world contexts.', authorGuidance: 'Psychic powers, no system framing' },
     { name: 'Shifter Fiction', slug: 'shifter-fiction', description: 'Shapeshifter identity and community central (non-romance-primary).', authorGuidance: 'Pack/shifter culture focus' },
     { name: 'Urban Supernatural', slug: 'urban-supernatural', description: 'Hidden supernatural societies in real cities (less system-heavy than urban fantasy).', authorGuidance: 'Secret supernatural underworld' },
-    { name: 'Occult / Cursed Objects', slug: 'occult-cursed-objects', description: 'Rituals, curses, occult phenomena, haunted artifacts.', authorGuidance: 'Paranormal object/event-driven stories' },
+    { name: 'Occult / Cursed Objects', slug: 'occult-cursed-objects', description: 'Rituals, curses, occult phenomena, haunted artifacts.', authorGuidance: 'Paranormal object/event-driven stories', shortName: 'Occult' },
   ],
   'non-fiction-essay': [
     { name: 'Personal Memoir', slug: 'personal-memoir', description: 'First-person true-life narrative.', authorGuidance: 'Your lived experience' },
-    { name: 'Narrative Non-Fiction', slug: 'narrative-non-fiction', description: 'True events told with narrative/literary technique.', authorGuidance: 'Story-structured truth' },
-    { name: 'Personal Essay / Column', slug: 'personal-essay-column', description: 'Serialised reflection/opinion/personal perspective.', authorGuidance: 'Essayistic format' },
+    { name: 'Narrative Non-Fiction', slug: 'narrative-non-fiction', description: 'True events told with narrative/literary technique.', authorGuidance: 'Story-structured truth', shortName: 'Narrative NF' },
+    { name: 'Personal Essay / Column', slug: 'personal-essay-column', description: 'Serialised reflection/opinion/personal perspective.', authorGuidance: 'Essayistic format', shortName: 'Personal Essay' },
     { name: 'Travel Writing', slug: 'travel-writing', description: 'Place/culture/movement as subject.', authorGuidance: 'Place and meaning' },
     { name: 'Creative Non-Fiction', slug: 'creative-non-fiction', description: 'Factually grounded but literary/crafted in form.', authorGuidance: 'Artful truth-telling' },
     { name: 'Craft & How-To', slug: 'craft-how-to', description: 'Writing/process/skill guidance for readers/creators.', authorGuidance: 'Practical instruction' },
-    { name: 'Investigative / Deep Dive', slug: 'investigative-deep-dive', description: 'Research-driven serial or longform inquiry.', authorGuidance: 'Evidence/explainer reporting' },
+    { name: 'Investigative / Deep Dive', slug: 'investigative-deep-dive', description: 'Research-driven serial or longform inquiry.', authorGuidance: 'Evidence/explainer reporting', shortName: 'Investigative' },
   ],
   'fan-fiction': [
     { name: 'Canon Compliant', slug: 'canon-compliant', description: 'Consistent with canon and set within canon logic.', authorGuidance: 'Gap fills / canon-consistent extensions' },
@@ -307,7 +318,7 @@ export const SUBGENRES: Record<string, Subgenre[]> = {
     { name: 'Alternate Universe (AU)', slug: 'alternate-universe', description: 'Characters/premise recontextualised in a different setting.', authorGuidance: 'Coffee shop AU, school AU, etc.' },
     { name: 'Fix-It', slug: 'fix-it', description: 'Rewrites canon outcomes to repair perceived failures.', authorGuidance: 'Saves characters / fixes endings' },
     { name: 'Crossover', slug: 'crossover', description: 'Multiple canons/properties intersect.', authorGuidance: 'Shared canon collision' },
-    { name: 'Reader Insert / Self-Insert', slug: 'reader-insert-self-insert', description: 'Reader stand-in or self enters canon world.', authorGuidance: 'Y/N or self-insert convention' },
+    { name: 'Reader Insert / Self-Insert', slug: 'reader-insert-self-insert', description: 'Reader stand-in or self enters canon world.', authorGuidance: 'Y/N or self-insert convention', shortName: 'Reader Insert' },
     { name: 'OC-Centric', slug: 'oc-centric', description: 'Original character is the focal lead in canon world.', authorGuidance: 'New protagonist in known universe' },
     { name: 'Continuation / Sequel', slug: 'continuation-sequel', description: 'Continues events after canon ends.', authorGuidance: '"What happened next?"' },
     { name: 'Prequel', slug: 'prequel', description: 'Set before canon.', authorGuidance: 'Backstory/origin events' },
