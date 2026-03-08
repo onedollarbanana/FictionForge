@@ -25,7 +25,7 @@ export function CookieConsent() {
 
   return (
     <div
-      className="fixed bottom-0 inset-x-0 z-50 flex justify-center p-4 animate-in slide-in-from-bottom duration-500"
+      className="fixed bottom-0 inset-x-0 z-50 flex justify-center p-4 safe-area-bottom animate-in slide-in-from-bottom duration-500"
     >
       <div className="w-full max-w-lg rounded-lg border bg-background/95 backdrop-blur-sm shadow-lg p-4 space-y-3">
         <p className="text-sm text-muted-foreground">

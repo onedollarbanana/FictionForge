@@ -129,7 +129,7 @@ export function PWAInstallPrompt() {
 
   return (
     <div
-      className={`fixed bottom-20 left-4 right-4 z-40 transition-all duration-300 ease-out sm:left-auto sm:right-6 sm:max-w-sm ${
+      className={`fixed float-above-nav left-4 right-4 z-40 transition-all duration-300 ease-out sm:left-auto sm:right-6 sm:max-w-sm ${
         isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
       }`}
     >

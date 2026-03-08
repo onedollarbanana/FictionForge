@@ -58,10 +58,62 @@
   }
 }
 
-/* iOS Safe Area support for bottom navigation */
+/* Safe area utilities — viewport-fit:cover means content goes behind notch/home-bar.
+   Apply to fixed elements so they don't overlap system UI chrome. */
 @layer utilities {
+  /* For fixed-bottom elements (nav bars, banners, cookie consent) */
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  /* For fixed-top elements (offline indicator) */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  /* Article bottom padding in reader — clears mobile nav bar including safe area.
+     4.5rem (72px) covers the nav content; env() adds the home-indicator height. */
+  .pb-safe-nav {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  }
+  @media (min-width: 768px) {
+    .pb-safe-nav {
+      padding-bottom: 2rem;
+    }
+  }
+  /* Floating elements that must sit above the mobile nav bar + safe area
+     (toasts, install prompt, scroll-to-top button) */
+  .float-above-nav {
+    bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  }
+  @media (min-width: 768px) {
+    .float-above-nav {
+      bottom: 2rem;
+    }
+  }
+}
+
+/* Prevent pull-to-refresh and elastic over-scroll on mobile browsers.
+   Readers swiping past the top/bottom of content won't trigger accidental refresh. */
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* Respect the user's "Reduce Motion" accessibility preference.
+   Use 0.01ms (not 0ms/none) so animationend/transitionend still fire —
+   Radix UI relies on these events to unmount overlays. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Optimizations when running as installed PWA in standalone mode */
+@media (display-mode: standalone) {
+  /* Hide any browser-navigation affordances that are irrelevant in standalone */
+  .pwa-hide-standalone {
+    display: none !important;
   }
 }
 
@@ -89,6 +141,17 @@ body.immersive-mode .reader-bottom-nav {
 .reader-sticky-header,
 .reader-bottom-nav {
   transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Allow native horizontal scrolling inside tables, code blocks, and stat boxes.
+   overscroll-behavior-x: contain prevents the scroll from propagating to the page
+   and triggering swipe-navigation; touch-action lets the browser handle pan natively. */
+.prose table,
+.prose pre,
+[data-type="statBox"],
+[data-type="systemMessage"] {
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
 }
 
 /* Reading settings: override Tailwind Typography prose defaults */
