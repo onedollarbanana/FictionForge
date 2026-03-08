@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     // Validate tier name
     if (!tierName || !(tierName in PLATFORM_CONFIG.TIER_PRICES)) {
       return NextResponse.json(
-        { error: 'Invalid tier name. Must be one of: supporter, enthusiast, patron' },
+        { error: `Invalid tier name. Must be one of: ${Object.keys(PLATFORM_CONFIG.TIER_PRICES).join(', ')}` },
         { status: 400 }
       );
     }
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     const authorName = authorProfile?.display_name || authorProfile?.username || 'Author';
     const authorUsername = authorProfile?.username || authorId;
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://fictionry-beige.vercel.app';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.fictionry.com';
 
     // Create Stripe Checkout session with Connect
     const session = await stripe.checkout.sessions.create({

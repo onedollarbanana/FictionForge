@@ -50,7 +50,7 @@ export async function POST() {
     }
 
     // Create onboarding link
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://fictionry-beige.vercel.app';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.fictionry.com';
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccountId,
       refresh_url: `${siteUrl}/author/dashboard/monetization?refresh=true`,
