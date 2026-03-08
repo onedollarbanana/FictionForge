@@ -18,8 +18,9 @@ const tabs = [
   { key: 'reports', label: 'Reports' },
 ];
 
-function formatCurrency(cents: number | null): string {
-  return `$${((cents ?? 0) / 100).toFixed(2)}`;
+function formatCurrency(cents: number | null | undefined): string {
+  if (cents === null || cents === undefined) return '—';
+  return `$${(cents / 100).toFixed(2)}`;
 }
 
 function formatDate(timestamp: string | null): string {
@@ -230,7 +231,6 @@ async function SubscriptionsTab() {
                 <td className="p-3">
                   <span className="text-xs">
                     {sub.type ?? '—'}
-                    {sub.type === 'author' && sub.author?.username ? ` → ${sub.author.username}` : ''}
                   </span>
                 </td>
                 <td className="p-3">{sub.tier_name ?? '—'}</td>
@@ -357,7 +357,7 @@ async function PayoutsTab() {
                 <td className="p-3">{p.author?.username ?? 'Unknown'}</td>
                 <td className="p-3 text-right font-mono">{formatCurrency(p.amount_cents)}</td>
                 <td className="p-3"><StatusBadge status={p.status} /></td>
-                <td className="p-3 font-mono text-xs text-muted-foreground">{p.stripe_payout_id ?? '—'}</td>
+                <td className="p-3 font-mono text-xs text-muted-foreground">{p.stripe_transfer_id ?? p.stripe_payout_id ?? '—'}</td>
                 <td className="p-3">{p.processor?.username ?? '—'}</td>
               </tr>
             ))
