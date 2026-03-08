@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { BookOpen, Twitter, Github, Mail } from 'lucide-react'
+import { Twitter, Github, Mail } from 'lucide-react'
+import { LogoWordmark } from '@/components/logo-wordmark'
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
@@ -10,10 +11,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="space-y-4">
-            <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-              <BookOpen className="h-6 w-6 text-violet-600" />
-              <span>Fictionry</span>
-            </Link>
+            <LogoWordmark height={28} />
             <p className="text-sm text-muted-foreground">
               Where stories come alive. A modern platform for web fiction authors and readers.
             </p>

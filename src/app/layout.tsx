@@ -41,6 +41,10 @@ export const metadata: Metadata = {
     description: 'A modern platform for web fiction authors and readers',
     images: ['/og-default.png'],
   },
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -67,7 +71,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
       </head>
       <body className={`${inter.className} ${merriweather.variable} ${lora.variable} ${literata.variable} ${sourceSans.variable}`}>
         <ThemeProvider
