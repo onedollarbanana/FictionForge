@@ -146,7 +146,7 @@ export function ChapterContentWrapper({ children, headerContent, storyTitle, sto
 
       {/* Chapter Content with Applied Settings */}
       <article 
-        className={`container mx-auto px-5 md:px-4 py-8 pb-24 md:pb-8 ${widthClass} ${fontClass} ${lineHeightClass}`}
+        className={`container mx-auto px-5 md:px-4 py-8 pb-safe-nav ${widthClass} ${fontClass} ${lineHeightClass}`}
         style={{ fontSize: `${settings.fontSize}px` }}
         onClick={handleContentTap}
         data-reading-settings

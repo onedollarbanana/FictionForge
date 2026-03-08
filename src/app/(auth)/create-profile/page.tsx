@@ -31,8 +31,8 @@ export default function CreateProfilePage() {
       const { data } = await supabase
         .from("profiles")
         .select("username")
-        .eq("username", username.toLowerCase())
-        .single();
+        .eq("username", username.trim().toLowerCase())
+        .maybeSingle();
 
       setUsernameAvailable(!data);
       setCheckingUsername(false);
@@ -56,16 +56,21 @@ export default function CreateProfilePage() {
       return;
     }
 
+    const trimmedUsername = username.trim().toLowerCase();
     const { error } = await supabase
       .from("profiles")
       .update({
-        username: username.toLowerCase(),
-        display_name: displayName || username,
+        username: trimmedUsername,
+        display_name: displayName.trim() || trimmedUsername,
       })
       .eq("id", user.id);
 
     if (error) {
-      setError(error.message);
+      if (error.code === '23505' || error.message.includes('duplicate') || error.message.includes('unique')) {
+        setError("That username is already taken. Please choose another.");
+      } else {
+        setError(error.message);
+      }
       setLoading(false);
       return;
     }
@@ -75,7 +80,7 @@ export default function CreateProfilePage() {
     router.refresh();
   };
 
-  const isValidUsername = /^[a-z0-9_]{3,20}$/.test(username.toLowerCase());
+  const isValidUsername = /^[a-z0-9_]{3,20}$/.test(username.trim().toLowerCase());
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">

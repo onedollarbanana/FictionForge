@@ -114,8 +114,8 @@ export async function GET(request: Request) {
           }
         }
 
-        // If user has an explicit next destination, respect it
-        if (next) {
+        // If user has an explicit next destination, respect it (must be a safe relative path)
+        if (next && next.startsWith('/') && !next.startsWith('//')) {
           return NextResponse.redirect(`${origin}${next}`)
         }
 
@@ -128,8 +128,9 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}/library`)
       }
 
-      // Fallback: if next is set use it, otherwise go to library
-      return NextResponse.redirect(`${origin}${next || '/library'}`)
+      // Fallback: if next is set use it (safe paths only), otherwise go to library
+      const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '/library'
+      return NextResponse.redirect(`${origin}${safeNext}`)
     }
   }
 

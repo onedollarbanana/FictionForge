@@ -113,7 +113,9 @@ export async function middleware(request: NextRequest) {
     // Protected routes - require auth
     if (request.nextUrl.pathname.startsWith('/author/') || request.nextUrl.pathname === '/author') {
       if (!user) {
-        return NextResponse.redirect(new URL('/login', request.url))
+        const loginUrl = new URL('/login', request.url)
+        loginUrl.searchParams.set('redirect', request.nextUrl.pathname)
+        return NextResponse.redirect(loginUrl)
       }
 
       // Check if user has profile
@@ -131,14 +133,18 @@ export async function middleware(request: NextRequest) {
     // Protect onboarding route - require auth
     if (request.nextUrl.pathname.startsWith('/onboarding')) {
       if (!user) {
-        return NextResponse.redirect(new URL('/login?redirect=/onboarding/genres', request.url))
+        const loginUrl = new URL('/login', request.url)
+        loginUrl.searchParams.set('redirect', request.nextUrl.pathname)
+        return NextResponse.redirect(loginUrl)
       }
     }
 
     // Protect library route - require auth
     if (request.nextUrl.pathname === '/library' || request.nextUrl.pathname.startsWith('/library/')) {
       if (!user) {
-        return NextResponse.redirect(new URL('/login?redirect=/library', request.url))
+        const loginUrl = new URL('/login', request.url)
+        loginUrl.searchParams.set('redirect', request.nextUrl.pathname)
+        return NextResponse.redirect(loginUrl)
       }
     }
 
@@ -147,8 +153,17 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/library', request.url))
     }
   } catch (error) {
-    // If auth check fails, allow request to continue
     console.error('Middleware auth error:', error)
+    // On auth failure, protect sensitive routes by redirecting to login
+    const path = request.nextUrl.pathname
+    if (
+      path.startsWith('/author') ||
+      path.startsWith('/admin') ||
+      path.startsWith('/library') ||
+      path.startsWith('/onboarding')
+    ) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
   }
 
   return response
