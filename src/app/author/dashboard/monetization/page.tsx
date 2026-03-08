@@ -19,7 +19,12 @@ import {
   ArrowLeft,
   Loader2,
   Save,
+  TrendingUp,
+  Users,
+  Wallet,
+  Clock,
 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import { HelpLink } from '@/components/ui/help-link'
 
 // --- Types ---
@@ -68,6 +73,17 @@ export default function MonetizationPage() {
   const [saving, setSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
+  // Earnings state
+  const [earnings, setEarnings] = useState<{
+    availableBalance: number
+    totalEarned: number
+    activeSubscribers: number
+    pendingPayout: number
+  } | null>(null)
+  const [earningsLoading, setEarningsLoading] = useState(true)
+  const [payoutLoading, setPayoutLoading] = useState(false)
+  const [payoutMessage, setPayoutMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
   const isConnected = accountStatus?.hasAccount && accountStatus?.onboardingComplete && accountStatus?.chargesEnabled
 
   // --- Data Fetching ---
@@ -115,6 +131,48 @@ export default function MonetizationPage() {
     }
   }, [])
 
+  const fetchEarnings = useCallback(async () => {
+    if (!user) return
+    setEarningsLoading(true)
+    try {
+      const supabase = createClient()
+
+      const [revenueRes, pendingPayoutRes, activeSubsRes] = await Promise.all([
+        supabase
+          .from('author_revenue')
+          .select('net_amount_cents')
+          .eq('author_id', user.id),
+        supabase
+          .from('payouts')
+          .select('amount_cents')
+          .eq('author_id', user.id)
+          .eq('status', 'pending'),
+        supabase
+          .from('author_subscriptions')
+          .select('id', { count: 'exact', head: true })
+          .eq('author_id', user.id)
+          .eq('status', 'active'),
+      ])
+
+      const totalEarned = (revenueRes.data ?? []).reduce(
+        (s, r) => s + (r.net_amount_cents ?? 0), 0
+      )
+      const pendingPayout = (pendingPayoutRes.data ?? []).reduce(
+        (s, r) => s + (r.amount_cents ?? 0), 0
+      )
+      // Available = total earned minus pending payout requests (paid payouts were
+      // already deducted when net_amount_cents was recorded as negative author_revenue)
+      const availableBalance = totalEarned - pendingPayout
+      const activeSubscribers = activeSubsRes.count ?? 0
+
+      setEarnings({ availableBalance, totalEarned, activeSubscribers, pendingPayout })
+    } catch {
+      // Non-critical — earnings section just won't show
+    } finally {
+      setEarningsLoading(false)
+    }
+  }, [user])
+
   useEffect(() => {
     if (!userLoading && !user) {
       router.push('/login')
@@ -123,6 +181,7 @@ export default function MonetizationPage() {
     if (user) {
       fetchAccountStatus()
       fetchTiers()
+      fetchEarnings()
 
       // Handle onboarding return
       if (searchParams.get('onboarding') === 'complete') {
@@ -131,7 +190,7 @@ export default function MonetizationPage() {
         window.history.replaceState({}, '', '/author/dashboard/monetization')
       }
     }
-  }, [user, userLoading, router, searchParams, fetchAccountStatus, fetchTiers])
+  }, [user, userLoading, router, searchParams, fetchAccountStatus, fetchTiers, fetchEarnings])
 
   // --- Handlers ---
 
@@ -196,6 +255,27 @@ export default function MonetizationPage() {
     } finally {
       setSaving(false)
       setTimeout(() => setSaveMessage(null), 4000)
+    }
+  }
+
+  async function handleRequestPayout() {
+    setPayoutLoading(true)
+    setPayoutMessage(null)
+    try {
+      const res = await fetch('/api/stripe/request-payout', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) {
+        setPayoutMessage({ type: 'error', text: data.error || 'Failed to request payout.' })
+      } else {
+        setPayoutMessage({ type: 'success', text: 'Payout request submitted! An admin will process it shortly.' })
+        // Refresh earnings to reflect pending payout
+        await fetchEarnings()
+      }
+    } catch {
+      setPayoutMessage({ type: 'error', text: 'Failed to request payout. Please try again.' })
+    } finally {
+      setPayoutLoading(false)
+      setTimeout(() => setPayoutMessage(null), 6000)
     }
   }
 
@@ -507,46 +587,119 @@ export default function MonetizationPage() {
         </div>
       </div>
 
-      {/* Section 3: Revenue Info */}
-      <Card className="rounded-xl bg-zinc-50 dark:bg-zinc-800/50">
+      {/* Section 3: Earnings & Payouts */}
+      <Card className="rounded-xl">
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-              <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
-            <CardTitle className="text-lg">Revenue Information</CardTitle>
+            <div>
+              <CardTitle className="text-lg">Earnings &amp; Payouts</CardTitle>
+              <CardDescription>Your current balance and earnings overview</CardDescription>
+            </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700">
-              <Check className="w-5 h-5 text-green-500 shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">You keep 85%</p>
-                <p className="text-xs text-zinc-500">of every subscription</p>
+        <CardContent className="space-y-6">
+          {/* Stats grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700">
+              <div className="flex items-center gap-2 mb-1">
+                <Wallet className="w-4 h-4 text-green-500" />
+                <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Available</p>
               </div>
+              {earningsLoading ? (
+                <div className="h-7 w-24 animate-pulse bg-zinc-200 dark:bg-zinc-700 rounded" />
+              ) : (
+                <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                  {formatDollars(Math.max(0, earnings?.availableBalance ?? 0))}
+                </p>
+              )}
+              <p className="text-xs text-zinc-400 mt-1">Ready to request</p>
             </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700">
-              <DollarSign className="w-5 h-5 text-zinc-400 shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Platform fee: 15%</p>
-                <p className="text-xs text-zinc-500">Covers hosting &amp; support</p>
+            <div className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700">
+              <div className="flex items-center gap-2 mb-1">
+                <DollarSign className="w-4 h-4 text-zinc-400" />
+                <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Total Earned</p>
               </div>
+              {earningsLoading ? (
+                <div className="h-7 w-24 animate-pulse bg-zinc-200 dark:bg-zinc-700 rounded" />
+              ) : (
+                <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                  {formatDollars(Math.max(0, earnings?.totalEarned ?? 0))}
+                </p>
+              )}
+              <p className="text-xs text-zinc-400 mt-1">All time (net)</p>
             </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700">
-              <CreditCard className="w-5 h-5 text-zinc-400 shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Minimum payout: $20</p>
-                <p className="text-xs text-zinc-500">Automatic via Stripe</p>
+            <div className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700">
+              <div className="flex items-center gap-2 mb-1">
+                <Users className="w-4 h-4 text-violet-500" />
+                <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Subscribers</p>
               </div>
+              {earningsLoading ? (
+                <div className="h-7 w-16 animate-pulse bg-zinc-200 dark:bg-zinc-700 rounded" />
+              ) : (
+                <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                  {earnings?.activeSubscribers ?? 0}
+                </p>
+              )}
+              <p className="text-xs text-zinc-400 mt-1">Active right now</p>
             </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700">
-              <ExternalLink className="w-5 h-5 text-zinc-400 shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Payouts via Stripe</p>
-                <p className="text-xs text-zinc-500">Direct to your bank</p>
-              </div>
+          </div>
+
+          {/* Pending payout notice */}
+          {!earningsLoading && earnings && earnings.pendingPayout > 0 && (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+              <Clock className="w-4 h-4 text-amber-500 shrink-0" />
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                <span className="font-medium">{formatDollars(earnings.pendingPayout)}</span> payout pending — an admin will process it shortly.
+              </p>
             </div>
+          )}
+
+          {/* Payout message */}
+          {payoutMessage && (
+            <div className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium ${
+              payoutMessage.type === 'success'
+                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+            }`}>
+              {payoutMessage.type === 'success' ? (
+                <Check className="w-4 h-4 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0" />
+              )}
+              {payoutMessage.text}
+            </div>
+          )}
+
+          {/* Request payout + fee info */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2 border-t border-zinc-200 dark:border-zinc-700">
+            <div className="text-sm text-zinc-500 space-y-0.5">
+              <p><span className="font-medium text-zinc-700 dark:text-zinc-300">You keep {100 - PLATFORM_CONFIG.PLATFORM_FEE_PERCENT}%</span> · Platform fee: {PLATFORM_CONFIG.PLATFORM_FEE_PERCENT}%</p>
+              <p>Minimum payout: {formatDollars(PLATFORM_CONFIG.MIN_PAYOUT_CENTS)} · Paid via Stripe to your bank</p>
+            </div>
+            {isConnected && (
+              <Button
+                onClick={handleRequestPayout}
+                disabled={
+                  payoutLoading ||
+                  earningsLoading ||
+                  !earnings ||
+                  earnings.availableBalance < PLATFORM_CONFIG.MIN_PAYOUT_CENTS ||
+                  earnings.pendingPayout > 0
+                }
+                variant="outline"
+                className="gap-2 shrink-0"
+              >
+                {payoutLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Wallet className="w-4 h-4" />
+                )}
+                Request Payout
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
