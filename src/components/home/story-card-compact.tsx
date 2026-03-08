@@ -5,6 +5,15 @@ import Image from 'next/image'
 import { BookOpen, FileText, Users } from 'lucide-react'
 import { getStoryUrl } from "@/lib/url-utils";
 import { useImpressionLogger } from "@/hooks/useImpressionLogger";
+import { PRIMARY_GENRES, SUBGENRES } from '@/lib/constants'
+
+// Short name lookup maps — built once at module level
+const PRIMARY_SHORT: Record<string, string> = Object.fromEntries(
+  PRIMARY_GENRES.filter(g => g.shortName).map(g => [g.slug, g.shortName!])
+)
+const SUBGENRE_SHORT: Record<string, string> = Object.fromEntries(
+  Object.values(SUBGENRES).flat().filter(s => s.shortName).map(s => [s.slug, s.shortName!])
+)
 
 const GENRE_COLOURS: Record<string, string> = {
   'fantasy': 'bg-purple-600',
@@ -149,13 +158,20 @@ export function StoryCardCompact({ story, rank, showRank = false, surface }: Sto
             {/* Genre tags — 2 rows reserved */}
             <div className="flex flex-wrap gap-1.5 content-start min-h-[3.5rem]">
               {story.primary_genre && (
-                <span className={`${genreColour} text-white text-xs font-medium px-2 py-0.5 rounded-full capitalize`}>
-                  {story.primary_genre.replace(/-/g, ' ')}
+                <span
+                  title={PRIMARY_GENRES.find(g => g.slug === story.primary_genre)?.name ?? story.primary_genre.replace(/-/g, ' ')}
+                  className={`${genreColour} text-white text-xs font-medium px-2 py-0.5 rounded-full capitalize`}
+                >
+                  {PRIMARY_SHORT[story.primary_genre] ?? story.primary_genre.replace(/-/g, ' ')}
                 </span>
               )}
               {story.subgenres?.map(sg => (
-                <span key={sg} className="border border-border text-muted-foreground text-xs px-2 py-0.5 rounded-full capitalize">
-                  {sg.replace(/-/g, ' ')}
+                <span
+                  key={sg}
+                  title={Object.values(SUBGENRES).flat().find(s => s.slug === sg)?.name ?? sg.replace(/-/g, ' ')}
+                  className="border border-border text-muted-foreground text-xs px-2 py-0.5 rounded-full capitalize"
+                >
+                  {SUBGENRE_SHORT[sg] ?? sg.replace(/-/g, ' ')}
                 </span>
               ))}
             </div>
