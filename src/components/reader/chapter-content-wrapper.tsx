@@ -56,7 +56,9 @@ export function ChapterContentWrapper({ children, headerContent, storyTitle, sto
     // Don't trigger on links, buttons, or interactive elements
     const target = e.target as HTMLElement
     if (target.closest('a, button, [role="button"], input, textarea, select, [data-interactive]')) return
-    
+    // Exclude elements with a pointer cursor (e.g. spoiler reveals, custom interactive spans)
+    if (window.getComputedStyle(target).cursor === 'pointer') return
+
     const rect = e.currentTarget.getBoundingClientRect()
     const tapY = e.clientY - rect.top
     const zoneHeight = rect.height
