@@ -84,31 +84,35 @@ export async function POST(request: NextRequest) {
     });
 
     // Handle author_subscription_payment refund
-    if (transaction.type === 'author_subscription_payment' && transaction.subscription_id) {
-      // Get author_id from the subscription
-      const { data: subscription } = await supabase
-        .from('subscriptions')
-        .select('author_id')
-        .eq('id', transaction.subscription_id)
+    if (transaction.type === 'author_subscription_payment' && transaction.author_id) {
+      const authorEarning = transaction.author_earning_cents ?? 0;
+      const platformFee = transaction.platform_fee_cents ?? 0;
+      const grossAmount = transaction.amount_cents ?? 0;
+
+      // Insert a negative author_revenue record to reverse the earnings
+      await supabase.from('author_revenue').insert({
+        author_id: transaction.author_id,
+        subscription_id: transaction.subscription_id ?? null,
+        gross_amount_cents: -grossAmount,
+        platform_fee_cents: -platformFee,
+        net_amount_cents: -authorEarning,
+        description: reason ? `Refund: ${reason}` : `Refund for transaction ${transaction_id}`,
+      });
+
+      // Deduct from author's balance (floor at 0)
+      const { data: account } = await supabase
+        .from('author_stripe_accounts')
+        .select('balance_cents')
+        .eq('author_id', transaction.author_id)
         .single();
 
-      if (subscription?.author_id) {
-        // Deduct from author's balance
-        const { data: account } = await supabase
+      if (account) {
+        await supabase
           .from('author_stripe_accounts')
-          .select('balance_cents')
-          .eq('author_id', subscription.author_id)
-          .single();
-
-        if (account) {
-          const authorEarning = transaction.author_earning_cents ?? 0;
-          await supabase
-            .from('author_stripe_accounts')
-            .update({
-              balance_cents: Math.max(0, (account.balance_cents ?? 0) - authorEarning),
-            })
-            .eq('author_id', subscription.author_id);
-        }
+          .update({
+            balance_cents: Math.max(0, (account.balance_cents ?? 0) - authorEarning),
+          })
+          .eq('author_id', transaction.author_id);
       }
     }
 
