@@ -109,6 +109,7 @@ export function ReadingHistory({ entries, stats }: ReadingHistoryProps) {
                       fill
                       className="object-cover"
                       sizes="40px"
+                      unoptimized
                     />
                   </div>
                 ) : (

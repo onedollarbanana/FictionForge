@@ -58,6 +58,7 @@ export function AuthorStoryCard({ story }: StoryCardProps) {
               fill
               sizes="80px"
               className="object-cover"
+              unoptimized
             />
           </div>
         ) : (

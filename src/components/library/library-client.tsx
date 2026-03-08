@@ -256,6 +256,7 @@ export function LibraryClient({ items: initialItems }: LibraryClientProps) {
                       fill
                       className="object-cover"
                       sizes="(max-width: 640px) 80px, 96px"
+                      unoptimized
                     />
                   </div>
                 ) : (

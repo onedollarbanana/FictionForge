@@ -234,6 +234,7 @@ export function StoryCard({
                 sizes="112px"
                 className="object-cover rounded"
                 loading="lazy"
+                unoptimized
               />
             </div>
           ) : (
@@ -417,6 +418,7 @@ export function StoryCard({
               sizes="(max-width: 640px) 140px, 180px"
               className="object-cover"
               loading="lazy"
+              unoptimized
             />
           ) : (
             <div className={cn(
