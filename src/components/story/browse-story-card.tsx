@@ -98,6 +98,7 @@ export function BrowseStoryCard({ story, className, surface }: BrowseStoryCardPr
               sizes="(max-width: 640px) 96px, 112px"
               className="object-cover rounded-md"
               loading="lazy"
+              unoptimized
             />
           </div>
         ) : (

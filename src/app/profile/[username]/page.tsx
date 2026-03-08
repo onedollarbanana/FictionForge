@@ -395,6 +395,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                       alt={profile.username}
                       fill
                       className="object-cover"
+                      unoptimized
                     />
                   ) : (
                     <User className="h-12 w-12 text-muted-foreground" />
@@ -612,11 +613,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                             alt={story.title}
                             fill
                             className="object-cover rounded"
+                            unoptimized
                           />
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <Link 
+                        <Link
                           href={getStoryUrl(story)}
                           className="font-semibold hover:text-primary transition-colors line-clamp-1 break-all"
                         >
@@ -685,6 +687,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                               alt={story.title}
                               fill
                               className="object-cover rounded"
+                              unoptimized
                             />
                           </div>
                         )}

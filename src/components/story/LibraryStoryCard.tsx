@@ -55,6 +55,7 @@ export function LibraryStoryCard({ story, status: initialStatus }: LibraryStoryC
               sizes="80px"
               className="object-cover"
               loading="lazy"
+              unoptimized
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-2xl">

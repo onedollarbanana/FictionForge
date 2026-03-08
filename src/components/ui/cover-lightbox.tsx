@@ -53,6 +53,7 @@ export function CoverLightbox({
           className="object-cover rounded-lg"
           sizes="(max-width: 768px) 100vw, 192px"
           priority
+          unoptimized
         />
       </button>
 
@@ -91,6 +92,7 @@ export function CoverLightbox({
               className="object-contain rounded-lg"
               sizes={`(max-width: ${maxWidth}px) 100vw, ${maxWidth}px`}
               quality={90}
+              unoptimized
             />
           </div>
         </div>
