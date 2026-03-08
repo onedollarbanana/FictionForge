@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (account.status !== 'complete') {
+    if (account.status !== 'active') {
       return NextResponse.json(
         { error: 'Onboarding is not complete for this account' },
         { status: 400 }
@@ -104,7 +104,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Insert payout record
+    // Insert payout record. IMPORTANT: the Stripe transfer has already executed above.
+    // If this insert fails we must still deduct the balance and log the transfer ID
+    // so an admin can reconcile manually — do not return 500 and leave the DB stale.
     const now = new Date().toISOString();
     const { data: payout, error: insertError } = await admin
       .from('payouts')
@@ -121,11 +123,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (insertError) {
-      console.error('Payout insert error:', insertError);
-      return NextResponse.json({ error: 'Failed to create payout record' }, { status: 500 });
+      // Transfer already happened — log with the Stripe transfer ID for manual reconciliation
+      console.error(
+        `Payout record insert failed after Stripe transfer ${transfer.id} for author ${author_id}:`,
+        insertError
+      );
     }
 
-    // Deduct from author's balance
+    // Deduct from author's balance regardless of whether the payout record insert succeeded
     const { error: balanceError } = await admin
       .from('author_stripe_accounts')
       .update({
@@ -135,15 +140,15 @@ export async function POST(request: NextRequest) {
       .eq('author_id', author_id);
 
     if (balanceError) {
-      console.error('Balance update error:', balanceError);
+      console.error('Balance update error after transfer:', balanceError);
     }
 
     return NextResponse.json({
       success: true,
       payout: {
-        id: payout.id,
-        amount_cents: payout.amount_cents,
-        status: payout.status,
+        id: payout?.id ?? null,
+        amount_cents: payoutAmount,
+        status: 'paid',
         stripe_transfer_id: transfer.id,
       },
     });
