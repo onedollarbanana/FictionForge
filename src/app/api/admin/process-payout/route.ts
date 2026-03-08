@@ -89,6 +89,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Audit log
+    console.info('[ADMIN_AUDIT] process_payout', {
+      admin_user_id: user.id,
+      author_id,
+      amount_cents: payoutAmount,
+      stripe_account_id: account.stripe_account_id,
+    });
+
     // Create Stripe transfer to connected account
     let transfer;
     try {

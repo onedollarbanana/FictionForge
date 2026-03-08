@@ -48,6 +48,14 @@ export async function POST(request: NextRequest) {
           hold_set_at: null,
         };
 
+    // Audit log
+    console.info('[ADMIN_AUDIT] payout_hold', {
+      admin_user_id: user.id,
+      author_id,
+      hold,
+      reason: reason || null,
+    });
+
     const { data: updated, error: updateError } = await admin
       .from('author_stripe_accounts')
       .update(updateData)

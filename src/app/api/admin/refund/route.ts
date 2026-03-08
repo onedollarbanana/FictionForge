@@ -70,6 +70,15 @@ export async function POST(request: NextRequest) {
       .update({ status: 'refunded' })
       .eq('id', transaction_id);
 
+    // Audit log
+    console.info('[ADMIN_AUDIT] refund', {
+      admin_user_id: user.id,
+      transaction_id,
+      amount_cents: transaction.amount_cents,
+      stripe_refund_id: stripeRefund.id,
+      reason: reason || null,
+    });
+
     // Create a new refund transaction record
     await supabase.from('transactions').insert({
       user_id: transaction.user_id,
@@ -80,7 +89,7 @@ export async function POST(request: NextRequest) {
       currency: transaction.currency,
       stripe_payment_intent_id: transaction.stripe_payment_intent_id,
       author_id: transaction.author_id,
-      description: reason || `Refund for transaction ${transaction_id}`,
+      description: reason ? `Refund by ${user.id}: ${reason}` : `Refund by ${user.id} for transaction ${transaction_id}`,
     });
 
     // Handle author_subscription_payment refund
